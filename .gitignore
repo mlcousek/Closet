@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+dist/
+ios/
+android/
+*.ipa
+.env
+.env.*
+.DS_Store
