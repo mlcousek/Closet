@@ -1,32 +1,35 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Product: Closet (working name), a personal digital wardrobe for iPhone.
+  The user photographs their clothes, builds outfits, sees them rendered on
+  their own photo by an AI image model, and plans what to wear by weather
+  and calendar. Inspired by the Alta closet app.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Tech stack: React Native + Expo (TypeScript, expo-router), iPhone only,
+  portrait. SQLite with Drizzle ORM and images on the file system. TanStack
+  Query and Zustand. i18next with English and Czech.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  Constraints:
+  - Developed on Windows with no Mac and no iOS simulator. Device testing
+    happens on a real iPhone through a development client.
+  - Built unsigned in GitHub Actions and sideloaded with AltStore using a
+    free Apple ID: builds expire after 7 days, no push notifications, no
+    iCloud, no app extensions (widgets, share extensions).
+  - Local-first and single-user now, but sync-ready: UUID ids, createdAt,
+    updatedAt, deletedAt on every table, data access only through
+    repositories.
+  - AI providers are called directly with keys the user stores on the
+    device. All provider access goes through the single AI module so it can
+    be pointed at a proxy backend before any public release.
+  - Every user-facing string exists in English and Czech.
+
+  Conventions: Conventional Commits. Changes are implemented in the order
+  listed in README.md.
+
+rules:
+  specs:
+    - Describe behaviour the user can observe; keep library and provider names out of specs
+  tasks:
+    - State how each task is verified, and say "on device" when it needs the real iPhone
+    - End every change with a task that walks through all spec scenarios on device
