@@ -495,5 +495,55 @@
     "inUse": "Renders use your studio photo.",
     "remove": "Go back to my original photo",
     "failed": "The studio photo could not be created."
+  },
+  "lookbooks": {
+    "title": "Lookbook",
+    "add": "Add lookbook",
+    "addTo": "Add to lookbook",
+    "create": "Create",
+    "newPlaceholder": "New lookbook name",
+    "arrange": "Arrange",
+    "cover": "Cover",
+    "setCover": "Use as cover",
+    "moveEarlier": "Move earlier",
+    "moveLater": "Move later",
+    "removeOutfit": "Remove from lookbook",
+    "emptyTitle": "No outfits here yet",
+    "emptyMessage": "Open an outfit and choose Add to lookbook, or select several in the Outfits tab with a long press.",
+    "delete": "Delete lookbook",
+    "deleteTitle": "Delete this lookbook?",
+    "deleteMessage": "The lookbook is removed. Its outfits stay in your Outfits.",
+    "deletedToast": "Lookbook deleted",
+    "notFound": "This lookbook no longer exists."
+  },
+  "wishlist": {
+    "title": "Wishlist",
+    "badge": "On your wishlist",
+    "emptyTitle": "Your wishlist is empty",
+    "emptyMessage": "Keep pieces you are thinking of buying here and try them in outfits with what you already own.",
+    "emptyAction": "Add from a shop link",
+    "unpriced": "{{count}} without a price",
+    "includeInEditor": "Include wishlist pieces",
+    "pricePaid": "Price paid",
+    "bought": "I bought it",
+    "boughtToast": "Moved to your closet"
+  },
+  "share": {
+    "title": "Share as an image",
+    "share": "Share",
+    "save": "Save to Photos",
+    "saved": "Saved to your photo library.",
+    "failed": "The image could not be created.",
+    "denied": "Closet is not allowed to add photos. You can allow it in the system settings.",
+    "includeItems": "Show the pieces underneath",
+    "content": {
+      "render": "On me",
+      "collage": "Pieces only"
+    },
+    "format": {
+      "portrait": "Portrait",
+      "story": "Story",
+      "square": "Square"
+    }
   }
 }

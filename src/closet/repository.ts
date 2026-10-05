@@ -15,7 +15,14 @@ import {
   isWarmth,
   type Category,
 } from './taxonomy';
-import type { Item, ItemDetails, ItemFilter, ItemImages, Ownership } from './types';
+import {
+  OWNERSHIPS,
+  type Item,
+  type ItemDetails,
+  type ItemFilter,
+  type ItemImages,
+  type Ownership,
+} from './types';
 
 type Row = typeof items.$inferSelect;
 
@@ -48,7 +55,9 @@ export function toItem(row: Row): Item {
     purchasedAt: row.purchasedAt,
     notes: row.notes,
     sourceUrl: row.sourceUrl,
-    ownership: row.ownership === 'archived' ? 'archived' : 'owned',
+    ownership: OWNERSHIPS.includes(row.ownership as Ownership)
+      ? (row.ownership as Ownership)
+      : 'owned',
     originalPath: row.originalPath,
     cutoutPath: row.cutoutPath,
     thumbPath: row.thumbPath,
@@ -147,14 +156,14 @@ export function createItemRepository(db: () => Db = getDb, now: () => number = D
     async create(
       details: ItemDetails,
       images: ItemImages,
-      options: { needsReview?: boolean; id?: string } = {},
+      options: { needsReview?: boolean; id?: string; ownership?: Ownership } = {},
     ): Promise<Item> {
       const row = await base.create({
         ...toColumns(details),
         ...images,
         ...(options.id ? { id: options.id } : {}),
         category: details.category,
-        ownership: 'owned',
+        ownership: options.ownership ?? 'owned',
         needsReview: options.needsReview ?? false,
       });
       return toItem(row);
@@ -181,6 +190,40 @@ export function createItemRepository(db: () => Db = getDb, now: () => number = D
         .set({ ...toColumns(patch), updatedAt: now() })
         .where(and(inArray(items.id, ids), isNull(items.deletedAt)))
         .run();
+    },
+    /**
+     * Moves a wishlist item into the closet as bought, with the price paid
+     * and the purchase date. Outfits that use it need no change.
+     */
+    async markBought(
+      id: string,
+      purchase: { price: number | null; currency: string | null; purchasedAt: number },
+    ): Promise<Item | null> {
+      const row = await base.update(id, { ...purchase, ownership: 'owned' });
+      return row ? toItem(row) : null;
+    },
+    /** Number of wishlist items and the sum of their prices per currency, with how many have no price. */
+    async wishlistTotals(): Promise<{
+      count: number;
+      unpriced: number;
+      totals: { currency: string | null; amount: number }[];
+    }> {
+      const rows = db()
+        .select({ price: items.price, currency: items.currency })
+        .from(items)
+        .where(and(isNull(items.deletedAt), eq(items.ownership, 'wishlist')))
+        .all();
+      const sums = new Map<string | null, number>();
+      let unpriced = 0;
+      for (const row of rows) {
+        if (row.price === null) unpriced++;
+        else sums.set(row.currency, (sums.get(row.currency) ?? 0) + row.price);
+      }
+      return {
+        count: rows.length,
+        unpriced,
+        totals: [...sums].map(([currency, amount]) => ({ currency, amount })),
+      };
     },
     async archive(ids: string[]): Promise<void> {
       setOwnership(ids, 'archived');

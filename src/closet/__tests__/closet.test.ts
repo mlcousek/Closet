@@ -281,6 +281,69 @@ describe('item repository', () => {
     expect(await repo.get(skirt.id)).not.toBeNull();
   });
 
+  it('keeps wishlist items out of every closet query unless asked for', async () => {
+    const { repo, shirt } = await seed();
+    const wished = await repo.create(
+      details({
+        name: 'Dream coat',
+        category: 'outerwear',
+        brand: 'Dior',
+        price: 9000,
+        currency: 'CZK',
+      }),
+      images('coat'),
+      { ownership: 'wishlist' },
+    );
+    expect(await repo.count()).toBe(3);
+    expect((await repo.list()).map((item) => item.id)).not.toContain(wished.id);
+    expect((await repo.list({ category: 'outerwear' })).length).toBe(0);
+    expect(await repo.brands()).toEqual(['Arket', 'Zara']);
+    expect((await repo.list({ ownership: 'wishlist' })).map((item) => item.id)).toEqual([
+      wished.id,
+    ]);
+    expect((await repo.list({ ownership: 'archived' })).length).toBe(0);
+    expect((await repo.get(shirt.id))!.ownership).toBe('owned');
+  });
+
+  it('totals wishlist prices per currency and counts items without a price', async () => {
+    const { repo } = await setup();
+    const add = (patch: Partial<ItemDetails>) =>
+      repo.create(details(patch), images(), { ownership: 'wishlist' });
+    await add({ price: 1000, currency: 'CZK' });
+    await add({ price: 500.5, currency: 'CZK' });
+    await add({ price: 40, currency: 'EUR' });
+    await add({});
+    await repo.create(details({ price: 99999, currency: 'CZK' }), images());
+    const totals = await repo.wishlistTotals();
+    expect(totals.count).toBe(4);
+    expect(totals.unpriced).toBe(1);
+    expect(totals.totals).toEqual(
+      expect.arrayContaining([
+        { currency: 'CZK', amount: 1500.5 },
+        { currency: 'EUR', amount: 40 },
+      ]),
+    );
+  });
+
+  it('moves a bought wishlist item into the closet with price and date', async () => {
+    const { repo } = await setup();
+    const wished = await repo.create(details({ price: 4000, currency: 'CZK' }), images(), {
+      ownership: 'wishlist',
+    });
+    const bought = await repo.markBought(wished.id, {
+      price: 3500,
+      currency: 'CZK',
+      purchasedAt: 1_760_000_000_000,
+    });
+    expect(bought).toMatchObject({
+      ownership: 'owned',
+      price: 3500,
+      purchasedAt: 1_760_000_000_000,
+    });
+    expect(await repo.count()).toBe(1);
+    expect(await repo.count({ ownership: 'wishlist' })).toBe(0);
+  });
+
   it('ignores stored values that are not in the taxonomy', async () => {
     const { repo } = await setup();
     const item = await repo.create(

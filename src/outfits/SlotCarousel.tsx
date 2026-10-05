@@ -108,9 +108,16 @@ export function SlotCarousel({
                   recyclingKey={cell.item.id}
                   style={{ flex: 1 }}
                 />
-                {cell.item.ownership === 'archived' ? (
-                  <View style={{ position: 'absolute', right: 4, top: 4 }}>
-                    <Ionicons name="archive" size={14} color={colors.textMuted} />
+                {cell.item.ownership !== 'owned' ? (
+                  <View
+                    testID={`${testID}-${cell.item.id}-${cell.item.ownership}`}
+                    style={{ position: 'absolute', right: 4, top: 4 }}
+                  >
+                    <Ionicons
+                      name={cell.item.ownership === 'wishlist' ? 'heart' : 'archive'}
+                      size={14}
+                      color={colors.textMuted}
+                    />
                   </View>
                 ) : null}
               </View>

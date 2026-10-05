@@ -1,6 +1,10 @@
 import type { Category, Colour, Occasion, Season, Subcategory, Warmth } from './taxonomy';
 
-export const OWNERSHIPS = ['owned', 'archived'] as const;
+/**
+ * owned: in the closet. archived: no longer owned, kept for history.
+ * wishlist: not owned yet; kept apart from the closet everywhere unless asked for.
+ */
+export const OWNERSHIPS = ['owned', 'archived', 'wishlist'] as const;
 export type Ownership = (typeof OWNERSHIPS)[number];
 
 export type Item = {

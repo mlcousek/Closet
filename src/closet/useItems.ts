@@ -44,6 +44,13 @@ export function useItemCount(filter: ItemFilter) {
   });
 }
 
+export function useWishlistTotals() {
+  return useQuery({
+    queryKey: [ITEMS, 'wishlist-totals'],
+    queryFn: () => itemRepository.wishlistTotals(),
+  });
+}
+
 export function useBrands() {
   return useQuery({ queryKey: [ITEMS, 'brands'], queryFn: () => itemRepository.brands() });
 }

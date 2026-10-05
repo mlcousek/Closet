@@ -36,6 +36,13 @@ const config: ExpoConfig = {
     'expo-sharing',
     'expo-document-picker',
     [
+      'expo-media-library',
+      {
+        savePhotosPermission: 'Closet saves outfit images you export to your photo library.',
+        photosPermission: false,
+      },
+    ],
+    [
       'expo-image-picker',
       {
         cameraPermission: 'Closet uses the camera to photograph you and your clothes.',

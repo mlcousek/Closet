@@ -11,6 +11,7 @@ import LinkImportScreen from '@/app/item/link';
 import NewItemScreen from '@/app/item/new';
 import { useAddActions } from '@/shell/addActions';
 
+import { useClosetTab } from '../closetTab';
 import { ImportIndicator } from '../ImportIndicator';
 import { usePendingLink } from '../pendingLink';
 
@@ -82,6 +83,24 @@ const mockRepo = {
   ),
   get: jest.fn(async (id: string) => mockItems.find((entry) => entry.id === id) ?? null),
   brands: jest.fn(async () => []),
+  wishlistTotals: jest.fn(async () => {
+    const wished = mockItems.filter((entry) => entry.ownership === 'wishlist');
+    const priced = wished.filter((entry) => entry.price !== null);
+    return {
+      count: wished.length,
+      unpriced: wished.length - priced.length,
+      totals:
+        priced.length > 0
+          ? [{ currency: 'CZK', amount: priced.reduce((sum, entry) => sum + entry.price!, 0) }]
+          : [],
+    };
+  }),
+  markBought: jest.fn(async (id: string, purchase: object) => {
+    mockItems = mockItems.map((entry) =>
+      entry.id === id ? { ...entry, ...purchase, ownership: 'owned' as const } : entry,
+    );
+    return mockItems.find((entry) => entry.id === id) ?? null;
+  }),
   create: jest.fn(async (..._args: unknown[]) => item('new')),
   update: jest.fn(async (id: string, patch: Partial<Item>) => {
     mockItems = mockItems.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry));
@@ -191,6 +210,87 @@ beforeEach(() => {
   Object.assign(mockClipboard, { hasUrl: false, url: '' });
   mockCutout.mockResolvedValue({ uri: 'file:///tmp/cut.png', width: 10, height: 10 });
   useAddActions.setState({ actions: [], menuOpen: false });
+  useClosetTab.setState({ tab: 'closet' });
+});
+
+describe('wishlist', () => {
+  const seedWishlist = () => {
+    mockItems = [
+      item('shirt', { name: 'White shirt' }),
+      item('coat', { name: 'Dream coat', ownership: 'wishlist', price: 4000, currency: 'CZK' }),
+      item('bag', { name: 'Dream bag', ownership: 'wishlist' }),
+    ];
+  };
+
+  it('keeps wishlist items out of the closet tab and its count', async () => {
+    seedWishlist();
+    renderWithQuery(<ClosetScreen />);
+    expect(await screen.findByText('White shirt')).toBeTruthy();
+    expect(screen.queryByText('Dream coat')).toBeNull();
+    expect(screen.getByTestId('closet-count')).toHaveTextContent('1 items');
+  });
+
+  it('shows only wishlist items on the Wishlist tab, with the total and missing prices', async () => {
+    seedWishlist();
+    renderWithQuery(<ClosetScreen />);
+    await screen.findByText('White shirt');
+    fireEvent.press(screen.getByTestId('closet-tab-wishlist'));
+    await settle();
+    expect(screen.getByText('Dream coat')).toBeTruthy();
+    expect(screen.getByText('Dream bag')).toBeTruthy();
+    expect(screen.queryByText('White shirt')).toBeNull();
+    expect(screen.getByTestId('wishlist-total')).toHaveTextContent(/4.000.*1 without a price/);
+    expect(useClosetTab.getState().tab).toBe('wishlist');
+  });
+
+  it('explains an empty wishlist and offers to add from a link', async () => {
+    mockItems = [item('shirt')];
+    renderWithQuery(<ClosetScreen />);
+    await screen.findByText('Item shirt');
+    fireEvent.press(screen.getByTestId('closet-tab-wishlist'));
+    await settle();
+    expect(screen.getByText('Your wishlist is empty')).toBeTruthy();
+    fireEvent.press(screen.getByText('Add from a shop link'));
+    expect(mockRouter.push).toHaveBeenCalledWith('/item/link');
+  });
+
+  it('saves a new item to the wishlist when it is added from the Wishlist tab', async () => {
+    useClosetTab.setState({ tab: 'wishlist' });
+    mockParams = { source: 'library' };
+    mockPickPhoto.mockResolvedValue({
+      status: 'picked',
+      photo: { uri: 'file:///tmp/p.jpg', width: 10, height: 10 },
+    });
+    mockTagItem.mockResolvedValue({
+      name: 'Coat',
+      category: 'outerwear',
+      subcategory: null,
+      colours: [],
+      seasons: [],
+      occasions: [],
+      warmth: null,
+      brand: null,
+    });
+    renderWithQuery(<NewItemScreen />);
+    fireEvent.press(await screen.findByTestId('item-save'));
+    await waitFor(() => expect(mockRepo.create).toHaveBeenCalled());
+    expect(mockRepo.create.mock.calls[0][2]).toEqual({ ownership: 'wishlist' });
+  });
+
+  it('marks a wishlist item as bought with the price paid', async () => {
+    mockItems = [item('coat', { ownership: 'wishlist', price: 4000, currency: 'CZK' })];
+    mockParams = { id: 'coat' };
+    renderWithQuery(<ItemScreen />);
+    expect(await screen.findByTestId('item-wishlist')).toBeTruthy();
+    fireEvent.changeText(screen.getByTestId('item-bought-price'), '3500');
+    fireEvent.press(screen.getByTestId('item-bought'));
+    await waitFor(() => expect(mockRepo.markBought).toHaveBeenCalled());
+    expect(mockRepo.markBought.mock.calls[0]).toEqual([
+      'coat',
+      { price: 3500, currency: 'CZK', purchasedAt: expect.any(Number) },
+    ]);
+    await waitFor(() => expect(screen.queryByTestId('item-wishlist')).toBeNull());
+  });
 });
 
 describe('closet screen', () => {
@@ -391,6 +491,7 @@ describe('adding an item from a photo', () => {
         colours: ['pink', 'white'],
       }),
       expect.objectContaining({ cutoutPath: 'images/items/n.png' }),
+      { ownership: 'owned' },
     ]);
     expect(mockStoreImages.mock.calls[0][0]).toEqual({
       originalUri: photo.uri,

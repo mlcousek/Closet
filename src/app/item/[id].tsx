@@ -7,12 +7,13 @@ import { useTranslation } from 'react-i18next';
 
 import { itemImageDeps } from '@/closet/deviceImages';
 import { ItemForm } from '@/closet/ItemForm';
+import { parsePriceInput } from '@/closet/itemFormLogic';
 import { removeItemImages, storeItemImages } from '@/closet/itemImages';
 import { parseWebUrl } from '@/closet/productPage';
 import { itemRepository } from '@/closet/repository';
 import { displayPath, type Item, type ItemDetails } from '@/closet/types';
 import { useInvalidateItems, useItem } from '@/closet/useItems';
-import { AppText, Button, EmptyState, Row, Screen } from '@/components/ui';
+import { AppText, Button, EmptyState, Field, Row, Screen } from '@/components/ui';
 import { formatCurrency, formatDate, formatLocale } from '@/i18n/format';
 import { outfitRepository } from '@/outfits/repository';
 import { useInvalidateOutfits } from '@/outfits/useOutfits';
@@ -30,6 +31,7 @@ function ItemView({ item }: { item: Item }) {
   const showToast = useToast((state) => state.show);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [boughtPrice, setBoughtPrice] = useState(item.price !== null ? String(item.price) : '');
 
   const locale = formatLocale(i18n.language === 'cs' ? 'cs' : 'en', getLocales()[0]?.regionCode);
   // Only web links are ever opened, whatever ended up stored.
@@ -68,6 +70,22 @@ function ItemView({ item }: { item: Item }) {
     } finally {
       setBusy(false);
     }
+  };
+
+  const markBought = async () => {
+    const price = boughtPrice.trim() ? parsePriceInput(boughtPrice) : null;
+    if (boughtPrice.trim() && price === null) {
+      showToast({ message: t('itemForm.priceInvalid') });
+      return;
+    }
+    await itemRepository.markBought(item.id, {
+      price,
+      currency: price !== null ? (item.currency ?? getLocales()[0]?.currencyCode ?? null) : null,
+      purchasedAt: Date.now(),
+    });
+    await invalidateItems();
+    await invalidateOutfits();
+    showToast({ message: t('wishlist.boughtToast') });
   };
 
   const toggleArchive = async () => {
@@ -136,6 +154,11 @@ function ItemView({ item }: { item: Item }) {
               {item.name ?? t(`taxonomy.category.${item.category}`)}
             </AppText>
             {item.brand ? <AppText muted>{item.brand}</AppText> : null}
+            {item.ownership === 'wishlist' ? (
+              <AppText testID="item-wishlist" variant="label" muted>
+                {t('wishlist.badge')}
+              </AppText>
+            ) : null}
             {item.ownership === 'archived' ? (
               <AppText testID="item-archived" variant="label" style={{ color: colors.danger }}>
                 {t('item.archivedBadge')}
@@ -225,6 +248,28 @@ function ItemView({ item }: { item: Item }) {
                 label={t('item.openSource')}
                 onPress={() => void Linking.openURL(sourceUrl)}
               />
+            ) : null}
+            {item.ownership === 'wishlist' ? (
+              <View
+                testID="item-bought-panel"
+                style={{ gap: spacing.sm, flexDirection: 'row', alignItems: 'flex-end' }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Field
+                    testID="item-bought-price"
+                    label={t('wishlist.pricePaid')}
+                    value={boughtPrice}
+                    onChangeText={setBoughtPrice}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <Button
+                  testID="item-bought"
+                  icon="bag-check-outline"
+                  label={t('wishlist.bought')}
+                  onPress={() => void markBought()}
+                />
+              </View>
             ) : null}
             <Button
               testID="item-archive"

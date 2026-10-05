@@ -63,7 +63,14 @@ function Editor({ outfit, startItem }: { outfit: Outfit | null; startItem: Item 
   const [draft, setDraft] = useState(initial);
   const [season, setSeason] = useState<Season | null>(null);
   const [saving, setSaving] = useState(false);
-  const { data: owned = [] } = useItems({});
+  const [withWishlist, setWithWishlist] = useState(false);
+  const { data: ownedItems = [] } = useItems({});
+  const { data: wished = [] } = useItems({ ownership: 'wishlist' });
+  // Wishlist pieces are offered only on request, so a purchase can be judged against the closet.
+  const owned = useMemo(
+    () => (withWishlist ? [...ownedItems, ...wished] : ownedItems),
+    [ownedItems, wished, withWishlist],
+  );
 
   // Items already in the outfit stay selectable even when archived or filtered out.
   const inOutfit = useMemo(() => outfit?.entries.map((entry) => entry.item) ?? [], [outfit]);
@@ -169,6 +176,22 @@ function Editor({ outfit, startItem }: { outfit: Outfit | null; startItem: Item 
             onToggle={(value) => setSeason(season === value ? null : value)}
           />
         </View>
+        {wished.length > 0 ? (
+          <Pressable
+            testID="editor-wishlist"
+            accessibilityRole="switch"
+            accessibilityState={{ checked: withWishlist }}
+            accessibilityLabel={t('wishlist.includeInEditor')}
+            onPress={() => setWithWishlist(!withWishlist)}
+            style={{ padding: spacing.sm }}
+          >
+            <Ionicons
+              name={withWishlist ? 'heart' : 'heart-outline'}
+              size={24}
+              color={colors.text}
+            />
+          </Pressable>
+        ) : null}
         <Pressable
           testID="editor-shuffle"
           accessibilityRole="button"

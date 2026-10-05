@@ -84,8 +84,11 @@ const closet = [
   item('hat', 'accessories'),
 ];
 let mockOwned: Item[] = closet;
+let mockWished: Item[] = [];
 jest.mock('@/closet/useItems', () => ({
-  useItems: () => ({ data: mockOwned }),
+  useItems: (filter: { ownership?: string } = {}) => ({
+    data: filter.ownership === 'wishlist' ? mockWished : mockOwned,
+  }),
   useItem: (id?: string) => ({
     data: id ? (mockOwned.find((entry) => entry.id === id) ?? null) : undefined,
     isPending: false,
@@ -139,10 +142,24 @@ const mockOutfitRepo = {
   restore: jest.fn(async () => {}),
 };
 jest.mock('../repository', () => ({
+  hasWishlistItem: (outfit: { entries: { item: { ownership: string } }[] }) =>
+    outfit.entries.some((candidate) => candidate.item.ownership === 'wishlist'),
   get outfitRepository() {
     return mockOutfitRepo;
   },
 }));
+jest.mock('@/lookbooks/useLookbooks', () => ({
+  useLookbooks: () => ({ data: [] }),
+  useLookbooksContaining: () => ({ data: [] }),
+}));
+jest.mock('@/lookbooks/LookbookPicker', () => {
+  const { Text } = require('react-native');
+  return { LookbookPicker: () => <Text testID="lookbook-picker">picker</Text> };
+});
+jest.mock('@/sharing/ShareSheet', () => {
+  const { Text } = require('react-native');
+  return { ShareSheet: () => <Text testID="share-sheet">share</Text> };
+});
 
 const doneRender = (id: string, outfitId: string, patch: Partial<Render> = {}): Render => ({
   id,
@@ -269,6 +286,7 @@ beforeEach(() => {
   jest.restoreAllMocks();
   mockParams = {};
   mockOwned = closet;
+  mockWished = [];
   mockOutfits = [];
   mockRenders = [];
   mockProfile = profile;
@@ -383,6 +401,21 @@ describe('outfit editor', () => {
     fireEvent.press(screen.getByTestId('editor-shuffle'));
     expect(screen.getByTestId('editor-preview')).toBeTruthy();
     expect(screen.getByTestId('editor-save')).toBeEnabled();
+  });
+
+  it('offers wishlist pieces only on request and marks them', () => {
+    mockWished = [item('dream-coat', 'outerwear', { ownership: 'wishlist' })];
+    renderWithQuery(<OutfitEditorScreen />);
+    expect(screen.queryByTestId('carousel-outer-0-dream-coat')).toBeNull();
+    fireEvent.press(screen.getByTestId('editor-wishlist'));
+    expect(screen.getByTestId('carousel-outer-0-dream-coat-wishlist')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('carousel-outer-0-dream-coat'));
+    expect(screen.getByTestId('collage-piece-dream-coat')).toBeTruthy();
+  });
+
+  it('has no wishlist switch when the wishlist is empty', () => {
+    renderWithQuery(<OutfitEditorScreen />);
+    expect(screen.queryByTestId('editor-wishlist')).toBeNull();
   });
 
   it('opens with a closet item selected in its slot', () => {
@@ -503,6 +536,23 @@ describe('outfits section', () => {
     });
   });
 
+  it('marks an outfit that contains a wishlist piece', async () => {
+    const wished = item('dream-coat', 'outerwear', { ownership: 'wishlist' });
+    mockOutfits = [outfitOf('o1', { entries: [entry(wished, 'outer')] }), outfitOf('o2')];
+    renderWithQuery(<OutfitsScreen />);
+    await waitFor(() => expect(screen.getAllByTestId('outfit-wishlist')).toHaveLength(1));
+  });
+
+  it('adds several selected outfits to a lookbook', async () => {
+    mockOutfits = [outfitOf('o1'), outfitOf('o2')];
+    renderWithQuery(<OutfitsScreen />);
+    fireEvent(await screen.findByTestId('outfit-o1'), 'longPress');
+    fireEvent.press(screen.getByTestId('outfit-o2'));
+    expect(screen.getByText('2 selected')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('outfit-selection-lookbook'));
+    expect(screen.getByTestId('lookbook-picker')).toBeTruthy();
+  });
+
   it('filters by favourites', async () => {
     mockOutfits = [
       outfitOf('o1', { name: 'Loved', favourite: true }),
@@ -605,6 +655,14 @@ describe('outfit detail', () => {
     const archived = { ...closet[0], ownership: 'archived' as const };
     open(outfitOf('o1', { entries: [entry(archived, 'top')] }));
     expect(await screen.findByTestId('piece-archived-shirt')).toBeTruthy();
+  });
+
+  it('opens the share sheet and the lookbook picker', async () => {
+    open(outfitOf('o1'));
+    fireEvent.press(await screen.findByTestId('outfit-share'));
+    expect(screen.getByTestId('share-sheet')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('outfit-lookbooks'));
+    expect(screen.getByTestId('lookbook-picker')).toBeTruthy();
   });
 
   it('duplicates into the editor', async () => {

@@ -33,6 +33,11 @@ export type Outfit = OutfitInfo & {
   entries: OutfitEntry[];
 };
 
+/** True when an outfit contains a piece the user does not own yet. Such outfits cannot be planned. */
+export function hasWishlistItem(outfit: Pick<Outfit, 'entries'>): boolean {
+  return outfit.entries.some((entry) => entry.item.ownership === 'wishlist');
+}
+
 export type OutfitFilter = { favourite?: boolean; season?: Season; occasion?: Occasion };
 
 type Row = typeof outfits.$inferSelect;

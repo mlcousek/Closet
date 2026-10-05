@@ -495,5 +495,55 @@
     "inUse": "Vykreslování používá vaši studiovou fotku.",
     "remove": "Vrátit se k původní fotce",
     "failed": "Studiovou fotku se nepodařilo vytvořit."
+  },
+  "lookbooks": {
+    "title": "Lookbook",
+    "add": "Přidat lookbook",
+    "addTo": "Přidat do lookbooku",
+    "create": "Vytvořit",
+    "newPlaceholder": "Název nového lookbooku",
+    "arrange": "Uspořádat",
+    "cover": "Titulní",
+    "setCover": "Použít jako titulní",
+    "moveEarlier": "Posunout dopředu",
+    "moveLater": "Posunout dozadu",
+    "removeOutfit": "Odebrat z lookbooku",
+    "emptyTitle": "Zatím tu nejsou žádné outfity",
+    "emptyMessage": "Otevřete outfit a zvolte Přidat do lookbooku, nebo jich na kartě Outfity vyberte víc dlouhým stiskem.",
+    "delete": "Smazat lookbook",
+    "deleteTitle": "Smazat tento lookbook?",
+    "deleteMessage": "Lookbook se odstraní. Jeho outfity zůstanou mezi vašimi outfity.",
+    "deletedToast": "Lookbook smazán",
+    "notFound": "Tento lookbook už neexistuje."
+  },
+  "wishlist": {
+    "title": "Wishlist",
+    "badge": "Na vašem wishlistu",
+    "emptyTitle": "Wishlist je prázdný",
+    "emptyMessage": "Ukládejte si sem kousky, o jejichž koupi uvažujete, a zkoušejte je v outfitech s tím, co už máte.",
+    "emptyAction": "Přidat z odkazu na e-shop",
+    "unpriced": "Bez ceny: {{count}}",
+    "includeInEditor": "Zahrnout kousky z wishlistu",
+    "pricePaid": "Zaplacená cena",
+    "bought": "Koupeno",
+    "boughtToast": "Přesunuto do šatníku"
+  },
+  "share": {
+    "title": "Sdílet jako obrázek",
+    "share": "Sdílet",
+    "save": "Uložit do Fotek",
+    "saved": "Uloženo do knihovny fotek.",
+    "failed": "Obrázek se nepodařilo vytvořit.",
+    "denied": "Closet nemá povoleno přidávat fotky. Povolit to můžete v nastavení systému.",
+    "includeItems": "Zobrazit kousky pod outfitem",
+    "content": {
+      "render": "Na mně",
+      "collage": "Jen kousky"
+    },
+    "format": {
+      "portrait": "Na výšku",
+      "story": "Story",
+      "square": "Čtverec"
+    }
   }
 }

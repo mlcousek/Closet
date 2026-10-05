@@ -128,6 +128,28 @@ export const migrations: Migration[] = [
       );
     `,
   },
+  {
+    version: 5,
+    sql: `
+      CREATE TABLE IF NOT EXISTS lookbooks (
+        id TEXT PRIMARY KEY NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER,
+        name TEXT NOT NULL,
+        description TEXT,
+        cover_outfit_id TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS lookbook_outfits (
+        lookbook_id TEXT NOT NULL,
+        outfit_id TEXT NOT NULL,
+        position INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (lookbook_id, outfit_id)
+      );
+      CREATE INDEX IF NOT EXISTS lookbook_outfits_outfit ON lookbook_outfits (outfit_id);
+    `,
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = migrations[migrations.length - 1].version;

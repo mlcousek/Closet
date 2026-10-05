@@ -52,7 +52,7 @@ export const items = sqliteTable('items', {
   purchasedAt: integer('purchased_at'),
   notes: text('notes'),
   sourceUrl: text('source_url'),
-  /** 'owned' or 'archived'. */
+  /** 'owned', 'archived' or 'wishlist'. */
   ownership: text('ownership').notNull().default('owned'),
   originalPath: text('original_path').notNull(),
   /** Background-removed image; null when no cutout could be made or the user kept the original. */
@@ -112,7 +112,25 @@ export const aiUsage = sqliteTable('ai_usage', {
   kind: text('kind').notNull(),
 });
 
+/** A named collection of outfits. */
+export const lookbooks = sqliteTable('lookbooks', {
+  ...baseColumns,
+  name: text('name').notNull(),
+  description: text('description'),
+  /** The outfit shown as the cover; null means the first outfit. */
+  coverOutfitId: text('cover_outfit_id'),
+});
+
+/** Which outfits a lookbook contains, in the user's order. An outfit can be in several lookbooks. */
+export const lookbookOutfits = sqliteTable('lookbook_outfits', {
+  lookbookId: text('lookbook_id').notNull(),
+  outfitId: text('outfit_id').notNull(),
+  position: integer('position').notNull().default(0),
+});
+
 export const schema = {
+  lookbooks,
+  lookbookOutfits,
   appSettings,
   profiles,
   items,

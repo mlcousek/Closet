@@ -70,12 +70,15 @@ export function OutfitImage({
   summary,
   large,
   renderPath,
+  wishlist,
 }: {
   items: Pick<Item, 'id' | 'thumbPath'>[];
   summary: RenderSummary;
   large?: boolean;
   /** Overrides which render image is shown, for stepping back to the previous one. */
   renderPath?: string | null;
+  /** Marks an outfit that contains a wishlist piece. */
+  wishlist?: boolean;
 }) {
   const { colors, radius } = useTheme();
   const path =
@@ -97,6 +100,14 @@ export function OutfitImage({
       ) : (
         <OutfitCollage items={items} />
       )}
+      {wishlist ? (
+        <View
+          testID="outfit-wishlist"
+          style={[styles.badge, styles.wishlist, { backgroundColor: colors.overlay }]}
+        >
+          <Ionicons name="heart" size={14} color="#FFFFFF" />
+        </View>
+      ) : null}
       <View style={styles.badges}>
         {summary.pending ? (
           <View testID="render-pending" style={[styles.badge, { backgroundColor: colors.overlay }]}>
@@ -123,6 +134,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   box: { overflow: 'hidden' },
   badges: { position: 'absolute', top: 8, right: 8 },
+  wishlist: { position: 'absolute', top: 8, left: 8 },
   badge: {
     width: 26,
     height: 26,

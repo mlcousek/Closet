@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { AiUnavailableError, type AiUnavailableReason } from '@/ai/client';
 import { tagItem, type ItemTags } from '@/ai/tagging';
 import { Chips } from '@/closet/Chips';
+import { useClosetTab } from '@/closet/closetTab';
 import { itemImageDeps, toTagImage } from '@/closet/deviceImages';
 import { ItemForm } from '@/closet/ItemForm';
 import { storeItemImages } from '@/closet/itemImages';
@@ -40,6 +41,10 @@ export default function NewItemScreen() {
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   const started = useRef(false);
+  // Fixed when the screen opens: items added from the Wishlist tab go to the wishlist.
+  const [target] = useState(() =>
+    useClosetTab.getState().tab === 'wishlist' ? ('wishlist' as const) : ('owned' as const),
+  );
 
   const prepare = async (uri: string, size?: { width: number; height: number }) => {
     setStage('working');
@@ -102,7 +107,7 @@ export default function NewItemScreen() {
         { originalUri: photo.originalUri, cutoutUri: useCutout ? photo.cutoutUri : null },
         itemImageDeps,
       );
-      await itemRepository.create(details, images);
+      await itemRepository.create(details, images, { ownership: target });
       await invalidateItems();
       router.back();
     } catch {

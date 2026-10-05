@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { getLocales } from 'expo-localization';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
@@ -12,6 +13,7 @@ import {
   activeFilterCount,
   type SheetFilter,
 } from '@/closet/FilterSheet';
+import { useClosetTab } from '@/closet/closetTab';
 import { itemRepository } from '@/closet/repository';
 import { matchesSearch } from '@/closet/search';
 import {
@@ -23,8 +25,15 @@ import {
   type Season,
 } from '@/closet/taxonomy';
 import type { Item, ItemFilter } from '@/closet/types';
-import { useBrands, useInvalidateItems, useItemCount, useItems } from '@/closet/useItems';
+import {
+  useBrands,
+  useInvalidateItems,
+  useItemCount,
+  useItems,
+  useWishlistTotals,
+} from '@/closet/useItems';
 import { AppText, Button, EmptyState, Field, Screen } from '@/components/ui';
+import { formatCurrency, formatLocale, formatNumber } from '@/i18n/format';
 import { outfitRepository } from '@/outfits/repository';
 import { useAddActions } from '@/shell/addActions';
 import { deleteWithUndo, useToast } from '@/shell/toast';
@@ -91,7 +100,7 @@ function RetagSheet({
 }
 
 export default function ClosetScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { colors, spacing, radius } = useTheme();
   const openMenu = useAddActions((state) => state.openMenu);
@@ -105,7 +114,11 @@ export default function ClosetScreen() {
   const [selected, setSelected] = useState<string[]>([]);
   const [retagging, setRetagging] = useState(false);
 
-  const ownership = sheet.archived ? 'archived' : 'owned';
+  const { tab, setTab } = useClosetTab();
+  const wishlist = tab === 'wishlist';
+  const ownership = wishlist ? 'wishlist' : sheet.archived ? 'archived' : 'owned';
+  const { data: wishlistTotals } = useWishlistTotals();
+  const locale = formatLocale(i18n.language === 'cs' ? 'cs' : 'en', getLocales()[0]?.regionCode);
   const filter: ItemFilter = {
     ownership,
     category,
@@ -190,11 +203,28 @@ export default function ClosetScreen() {
     await invalidateItems();
   };
 
+  const totalText = wishlistTotals
+    ? [
+        ...wishlistTotals.totals.map((entry) =>
+          entry.currency
+            ? formatCurrency(entry.amount, entry.currency, locale)
+            : formatNumber(entry.amount, locale),
+        ),
+        ...(wishlistTotals.unpriced > 0
+          ? [t('wishlist.unpriced', { count: wishlistTotals.unpriced })]
+          : []),
+      ].join(' · ')
+    : '';
+
   const header = (
     <View style={{ gap: spacing.md, paddingBottom: spacing.md }}>
       <View style={styles.titleRow}>
         <AppText variant="title" style={styles.fill}>
-          {sheet.archived ? t('closet.archivedTitle') : t('tabs.closet')}
+          {wishlist
+            ? t('wishlist.title')
+            : sheet.archived
+              ? t('closet.archivedTitle')
+              : t('tabs.closet')}
         </AppText>
         <AppText testID="closet-count" muted>
           {narrowed
@@ -213,6 +243,25 @@ export default function ClosetScreen() {
           <AppText style={styles.fill}>{t('closet.needsReview', { count: reviewCount })}</AppText>
           <AppText variant="label">{t('closet.review')}</AppText>
         </Pressable>
+      ) : null}
+
+      <Chips
+        testIDPrefix="closet-tab"
+        options={[
+          { value: 'closet' as const, label: t('tabs.closet') },
+          { value: 'wishlist' as const, label: t('wishlist.title') },
+        ]}
+        selected={[tab]}
+        onToggle={(value) => {
+          setSelected([]);
+          setTab(value);
+        }}
+      />
+
+      {wishlist && totalText ? (
+        <AppText testID="wishlist-total" muted>
+          {totalText}
+        </AppText>
       ) : null}
 
       <Field
@@ -246,7 +295,15 @@ export default function ClosetScreen() {
     </View>
   );
 
-  const empty = isPending ? null : total === 0 && !sheet.archived ? (
+  const empty = isPending ? null : total === 0 && wishlist ? (
+    <EmptyState
+      icon="heart-outline"
+      title={t('wishlist.emptyTitle')}
+      message={t('wishlist.emptyMessage')}
+      actionLabel={t('wishlist.emptyAction')}
+      onAction={() => router.push('/item/link')}
+    />
+  ) : total === 0 && !sheet.archived ? (
     <EmptyState
       icon="shirt-outline"
       title={t('empty.closet.title')}

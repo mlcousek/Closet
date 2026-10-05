@@ -50,6 +50,7 @@ export default function RootLayout() {
             <Stack.Screen name="item/link" options={{ title: t('linkImport.title') }} />
             <Stack.Screen name="import/index" options={{ title: t('importFlow.title') }} />
             <Stack.Screen name="import/review" options={{ title: t('importFlow.reviewTitle') }} />
+            <Stack.Screen name="lookbook/[id]" options={{ title: t('lookbooks.title') }} />
             <Stack.Screen name="outfit/[id]" options={{ title: t('outfits.title') }} />
             <Stack.Screen
               name="outfit/edit"

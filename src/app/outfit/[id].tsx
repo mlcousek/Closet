@@ -9,10 +9,13 @@ import { Chips, toggled } from '@/closet/Chips';
 import { OCCASIONS, SEASONS } from '@/closet/taxonomy';
 import { AppText, Button, EmptyState, Field, Screen } from '@/components/ui';
 import { KeyNeededPrompt } from '@/ai/KeyNeededPrompt';
+import { LookbookPicker } from '@/lookbooks/LookbookPicker';
+import { useLookbooksContaining } from '@/lookbooks/useLookbooks';
 import { OutfitImage } from '@/outfits/OutfitImage';
-import { outfitRepository, type Outfit } from '@/outfits/repository';
+import { hasWishlistItem, outfitRepository, type Outfit } from '@/outfits/repository';
 import { useInvalidateOutfits, useOutfit, useRenderSummary } from '@/outfits/useOutfits';
 import { useRenderRequest } from '@/outfits/useRenderRequest';
+import { ShareSheet } from '@/sharing/ShareSheet';
 import { deleteWithUndo } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
 import { useTheme } from '@/theme/useTheme';
@@ -26,6 +29,9 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
   const summary = useRenderSummary()(outfit);
   const [name, setName] = useState(outfit.name ?? '');
   const [showPrevious, setShowPrevious] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [pickingLookbook, setPickingLookbook] = useState(false);
+  const { data: inLookbooks = [] } = useLookbooksContaining(outfit.id);
 
   const update = async (info: Parameters<typeof outfitRepository.updateInfo>[1]) => {
     await outfitRepository.updateInfo(outfit.id, info);
@@ -69,6 +75,7 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
         items={outfit.entries.map((entry) => entry.item)}
         summary={summary}
         renderPath={previousPath}
+        wishlist={hasWishlistItem(outfit)}
       />
 
       {summary.pending ? (
@@ -208,6 +215,20 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
 
       <View style={{ gap: spacing.sm }}>
         <Button
+          testID="outfit-share"
+          kind="secondary"
+          icon="share-outline"
+          label={t('share.share')}
+          onPress={() => setSharing(true)}
+        />
+        <Button
+          testID="outfit-lookbooks"
+          kind="secondary"
+          icon="albums-outline"
+          label={t('lookbooks.addTo')}
+          onPress={() => setPickingLookbook(true)}
+        />
+        <Button
           testID="outfit-edit"
           kind="secondary"
           icon="create-outline"
@@ -229,6 +250,29 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
           onPress={remove}
         />
       </View>
+      {sharing ? (
+        <ShareSheet
+          title={outfit.name}
+          outfits={[
+            {
+              id: outfit.id,
+              name: outfit.name,
+              items: outfit.entries.map((entry) => entry.item),
+              renderPath: summary.current?.imagePath ?? null,
+            },
+          ]}
+          onClose={() => setSharing(false)}
+        />
+      ) : null}
+      {pickingLookbook ? (
+        <LookbookPicker
+          // Opens with the lookbooks that already hold this outfit ticked.
+          key={inLookbooks.join(',')}
+          outfitIds={[outfit.id]}
+          containing={inLookbooks}
+          onClose={() => setPickingLookbook(false)}
+        />
+      ) : null}
     </Screen>
   );
 }
