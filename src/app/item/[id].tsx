@@ -18,6 +18,7 @@ import { formatCurrency, formatDate, formatLocale } from '@/i18n/format';
 import { outfitRepository } from '@/outfits/repository';
 import { useInvalidateOutfits } from '@/outfits/useOutfits';
 import { WearStats } from '@/planning/WearStats';
+import { CostPerWear } from '@/stats/CostPerWear';
 import { pickPhoto } from '@/profile/photo';
 import { deleteWithUndo, useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
@@ -216,6 +217,7 @@ function ItemView({ item }: { item: Item }) {
           </View>
 
           <WearStats kind="item" id={item.id} />
+          {item.ownership === 'owned' ? <CostPerWear item={item} /> : null}
           <AppText variant="caption" muted>
             {t('item.added', { date: formatDate(new Date(item.createdAt), locale) })}
           </AppText>
@@ -234,6 +236,15 @@ function ItemView({ item }: { item: Item }) {
               label={t('outfits.createFromItem')}
               onPress={() => router.push({ pathname: '/outfit/edit', params: { itemId: item.id } })}
             />
+            {item.ownership !== 'archived' ? (
+              <Button
+                testID="item-style-this"
+                kind="secondary"
+                icon="sparkles-outline"
+                label={t('stylist.styleThis')}
+                onPress={() => router.push({ pathname: '/stylist', params: { itemId: item.id } })}
+              />
+            ) : null}
             <Button
               testID="item-replace-image"
               kind="secondary"

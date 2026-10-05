@@ -146,7 +146,56 @@ export const wearEvents = sqliteTable('wear_events', {
   day: text('day').notNull(),
 });
 
+/** One conversation with the stylist: the first request and every refinement, with their proposals. */
+export const stylistSessions = sqliteTable('stylist_sessions', {
+  ...baseColumns,
+  /** The first request, shown in the session list. */
+  request: text('request').notNull(),
+  /** The day the outfits are for, when one was chosen. */
+  day: text('day'),
+  /** The item every proposal must contain, for "style this". */
+  itemId: text('item_id'),
+  /** JSON array of turns: { request, proposals: [{ pieces, rationale }] }. */
+  turns: text('turns').notNull().default('[]'),
+});
+
+export const trips = sqliteTable('trips', {
+  ...baseColumns,
+  name: text('name').notNull(),
+  placeName: text('place_name').notNull(),
+  latitude: real('latitude').notNull(),
+  longitude: real('longitude').notNull(),
+  startDay: text('start_day').notNull(),
+  endDay: text('end_day').notNull(),
+});
+
+/** One day of a trip: what it is for and which pieces are worn. */
+export const tripDays = sqliteTable('trip_days', {
+  tripId: text('trip_id').notNull(),
+  day: text('day').notNull(),
+  activity: text('activity'),
+  /** JSON array of outfit pieces; empty when no outfit could be put together. */
+  pieces: text('pieces').notNull().default('[]'),
+  /** The saved outfit made from the pieces once the day was added to the calendar. */
+  outfitId: text('outfit_id'),
+});
+
+/** Checklist state of a trip. Outfit pieces are derived from the days; rows exist for what the user touched or added. */
+export const tripPacking = sqliteTable('trip_packing', {
+  tripId: text('trip_id').notNull(),
+  /** An item id, or a generated id for a free-text entry. */
+  key: text('key').notNull(),
+  /** 'item' for a closet item, 'text' for a free-text entry. */
+  kind: text('kind').notNull(),
+  label: text('label'),
+  packed: integer('packed', { mode: 'boolean' }).notNull().default(false),
+});
+
 export const schema = {
+  stylistSessions,
+  trips,
+  tripDays,
+  tripPacking,
   calendarEntries,
   wearEvents,
   lookbooks,

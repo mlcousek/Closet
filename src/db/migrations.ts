@@ -174,6 +174,52 @@ export const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS wear_events_item ON wear_events (item_id, day);
     `,
   },
+  {
+    version: 7,
+    sql: `
+      CREATE TABLE IF NOT EXISTS stylist_sessions (
+        id TEXT PRIMARY KEY NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER,
+        request TEXT NOT NULL,
+        day TEXT,
+        item_id TEXT,
+        turns TEXT NOT NULL DEFAULT '[]'
+      );
+
+      CREATE TABLE IF NOT EXISTS trips (
+        id TEXT PRIMARY KEY NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER,
+        name TEXT NOT NULL,
+        place_name TEXT NOT NULL,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        start_day TEXT NOT NULL,
+        end_day TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS trip_days (
+        trip_id TEXT NOT NULL,
+        day TEXT NOT NULL,
+        activity TEXT,
+        pieces TEXT NOT NULL DEFAULT '[]',
+        outfit_id TEXT,
+        PRIMARY KEY (trip_id, day)
+      );
+
+      CREATE TABLE IF NOT EXISTS trip_packing (
+        trip_id TEXT NOT NULL,
+        key TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        label TEXT,
+        packed INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (trip_id, key)
+      );
+    `,
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = migrations[migrations.length - 1].version;

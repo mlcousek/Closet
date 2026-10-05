@@ -39,3 +39,16 @@ The image model id is a stored setting (`ai.model.image`, default `gemini-2.5-fl
 ## Row filter in the outfit editor applies to all rows
 
 The spec lets the user filter the items offered in a row. The editor has one season filter above the rows that narrows every row at once; pieces already chosen stay visible. A filter per row can be added if one filter for all rows proves too coarse.
+
+## Smart features: where the implementation differs from the design
+
+**Decided:** 5 October 2026, during `add-smart-features`.
+
+- **No charting library.** The statistics need horizontal bars, one share bar and a column trend. These are plain views (`src/stats/charts.tsx`), so the build gains no native dependency that cannot be tried without a Mac. The donut in the design is a share bar.
+- **Trip outfits are stored as pieces, not as saved outfits.** A generated trip would otherwise fill the Outfits tab with one outfit per day. Outfits are saved only when the trip is added to the calendar; deleting the trip keeps them.
+- **Typical conditions are last year's weather.** For days beyond the 14-day forecast, the trip uses the same dates a year earlier from the Open-Meteo archive and marks them "typical". One year is a sample, not a climate average.
+- **The stylist plans a trip all or nothing.** The stylist returns outfits without saying which day each is for, and validation can drop some. If fewer valid outfits come back than the trip has days, nothing is changed, so no outfit lands on the wrong day's weather.
+- **Display orientation uses the navigator.** The app allows every orientation in its configuration and each screen locks itself to portrait through the stack's `orientation` option; only the display allows all. No orientation module was added.
+- **Dates are typed as YYYY-MM-DD** in the trip form, as for the purchase date of an item. There is no date picker in the app yet.
+
+**Not yet verified:** the display's keep-awake, rotation, dimming and start-while-charging behaviour, and every stylist request, have only been exercised in tests with mocks.

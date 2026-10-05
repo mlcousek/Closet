@@ -87,6 +87,30 @@ export default function ProfileScreen() {
       ) : null}
 
       <Row
+        testID="open-stylist"
+        icon="sparkles-outline"
+        label={t('stylist.title')}
+        onPress={() => router.push('/stylist')}
+      />
+      <Row
+        testID="open-stats"
+        icon="stats-chart-outline"
+        label={t('stats.title')}
+        onPress={() => router.push('/stats')}
+      />
+      <Row
+        testID="open-trips"
+        icon="airplane-outline"
+        label={t('trips.title')}
+        onPress={() => router.push('/trips')}
+      />
+      <Row
+        testID="open-display"
+        icon="tv-outline"
+        label={t('display.title')}
+        onPress={() => router.push('/display')}
+      />
+      <Row
         testID="open-settings"
         icon="settings-outline"
         label={t('profile.settings')}

@@ -36,6 +36,16 @@ export function useItem(id: string | undefined) {
   });
 }
 
+/** Items by id, whatever their ownership, in the order asked for. Unknown ids are left out. */
+export function useItemsById(ids: string[]) {
+  return useQuery({
+    queryKey: [ITEMS, 'byId', ids],
+    queryFn: async () =>
+      (await Promise.all(ids.map((id) => itemRepository.get(id)))).filter((item) => item !== null),
+    enabled: ids.length > 0,
+  });
+}
+
 export function useItemCount(filter: ItemFilter) {
   return useQuery({
     queryKey: [ITEMS, 'count', filter],

@@ -8,7 +8,9 @@ import { useTranslation } from 'react-i18next';
 import { AppText, Row, Screen } from '@/components/ui';
 import { getLanguageOverride, setLanguageOverride } from '@/i18n';
 import type { Language } from '@/i18n/language';
+import { DisplaySettings } from '@/display/DisplaySettings';
 import { PlanningSettings } from '@/planning/PlanningSettings';
+import { StylistUsage } from '@/stylist/StylistUsage';
 import { useToast } from '@/shell/toast';
 import { BackupError } from '@/storage/backup';
 import { exportBackup, importBackup, pickBackupFile } from '@/storage/backupActions';
@@ -133,10 +135,15 @@ export default function SettingsScreen() {
           label={t('settings.aiKeys')}
           onPress={() => router.push('/settings/ai-keys')}
         />
+        <StylistUsage />
       </View>
 
       <View style={{ marginTop: spacing.xl }}>
         <PlanningSettings />
+      </View>
+
+      <View style={{ marginTop: spacing.xl }}>
+        <DisplaySettings />
       </View>
 
       <AppText variant="label" muted style={{ marginTop: spacing.xl }}>

@@ -16,14 +16,7 @@ import {
 import { useClosetTab } from '@/closet/closetTab';
 import { itemRepository } from '@/closet/repository';
 import { matchesSearch } from '@/closet/search';
-import {
-  CATEGORIES,
-  OCCASIONS,
-  SEASONS,
-  type Category,
-  type Occasion,
-  type Season,
-} from '@/closet/taxonomy';
+import { CATEGORIES, OCCASIONS, SEASONS, type Occasion, type Season } from '@/closet/taxonomy';
 import type { Item, ItemFilter } from '@/closet/types';
 import {
   useBrands,
@@ -107,14 +100,13 @@ export default function ClosetScreen() {
   const showToast = useToast((state) => state.show);
   const invalidateItems = useInvalidateItems();
 
-  const [category, setCategory] = useState<Category | null>(null);
   const [search, setSearch] = useState('');
   const [sheet, setSheet] = useState<SheetFilter>(EMPTY_SHEET_FILTER);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [retagging, setRetagging] = useState(false);
 
-  const { tab, setTab } = useClosetTab();
+  const { tab, setTab, category, setCategory } = useClosetTab();
   const wishlist = tab === 'wishlist';
   const ownership = wishlist ? 'wishlist' : sheet.archived ? 'archived' : 'owned';
   const { data: wishlistTotals } = useWishlistTotals();
@@ -226,7 +218,12 @@ export default function ClosetScreen() {
               ? t('closet.archivedTitle')
               : t('tabs.closet')}
         </AppText>
-        <AppText testID="closet-count" muted>
+        <AppText
+          testID="closet-count"
+          muted
+          accessibilityRole={wishlist ? undefined : 'link'}
+          onPress={wishlist ? undefined : () => router.push('/stats')}
+        >
           {narrowed
             ? t('closet.countFiltered', { shown: items.length, total })
             : t('closet.count', { count: total })}

@@ -7,7 +7,8 @@ const config: ExpoConfig = {
   name: IS_DEV ? 'Closet Dev' : 'Closet',
   slug: 'closet',
   version: process.env.APP_VERSION ?? '0.1.0',
-  orientation: 'portrait',
+  // Every screen but the wall display locks itself to portrait in the root layout.
+  orientation: 'default',
   icon: IS_DEV ? './assets/images/icon-dev.png' : './assets/images/icon.png',
   scheme: IS_DEV ? 'closet-dev' : 'closet',
   userInterfaceStyle: 'automatic',

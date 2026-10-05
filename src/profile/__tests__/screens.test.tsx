@@ -27,6 +27,7 @@ jest.mock('expo-router', () => {
 jest.mock('@/closet/ImportIndicator', () => ({ ImportIndicator: () => null }));
 jest.mock('@/outfits/StudioAvatar', () => ({ StudioAvatar: () => null }));
 jest.mock('@/closet/useClosetSetup', () => ({ useClosetSetup: () => {} }));
+jest.mock('@/display/useAutoStart', () => ({ useDisplayAutoStart: () => {} }));
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: (props: object) => <View {...props} /> };

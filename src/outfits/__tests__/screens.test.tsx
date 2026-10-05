@@ -93,6 +93,10 @@ jest.mock('@/closet/useItems', () => ({
     data: id ? (mockOwned.find((entry) => entry.id === id) ?? null) : undefined,
     isPending: false,
   }),
+  useItemsById: (ids: string[]) => ({
+    data: [...mockOwned, ...mockWished].filter((entry) => ids.includes(entry.id)),
+    isPending: false,
+  }),
 }));
 
 const entry = (source: Item, slot: Outfit['entries'][number]['slot']) => ({

@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Chips } from '@/closet/Chips';
 import { CATEGORY_SLOT, SEASONS, type Season, type Slot } from '@/closet/taxonomy';
 import type { Item } from '@/closet/types';
-import { useItem, useItems } from '@/closet/useItems';
+import { useItem, useItems, useItemsById } from '@/closet/useItems';
 import { AppText, Button, Screen } from '@/components/ui';
 import {
   EDITOR_SLOTS,
@@ -36,9 +36,18 @@ import { useRenderRequest } from '@/outfits/useRenderRequest';
 import { useToast } from '@/shell/toast';
 import { useTheme } from '@/theme/useTheme';
 
-type Params = { id?: string; itemId?: string };
+/** `itemIds` is a comma-separated list of items to start a new outfit from. */
+type Params = { id?: string; itemId?: string; itemIds?: string };
 
-function Editor({ outfit, startItem }: { outfit: Outfit | null; startItem: Item | null }) {
+function Editor({
+  outfit,
+  startItem,
+  startItems,
+}: {
+  outfit: Outfit | null;
+  startItem: Item | null;
+  startItems: Item[];
+}) {
   const { t } = useTranslation();
   const router = useRouter();
   const navigation = useNavigation();
@@ -57,8 +66,19 @@ function Editor({ outfit, startItem }: { outfit: Outfit | null; startItem: Item 
         })),
       );
     }
+    if (startItems.length > 0) {
+      const positions = new Map<Slot, number>();
+      return draftFromPieces(
+        startItems.map((item) => {
+          const slot = CATEGORY_SLOT[item.category];
+          const position = positions.get(slot) ?? 0;
+          positions.set(slot, position + 1);
+          return { itemId: item.id, slot, position };
+        }),
+      );
+    }
     return startItem ? draftFromItem(startItem) : emptyDraft();
-  }, [outfit, startItem]);
+  }, [outfit, startItem, startItems]);
 
   const [draft, setDraft] = useState(initial);
   const [season, setSeason] = useState<Season | null>(null);
@@ -300,10 +320,20 @@ function Editor({ outfit, startItem }: { outfit: Outfit | null; startItem: Item 
 
 /** Creates a new outfit, optionally starting from one item, or edits an existing one. */
 export default function OutfitEditorScreen() {
-  const { id, itemId } = useLocalSearchParams<Params>();
+  const { id, itemId, itemIds } = useLocalSearchParams<Params>();
+  const startIds = itemIds ? itemIds.split(',').filter(Boolean) : [];
+  const { data: startItems, isPending: startItemsPending } = useItemsById(startIds);
   const { data: outfit, isPending: outfitPending } = useOutfit(id);
   const { data: startItem, isPending: itemPending } = useItem(itemId);
   // The editor copies its starting point into state once, so it mounts only when that is loaded.
-  if ((id && outfitPending) || (itemId && itemPending)) return null;
-  return <Editor outfit={outfit ?? null} startItem={startItem ?? null} />;
+  if (
+    (id && outfitPending) ||
+    (itemId && itemPending) ||
+    (startIds.length > 0 && startItemsPending)
+  ) {
+    return null;
+  }
+  return (
+    <Editor outfit={outfit ?? null} startItem={startItem ?? null} startItems={startItems ?? []} />
+  );
 }

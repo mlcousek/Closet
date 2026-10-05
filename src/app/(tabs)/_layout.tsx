@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ImportIndicator } from '@/closet/ImportIndicator';
 import { useClosetSetup } from '@/closet/useClosetSetup';
 import { EmptyState, Screen, type IconName } from '@/components/ui';
+import { useDisplayAutoStart } from '@/display/useAutoStart';
 import { useProfile } from '@/profile/useProfile';
 import { AddButton } from '@/shell/AddMenu';
 import { useTheme } from '@/theme/useTheme';
@@ -22,6 +23,7 @@ export default function TabsLayout() {
   const { colors } = useTheme();
   const { data: profile, isPending, isError, refetch } = useProfile();
   useClosetSetup();
+  useDisplayAutoStart();
 
   // Nothing is shown until we know whether onboarding is needed, so the tabs never flash first.
   if (isPending) return null;

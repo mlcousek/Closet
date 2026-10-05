@@ -203,6 +203,10 @@ export function createCalendarRepository(
         itemIds: new Set(itemRows.map((row) => row.id)),
       };
     },
+    /** Every recorded wear, for statistics. */
+    async wearLog(): Promise<{ itemId: string; day: Day }[]> {
+      return db().select({ itemId: wearEvents.itemId, day: wearEvents.day }).from(wearEvents).all();
+    },
     /** Total wears per item, for preferring pieces that are worn least. */
     async wearCounts(itemIds: string[]): Promise<Map<string, number>> {
       if (itemIds.length === 0) return new Map();

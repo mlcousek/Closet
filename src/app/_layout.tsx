@@ -38,7 +38,10 @@ export default function RootLayout() {
             },
           }}
         >
-          <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
+          <Stack
+            // Only the display turns with the phone; everything else is laid out for portrait.
+            screenOptions={{ headerBackButtonDisplayMode: 'minimal', orientation: 'portrait' }}
+          >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="onboarding"
@@ -56,6 +59,14 @@ export default function RootLayout() {
               name="outfit/edit"
               // The editor asks before discarding changes, which a swipe back would skip.
               options={{ title: t('outfitEditor.newTitle'), gestureEnabled: false }}
+            />
+            <Stack.Screen name="stylist" options={{ title: t('stylist.title') }} />
+            <Stack.Screen name="stats" options={{ title: t('stats.title') }} />
+            <Stack.Screen name="trips/index" options={{ title: t('trips.title') }} />
+            <Stack.Screen name="trips/[id]" options={{ title: t('trips.tripTitle') }} />
+            <Stack.Screen
+              name="display"
+              options={{ headerShown: false, orientation: 'all', animation: 'fade' }}
             />
             <Stack.Screen name="settings/index" options={{ title: t('settings.title') }} />
             <Stack.Screen name="settings/ai-keys" options={{ title: t('ai.title') }} />
