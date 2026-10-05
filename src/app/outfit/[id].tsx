@@ -15,12 +15,16 @@ import { hasWishlistItem, outfitRepository, type Outfit } from '@/outfits/reposi
 import { useInvalidateOutfits, useOutfit, useRenderSummary } from '@/outfits/useOutfits';
 import { useRenderRequest } from '@/outfits/useRenderRequest';
 import { ShareSheet } from '@/sharing/ShareSheet';
-import { deleteWithUndo } from '@/shell/toast';
+import { calendarRepository } from '@/planning/calendar';
+import { addDays, fromDay, today } from '@/planning/dates';
+import { useInvalidatePlanning } from '@/planning/usePlanning';
+import { WearStats } from '@/planning/WearStats';
+import { deleteWithUndo, useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
 import { useTheme } from '@/theme/useTheme';
 
 function OutfitView({ outfit }: { outfit: Outfit }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { colors, spacing, radius } = useTheme();
   const invalidateOutfits = useInvalidateOutfits();
@@ -29,6 +33,10 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
   const [name, setName] = useState(outfit.name ?? '');
   const [showPrevious, setShowPrevious] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [planning, setPlanning] = useState(false);
+  const invalidatePlanning = useInvalidatePlanning();
+  const showToast = useToast((state) => state.show);
+  const planDays = Array.from({ length: 14 }, (_, index) => addDays(today(), index));
   const [pickingLookbook, setPickingLookbook] = useState(false);
 
   const update = async (info: Parameters<typeof outfitRepository.updateInfo>[1]) => {
@@ -212,6 +220,15 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
       </View>
 
       <View style={{ gap: spacing.sm }}>
+        {hasWishlistItem(outfit) ? null : (
+          <Button
+            testID="outfit-plan"
+            kind="secondary"
+            icon="calendar-outline"
+            label={t('planning.plan')}
+            onPress={() => setPlanning(true)}
+          />
+        )}
         <Button
           testID="outfit-share"
           kind="secondary"
@@ -248,6 +265,42 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
           onPress={remove}
         />
       </View>
+      <WearStats kind="outfit" id={outfit.id} />
+      {planning ? (
+        <View
+          testID="plan-days"
+          style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}
+        >
+          {planDays.map((day) => (
+            <Pressable
+              key={day}
+              testID={`plan-day-${day}`}
+              accessibilityRole="button"
+              onPress={() => {
+                setPlanning(false);
+                void calendarRepository
+                  .plan(day, outfit.id)
+                  .then(() => invalidatePlanning())
+                  .then(() => showToast({ message: t('planning.plannedToast') }));
+              }}
+              style={{
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+                borderRadius: radius.pill,
+                backgroundColor: colors.surfaceAlt,
+              }}
+            >
+              <AppText variant="label">
+                {new Intl.DateTimeFormat(i18n.language, {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                }).format(fromDay(day))}
+              </AppText>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       {sharing ? (
         <ShareSheet
           title={outfit.name}

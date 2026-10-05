@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import { renderQueue } from '@/outfits/renderActions';
 import { outfitRepository } from '@/outfits/repository';
+import { restoreReminder } from '@/planning/reminder';
 import { useAddActions } from '@/shell/addActions';
 
 import { useClosetTab } from './closetTab';
@@ -114,6 +115,7 @@ export function useClosetSetup(): void {
     setImportListener(() => void invalidateItems(queryClient));
     void resumeImports();
     void renderQueue.resume();
+    void restoreReminder({ title: t('reminder.title'), body: t('reminder.body') });
     void itemRepository
       .purgeDeleted(Date.now() - PURGE_AFTER_MS)
       .then(async (purged) => {
@@ -123,5 +125,7 @@ export function useClosetSetup(): void {
       })
       .catch(() => {});
     return () => setImportListener(null);
+    // The reminder text is read once at start; changing language reschedules it from Settings.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient]);
 }

@@ -17,6 +17,7 @@ import { AppText, Button, EmptyState, Field, Row, Screen } from '@/components/ui
 import { formatCurrency, formatDate, formatLocale } from '@/i18n/format';
 import { outfitRepository } from '@/outfits/repository';
 import { useInvalidateOutfits } from '@/outfits/useOutfits';
+import { WearStats } from '@/planning/WearStats';
 import { pickPhoto } from '@/profile/photo';
 import { deleteWithUndo, useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
@@ -214,6 +215,7 @@ function ItemView({ item }: { item: Item }) {
             {item.notes ? <Row label={t('itemForm.notes')} value={item.notes} /> : null}
           </View>
 
+          <WearStats kind="item" id={item.id} />
           <AppText variant="caption" muted>
             {t('item.added', { date: formatDate(new Date(item.createdAt), locale) })}
           </AppText>

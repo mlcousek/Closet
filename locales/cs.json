@@ -1,5 +1,6 @@
 {
   "NSCameraUsageDescription": "Closet používá fotoaparát k focení vás a vašeho oblečení.",
   "NSPhotoLibraryUsageDescription": "Closet používá knihovnu fotek k přidávání fotek vás a vašeho oblečení.",
-  "NSPhotoLibraryAddUsageDescription": "Closet ukládá exportované obrázky outfitů do vaší knihovny fotek."
+  "NSPhotoLibraryAddUsageDescription": "Closet ukládá exportované obrázky outfitů do vaší knihovny fotek.",
+  "NSLocationWhenInUseUsageDescription": "Closet používá vaši přibližnou polohu k zobrazení počasí a k návrhům outfitů podle něj."
 }

@@ -4,7 +4,6 @@ import type { ReactElement } from 'react';
 import { Alert } from 'react-native';
 
 import TabsLayout from '@/app/(tabs)/_layout';
-import HomeScreen from '@/app/(tabs)/index';
 import ProfileScreen from '@/app/(tabs)/profile';
 import OnboardingScreen from '@/app/onboarding';
 import EditProfileScreen from '@/app/profile/edit';
@@ -256,14 +255,6 @@ describe('profile section', () => {
     mockProfile = { ...fullProfile, avatarPath: null, avatarSmallPath: null };
     renderWithQuery(<ProfileScreen />);
     expect(await screen.findByTestId('profile-no-avatar')).toBeTruthy();
-  });
-
-  it('greets the user by name on Home', async () => {
-    mockProfile = fullProfile;
-    renderWithQuery(<HomeScreen />);
-    await waitFor(() =>
-      expect(screen.getByTestId('greeting')).toHaveTextContent(/^Good \w+, Auri$/),
-    );
   });
 });
 

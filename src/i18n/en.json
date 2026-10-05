@@ -546,5 +546,70 @@
       "story": "Story",
       "square": "Square"
     }
+  },
+  "planning": {
+    "chooseOutfit": "Choose an outfit",
+    "noOutfits": "No saved outfit can be worn yet. Create one in the Outfits tab.",
+    "moveTo": "Move to another day",
+    "worn": "Worn",
+    "planned": "Planned",
+    "notConfirmed": "Planned, not confirmed",
+    "markWorn": "I wore this",
+    "replace": "Replace",
+    "move": "Move",
+    "removedToast": "Removed from the day",
+    "wearThis": "Wear this",
+    "planThis": "Plan this",
+    "showAnother": "Show another",
+    "newCombination": "new combination",
+    "nothingLogged": "Nothing logged for this day.",
+    "addAnother": "Add another outfit",
+    "logWorn": "Log what you wore",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "plan": "Plan for a day",
+    "plannedToast": "Planned",
+    "wearStats": "Worn {{count}} times · last on {{date}}",
+    "neverWorn": "Not worn yet",
+    "reason": {
+      "hot": "Light pieces for a hot day ({{temperature}})",
+      "warm": "Light layers for warm weather ({{temperature}})",
+      "mild": "Mid-weight pieces for a mild day ({{temperature}})",
+      "cool": "Warmer pieces and a layer for a cool day ({{temperature}})",
+      "cold": "Warm pieces and a coat for the cold ({{temperature}})",
+      "rain": "With an outer layer for the rain ({{temperature}})",
+      "season": "Chosen for the season, because there is no forecast"
+    }
+  },
+  "weather": {
+    "title": "Weather",
+    "chooseCity": "Choose a city for the weather",
+    "unavailable": "Weather unavailable",
+    "updatedAgo": "updated {{hours}} h ago",
+    "usingLocation": "Using your approximate location",
+    "useLocation": "Use my location instead",
+    "citySearch": "City",
+    "find": "Find",
+    "noPlaces": "No place found with that name.",
+    "searchFailed": "The search did not work. Check your connection.",
+    "condition": {
+      "clear": "Clear",
+      "cloudy": "Cloudy",
+      "fog": "Fog",
+      "rain": "Rain",
+      "snow": "Snow",
+      "storm": "Storm"
+    }
+  },
+  "reminder": {
+    "settingsTitle": "Daily reminder",
+    "time": "Time",
+    "turnOn": "Turn on",
+    "turnOff": "Turn off",
+    "onAt": "A reminder arrives every day at {{time}}.",
+    "timeInvalid": "Enter a time like 7:30.",
+    "denied": "Notifications are not allowed for Closet. You can allow them in the system settings.",
+    "title": "What are you wearing today?",
+    "body": "Open Closet to pick today's outfit."
   }
 }

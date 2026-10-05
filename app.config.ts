@@ -36,6 +36,13 @@ const config: ExpoConfig = {
     'expo-sharing',
     'expo-document-picker',
     [
+      'expo-location',
+      {
+        locationWhenInUsePermission:
+          'Closet uses your approximate location to show the weather and suggest outfits for it.',
+      },
+    ],
+    [
       'expo-media-library',
       {
         savePhotosPermission: 'Closet saves outfit images you export to your photo library.',

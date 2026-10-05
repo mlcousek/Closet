@@ -546,5 +546,70 @@
       "story": "Story",
       "square": "Čtverec"
     }
+  },
+  "planning": {
+    "chooseOutfit": "Vybrat outfit",
+    "noOutfits": "Zatím nemáte uložený outfit, který by šel obléct. Vytvořte ho na kartě Outfity.",
+    "moveTo": "Přesunout na jiný den",
+    "worn": "Nošeno",
+    "planned": "Naplánováno",
+    "notConfirmed": "Naplánováno, nepotvrzeno",
+    "markWorn": "Měl/a jsem to na sobě",
+    "replace": "Vyměnit",
+    "move": "Přesunout",
+    "removedToast": "Odebráno ze dne",
+    "wearThis": "Obléct si tohle",
+    "planThis": "Naplánovat",
+    "showAnother": "Ukázat jiný",
+    "newCombination": "nová kombinace",
+    "nothingLogged": "Pro tento den není nic zaznamenáno.",
+    "addAnother": "Přidat další outfit",
+    "logWorn": "Zaznamenat, co jste měli na sobě",
+    "previousMonth": "Předchozí měsíc",
+    "nextMonth": "Další měsíc",
+    "plan": "Naplánovat na den",
+    "plannedToast": "Naplánováno",
+    "wearStats": "Nošeno {{count}}× · naposledy {{date}}",
+    "neverWorn": "Zatím nenošeno",
+    "reason": {
+      "hot": "Lehké kousky na horký den ({{temperature}})",
+      "warm": "Lehké vrstvy do teplého počasí ({{temperature}})",
+      "mild": "Středně teplé kousky na mírný den ({{temperature}})",
+      "cool": "Teplejší kousky a vrstva navíc na chladný den ({{temperature}})",
+      "cold": "Teplé kousky a kabát do zimy ({{temperature}})",
+      "rain": "Se svrchní vrstvou do deště ({{temperature}})",
+      "season": "Vybráno podle ročního období, protože chybí předpověď"
+    }
+  },
+  "weather": {
+    "title": "Počasí",
+    "chooseCity": "Vyberte město pro počasí",
+    "unavailable": "Počasí není k dispozici",
+    "updatedAgo": "aktualizováno před {{hours}} h",
+    "usingLocation": "Používá se vaše přibližná poloha",
+    "useLocation": "Použít raději moji polohu",
+    "citySearch": "Město",
+    "find": "Najít",
+    "noPlaces": "Místo s tímto názvem nebylo nalezeno.",
+    "searchFailed": "Hledání se nepovedlo. Zkontrolujte připojení.",
+    "condition": {
+      "clear": "Jasno",
+      "cloudy": "Oblačno",
+      "fog": "Mlha",
+      "rain": "Déšť",
+      "snow": "Sníh",
+      "storm": "Bouřka"
+    }
+  },
+  "reminder": {
+    "settingsTitle": "Denní připomínka",
+    "time": "Čas",
+    "turnOn": "Zapnout",
+    "turnOff": "Vypnout",
+    "onAt": "Připomínka přijde každý den v {{time}}.",
+    "timeInvalid": "Zadejte čas ve tvaru 7:30.",
+    "denied": "Aplikace Closet nemá povolená oznámení. Povolit je můžete v nastavení systému.",
+    "title": "Co si dnes obléknete?",
+    "body": "Otevřete Closet a vyberte dnešní outfit."
   }
 }
