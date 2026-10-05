@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, ne, sql } from 'drizzle-orm';
 
 import { getDb, type Db } from '@/db/client';
 import { newId } from '@/db/id';
@@ -78,6 +78,32 @@ export function createRenderRepository(db: () => Db = getDb, now: () => number =
   return {
     async enqueue(outfitId: string, print: string): Promise<Render> {
       return toRender(await base.create({ outfitId, fingerprint: print, status: 'queued' }));
+    },
+    /** Records a finished render that reuses existing image files. */
+    async createDone(
+      outfitId: string,
+      print: string,
+      result: { imagePath: string; thumbPath: string; provider: string },
+    ): Promise<Render> {
+      return toRender(
+        await base.create({ outfitId, fingerprint: print, status: 'done', ...result }),
+      );
+    },
+    /** Queued renders of an outfit made for other inputs than the given ones are dropped unpaid. */
+    async dropQueuedExcept(outfitId: string, print: string): Promise<void> {
+      const timestamp = now();
+      db()
+        .update(renders)
+        .set({ deletedAt: timestamp, updatedAt: timestamp })
+        .where(
+          and(
+            active,
+            eq(renders.outfitId, outfitId),
+            eq(renders.status, 'queued'),
+            ne(renders.fingerprint, print),
+          ),
+        )
+        .run();
     },
     async get(id: string): Promise<Render | null> {
       const row = await base.getById(id);
@@ -168,21 +194,27 @@ export type RenderSummary = {
 
 /**
  * Picks what to show for an outfit from its renders (newest first):
- * - `current`: the newest finished render, whether or not it is up to date;
+ * - `current`: the finished render matching the outfit as it is now, otherwise the newest finished one;
  * - `previous`: the finished render before it, to step back to after a regenerate;
  * - `pending`: a render that is queued or running;
  * - `failed`: the newest attempt, when it failed and nothing newer succeeded.
  */
 export function summariseRenders(list: Render[], currentFingerprint: string | null): RenderSummary {
   const done = list.filter((render) => render.status === 'done');
-  const current = done[0] ?? null;
+  const matching = done.find((render) => render.fingerprint === currentFingerprint) ?? null;
+  const current = matching ?? done[0] ?? null;
   const newest = list[0] ?? null;
   return {
     current,
-    previous: done[1] ?? null,
+    previous: done.find((render) => render.id !== current?.id) ?? null,
     pending:
       list.find((render) => render.status === 'queued' || render.status === 'running') ?? null,
-    failed: newest?.status === 'failed' ? newest : null,
+    // A failed attempt is reported only when it was for the outfit as it is now.
+    failed:
+      newest?.status === 'failed' &&
+      (currentFingerprint === null || newest.fingerprint === currentFingerprint)
+        ? newest
+        : null,
     /** True when the shown render no longer matches the avatar or the pieces. */
     outdated:
       current !== null && currentFingerprint !== null && current.fingerprint !== currentFingerprint,

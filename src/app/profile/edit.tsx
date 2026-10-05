@@ -45,7 +45,10 @@ function EditForm({ profile }: { profile: Profile }) {
   const replaceAvatar = async (photo: PickedPhoto) => {
     setBusy(true);
     try {
-      await storeAvatarAnd(photo, avatarDeps, (stored) => saveProfile.mutateAsync(stored));
+      await storeAvatarAnd(photo, avatarDeps, (stored) =>
+        saveProfile.mutateAsync({ ...stored, avatarStudioPath: null }),
+      );
+      if (profile.avatarStudioPath) await avatarDeps.remove(profile.avatarStudioPath);
       // The old files are only deleted once the profile points at the new ones.
       await discardAvatar(profile, avatarDeps);
     } catch {
@@ -63,7 +66,12 @@ function EditForm({ profile }: { profile: Profile }) {
         style: 'destructive',
         onPress: () => {
           void (async () => {
-            await saveProfile.mutateAsync({ avatarPath: null, avatarSmallPath: null });
+            await saveProfile.mutateAsync({
+              avatarPath: null,
+              avatarSmallPath: null,
+              avatarStudioPath: null,
+            });
+            if (profile.avatarStudioPath) await avatarDeps.remove(profile.avatarStudioPath);
             await discardAvatar(profile, avatarDeps);
           })().catch(() => setError(t('common.somethingWentWrong')));
         },

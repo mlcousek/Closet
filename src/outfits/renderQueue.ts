@@ -15,6 +15,14 @@ export class RenderFailedError extends Error {
   }
 }
 
+/** Thrown by the render step, before any request is made, when the inputs no longer match the render. */
+export class RenderSupersededError extends Error {
+  constructor() {
+    super('Render superseded');
+    this.name = 'RenderSupersededError';
+  }
+}
+
 /**
  * Runs try-on renders one at a time. A failed render stays failed until the
  * user asks again: nothing is retried automatically, because every attempt
@@ -37,6 +45,12 @@ export function createRenderQueue(options: {
       try {
         await renders.markDone(render.id, await run(render));
       } catch (error) {
+        if (error instanceof RenderSupersededError) {
+          // The outfit or avatar changed while this render waited: forget it without a failure.
+          await renders.remove(render.id);
+          onChange?.();
+          continue;
+        }
         await renders.markFailed(
           render.id,
           error instanceof RenderFailedError ? error.failure : 'error',
@@ -75,16 +89,17 @@ export function createRenderQueue(options: {
         if (existing) {
           if (existing.outfitId === outfit.id) return { kind: 'reused', render: existing };
           // Another outfit with the same pieces already has this picture: point at the same files.
-          const copy = await renders.enqueue(outfit.id, print);
-          await renders.markDone(copy.id, {
+          const copy = await renders.createDone(outfit.id, print, {
             imagePath: existing.imagePath!,
             thumbPath: existing.thumbPath!,
             provider: existing.provider ?? 'reused',
           });
           onChange?.();
-          return { kind: 'reused', render: (await renders.get(copy.id))! };
+          return { kind: 'reused', render: copy };
         }
       }
+      // Renders still waiting for an earlier version of this outfit would be paid for nothing.
+      await renders.dropQueuedExcept(outfit.id, print);
       // One waiting render per outfit is enough.
       const waiting = (await renders.forOutfit(outfit.id)).find(
         (render) =>

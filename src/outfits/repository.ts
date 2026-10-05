@@ -91,13 +91,17 @@ export function createOutfitRepository(db: () => Db = getDb, now: () => number =
   });
 
   const writePieces = (outfitId: string, pieces: OutfitPiece[]) => {
-    db().delete(outfitItems).where(eq(outfitItems.outfitId, outfitId)).run();
-    if (pieces.length > 0) {
-      db()
-        .insert(outfitItems)
-        .values(pieces.map((piece) => ({ outfitId, ...piece })))
-        .run();
-    }
+    const seen = new Set<string>();
+    const unique = pieces.filter((piece) => !seen.has(piece.itemId) && seen.add(piece.itemId));
+    // Both steps or neither, so a failed write can never leave the outfit without pieces.
+    db().transaction((tx) => {
+      tx.delete(outfitItems).where(eq(outfitItems.outfitId, outfitId)).run();
+      if (unique.length > 0) {
+        tx.insert(outfitItems)
+          .values(unique.map((piece) => ({ outfitId, ...piece })))
+          .run();
+      }
+    });
   };
 
   const columns = (info: Partial<OutfitInfo>) => {

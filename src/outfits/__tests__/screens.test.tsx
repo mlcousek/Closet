@@ -18,17 +18,21 @@ import { StudioAvatar } from '../StudioAvatar';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
 let mockParams: Record<string, string> = {};
-type RemoveListener = (event: { preventDefault: () => void; data: { action: object } }) => void;
-let mockBeforeRemove: RemoveListener | null = null;
-const mockNavigation = {
-  addListener: jest.fn((_name: string, listener: RemoveListener) => {
-    mockBeforeRemove = listener;
-    return () => {
-      mockBeforeRemove = null;
-    };
-  }),
-  dispatch: jest.fn(),
-};
+/** What the editor last passed to usePreventRemove: whether leaving is blocked, and its callback. */
+const mockPrevent: {
+  blocked: boolean;
+  callback: ((options: { data: { action: object } }) => void) | null;
+} = { blocked: false, callback: null };
+const mockNavigation = { dispatch: jest.fn() };
+jest.mock('expo-router/react-navigation', () => ({
+  usePreventRemove: (
+    blocked: boolean,
+    callback: (options: { data: { action: object } }) => void,
+  ) => {
+    mockPrevent.blocked = blocked;
+    mockPrevent.callback = callback;
+  },
+}));
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
   useLocalSearchParams: () => mockParams,
@@ -268,7 +272,7 @@ beforeEach(() => {
   mockOutfits = [];
   mockRenders = [];
   mockProfile = profile;
-  mockBeforeRemove = null;
+  Object.assign(mockPrevent, { blocked: false, callback: null });
   mockUsage.counts.mockResolvedValue({ month: 4, total: 19 });
   Object.assign(mockSettings, { auto: true, disclosed: true });
 });
@@ -297,10 +301,14 @@ describe('outfit editor', () => {
       { itemId: 'skirt', slot: 'bottom', position: 0 },
       { itemId: 'boots', slot: 'shoes', position: 0 },
     ]);
-    expect(mockRouter.replace).toHaveBeenCalledWith({
-      pathname: '/outfit/[id]',
-      params: { id: 'new' },
-    });
+    await waitFor(() =>
+      expect(mockRouter.replace).toHaveBeenCalledWith({
+        pathname: '/outfit/[id]',
+        params: { id: 'new' },
+      }),
+    );
+    // Leaving after a save is not blocked by the unsaved-changes guard.
+    expect(mockPrevent.blocked).toBe(false);
     expect(useToast.getState().toast?.message).toBe('Saved look');
     await waitFor(() => expect(mockRequestRender).toHaveBeenCalled());
   });
@@ -391,10 +399,9 @@ describe('outfit editor', () => {
     renderWithQuery(<OutfitEditorScreen />);
     fireEvent.press(await screen.findByTestId('carousel-top-0-jumper'));
 
-    const event = { preventDefault: jest.fn(), data: { action: { type: 'GO_BACK' } } };
-    act(() => mockBeforeRemove?.(event));
+    expect(mockPrevent.blocked).toBe(true);
+    act(() => mockPrevent.callback?.({ data: { action: { type: 'GO_BACK' } } }));
 
-    expect(event.preventDefault).toHaveBeenCalled();
     expect(alert.mock.calls[0][0]).toBe('Discard changes?');
     expect(mockNavigation.dispatch).toHaveBeenCalledWith({ type: 'GO_BACK' });
     expect(mockOutfitRepo.setPieces).not.toHaveBeenCalled();
@@ -406,9 +413,7 @@ describe('outfit editor', () => {
     const alert = answerAlert('confirm');
     renderWithQuery(<OutfitEditorScreen />);
     await screen.findByTestId('carousel-top-0-shirt');
-    const event = { preventDefault: jest.fn(), data: { action: {} } };
-    act(() => mockBeforeRemove?.(event));
-    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(mockPrevent.blocked).toBe(false);
     expect(alert).not.toHaveBeenCalled();
   });
 

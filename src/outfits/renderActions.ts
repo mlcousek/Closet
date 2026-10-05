@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { Image } from 'react-native';
 import { create } from 'zustand';
 
 import { keyManager } from '@/ai/keys';
@@ -11,15 +12,22 @@ import {
   type TryOnPiece,
   type TryOnProvider,
 } from '@/ai/tryOn';
+import { fitWithin } from '@/closet/deviceImages';
 import type { Slot } from '@/closet/taxonomy';
 import { displayPath } from '@/closet/types';
+import { newId } from '@/db/id';
 import { getSetting, setSetting } from '@/db/settings';
 import { profileRepository } from '@/profile/repository';
 import type { Profile } from '@/profile/types';
 import { imageStore } from '@/storage/imageStore';
 
 import { outfitRepository, type Outfit } from './repository';
-import { RenderFailedError, createRenderQueue, type RenderResult } from './renderQueue';
+import {
+  RenderFailedError,
+  RenderSupersededError,
+  createRenderQueue,
+  type RenderResult,
+} from './renderQueue';
 import { fingerprint, renderRepository, usageLog, type Render } from './renders';
 
 const AUTO_RENDER_SETTING = 'tryon.auto';
@@ -44,8 +52,12 @@ export function avatarBasePath(
   return profile?.avatarStudioPath ?? profile?.avatarSmallPath ?? null;
 }
 
+/**
+ * What identifies each piece for a render: the item and the picture of it that
+ * is sent. Replacing an item's photo therefore makes renders with it outdated.
+ */
 export function outfitItemIds(outfit: Pick<Outfit, 'entries'>): string[] {
-  return outfit.entries.map((entry) => entry.item.id);
+  return outfit.entries.map((entry) => `${entry.item.id}@${displayPath(entry.item)}`);
 }
 
 /** The fingerprint an up-to-date render of this outfit would have, or null without an avatar. */
@@ -70,14 +82,19 @@ export function describeItem(item: Outfit['entries'][number]['item']): string {
 }
 
 async function encode(path: string, format: 'png' | 'jpeg'): Promise<EncodedImage> {
-  const resized = await ImageManipulator.manipulateAsync(
-    imageStore.uri(path),
-    [{ resize: { height: INPUT_MAX } }],
-    {
-      compress: 0.9,
-      format: format === 'png' ? ImageManipulator.SaveFormat.PNG : ImageManipulator.SaveFormat.JPEG,
-    },
+  const uri = imageStore.uri(path);
+  const size = await new Promise<{ width: number; height: number } | undefined>((resolve) =>
+    Image.getSize(
+      uri,
+      (width, height) => resolve({ width, height }),
+      () => resolve(undefined),
+    ),
   );
+  const resize = fitWithin(size, INPUT_MAX);
+  const resized = await ImageManipulator.manipulateAsync(uri, resize ? [{ resize }] : [], {
+    compress: 0.9,
+    format: format === 'png' ? ImageManipulator.SaveFormat.PNG : ImageManipulator.SaveFormat.JPEG,
+  });
   const base64 = await FileSystem.readAsStringAsync(resized.uri, {
     encoding: FileSystem.EncodingType.Base64,
   });
@@ -87,18 +104,22 @@ async function encode(path: string, format: 'png' | 'jpeg'): Promise<EncodedImag
 /** Writes a generated image into the image store, with a thumbnail. */
 async function store(image: EncodedImage, folder: string) {
   const extension = image.mimeType === 'image/jpeg' ? 'jpg' : 'png';
-  const temp = `${FileSystem.cacheDirectory}generated-${Date.now()}.${extension}`;
+  const temp = `${FileSystem.cacheDirectory}generated-${newId()}.${extension}`;
   await FileSystem.writeAsStringAsync(temp, image.base64, {
     encoding: FileSystem.EncodingType.Base64,
   });
   const imagePath = await imageStore.save(temp, folder, extension);
-  const thumb = await ImageManipulator.manipulateAsync(
-    temp,
-    [{ resize: { width: RENDER_THUMB_WIDTH } }],
-    { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG },
-  );
-  const thumbPath = await imageStore.save(thumb.uri, folder, 'jpg');
-  return { imagePath, thumbPath };
+  try {
+    const thumb = await ImageManipulator.manipulateAsync(
+      temp,
+      [{ resize: { width: RENDER_THUMB_WIDTH } }],
+      { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    return { imagePath, thumbPath: await imageStore.save(thumb.uri, folder, 'jpg') };
+  } catch {
+    // The image has been paid for; without a thumbnail the full image is shown in its place.
+    return { imagePath, thumbPath: imagePath };
+  }
 }
 
 const hintsOf = (profile: Profile): TryOnHints => ({
@@ -123,6 +144,8 @@ export async function runRender(
   if (!profile || !basePath) throw new RenderFailedError('noAvatar');
   if (!key) throw new RenderFailedError('noKey');
   if (!outfit || outfit.entries.length === 0) throw new RenderFailedError('error');
+  if (currentFingerprint(outfit, basePath) !== render.fingerprint)
+    throw new RenderSupersededError();
   try {
     const pieces: TryOnPiece[] = [];
     for (const entry of outfit.entries) {
@@ -138,6 +161,7 @@ export async function runRender(
     await usageLog.record('render');
     return { ...(await store(image, 'renders')), provider: provider.id };
   } catch (error) {
+    if (error instanceof RenderSupersededError) throw error;
     throw toFailure(error);
   }
 }

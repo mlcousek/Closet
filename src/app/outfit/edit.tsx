@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { usePreventRemove } from 'expo-router/react-navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -51,7 +52,7 @@ function Editor({ outfit, startItem }: { outfit: Outfit | null; startItem: Item 
       return draftFromPieces(
         outfit.entries.map((entry) => ({
           itemId: entry.item.id,
-          slot: entry.slot,
+          slot: CATEGORY_SLOT[entry.item.category],
           position: entry.position,
         })),
       );
@@ -92,26 +93,29 @@ function Editor({ outfit, startItem }: { outfit: Outfit | null; startItem: Item 
 
   // An outfit started from an item counts as changed, since it is not saved yet.
   const dirty = outfit ? !sameOutfit(draft, initial) : !isDraftEmpty(draft);
-  const leaving = useRef(false);
+  const [leaving, setLeaving] = useState(false);
+  const [leaveTo, setLeaveTo] = useState<'back' | { id: string } | null>(null);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (!dirty || leaving.current) return;
-      event.preventDefault();
-      Alert.alert(t('outfitEditor.discardTitle'), t('outfitEditor.discardMessage'), [
-        { text: t('outfitEditor.keepEditing'), style: 'cancel' },
-        {
-          text: t('outfitEditor.discard'),
-          style: 'destructive',
-          onPress: () => {
-            leaving.current = true;
-            navigation.dispatch(event.data.action);
-          },
+  usePreventRemove(dirty && !leaving, ({ data }) => {
+    Alert.alert(t('outfitEditor.discardTitle'), t('outfitEditor.discardMessage'), [
+      { text: t('outfitEditor.keepEditing'), style: 'cancel' },
+      {
+        text: t('outfitEditor.discard'),
+        style: 'destructive',
+        onPress: () => {
+          setLeaving(true);
+          navigation.dispatch(data.action);
         },
-      ]);
-    });
-    return unsubscribe;
-  }, [navigation, dirty, t]);
+      },
+    ]);
+  });
+
+  // Leaving after a save happens once the screen has re-rendered without the guard.
+  useEffect(() => {
+    if (!leaveTo) return;
+    if (leaveTo === 'back') router.back();
+    else router.replace({ pathname: '/outfit/[id]', params: { id: leaveTo.id } });
+  }, [leaveTo, router]);
 
   const save = async () => {
     const pieces = draftPieces(draft);
@@ -124,9 +128,8 @@ function Editor({ outfit, startItem }: { outfit: Outfit | null; startItem: Item 
       if (!saved) throw new Error('outfit no longer exists');
       await invalidateOutfits();
       showToast({ message: t('outfitEditor.saved') });
-      leaving.current = true;
-      if (outfit) router.back();
-      else router.replace({ pathname: '/outfit/[id]', params: { id: saved.id } });
+      setLeaving(true);
+      setLeaveTo(outfit ? 'back' : { id: saved.id });
       // The outfit is saved whatever happens to the render, which runs in the background.
       if (isAutoRenderOn()) void requestRender(saved);
     } catch {

@@ -1,4 +1,10 @@
-import { TryOnError, createGeminiProvider, readGeminiImage, tryOnPrompt } from '@/ai/tryOn';
+import {
+  TryOnError,
+  createGeminiProvider,
+  isInvalidKey,
+  readGeminiImage,
+  tryOnPrompt,
+} from '@/ai/tryOn';
 import { createItemRepository } from '@/closet/repository';
 import type { Slot } from '@/closet/taxonomy';
 import type { ItemDetails } from '@/closet/types';
@@ -20,7 +26,7 @@ import {
   shuffle,
 } from '../draft';
 import { createOutfitRepository } from '../repository';
-import { RenderFailedError, createRenderQueue } from '../renderQueue';
+import { RenderFailedError, RenderSupersededError, createRenderQueue } from '../renderQueue';
 import { createRenderRepository, createUsageLog, fingerprint, summariseRenders } from '../renders';
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => require('node:crypto').randomUUID() }));
@@ -204,6 +210,16 @@ describe('outfit repository', () => {
     await expect(outfits.setPieces(outfit.id, [])).rejects.toThrow();
   });
 
+  it('keeps an item only once even if it is given in two slots', async () => {
+    const { outfits, pieces, shirt } = await setupDb();
+    const outfit = await outfits.create([
+      pieces[0],
+      { itemId: shirt.id, slot: 'bottom', position: 0 },
+      pieces[2],
+    ]);
+    expect(outfit.entries.map((entry) => entry.slot)).toEqual(['top', 'shoes']);
+  });
+
   it('replaces the pieces of an outfit', async () => {
     const { outfits, pieces, shirt } = await setupDb();
     const outfit = await outfits.create(pieces);
@@ -322,6 +338,28 @@ describe('renders', () => {
     expect(summariseRenders(await renders.forOutfit('o1'), null).outdated).toBe(false);
   });
 
+  it('shows the render that matches the outfit after going back to an earlier combination', async () => {
+    const { renders } = await setupDb();
+    const done = { thumbPath: 't.jpg', provider: 'gemini' };
+    const first = await renders.enqueue('o1', 'shirt+skirt');
+    await renders.markDone(first.id, { ...done, imagePath: 'first.png' });
+    const second = await renders.enqueue('o1', 'shirt+jeans');
+    await renders.markDone(second.id, { ...done, imagePath: 'second.png' });
+
+    const summary = summariseRenders(await renders.forOutfit('o1'), 'shirt+skirt');
+    expect(summary.current?.imagePath).toBe('first.png');
+    expect(summary.outdated).toBe(false);
+    expect(summary.previous?.imagePath).toBe('second.png');
+  });
+
+  it('does not report a failed render that was for an earlier version of the outfit', async () => {
+    const { renders } = await setupDb();
+    const old = await renders.enqueue('o1', 'old');
+    await renders.markFailed(old.id, 'timeout');
+    expect(summariseRenders(await renders.forOutfit('o1'), 'new').failed).toBeNull();
+    expect(summariseRenders(await renders.forOutfit('o1'), 'old').failed?.failure).toBe('timeout');
+  });
+
   it('counts usage for the current month and in total', async () => {
     const { db } = await setupDb();
     let time = new Date(2026, 8, 20).getTime();
@@ -396,6 +434,34 @@ describe('render queue', () => {
     expect((await queue.request(outfit, 'avatar.jpg', true)).kind).toBe('queued');
     await queue.start();
     expect(run).toHaveBeenCalledTimes(4);
+  });
+
+  it('drops a waiting render when the outfit changes before it starts, so only one is paid', async () => {
+    const { renders } = await setupDb();
+    let release: (value: typeof result) => void = () => {};
+    const run = jest.fn(() => new Promise<typeof result>((resolve) => (release = resolve)));
+    const queue = createRenderQueue({ renders, run });
+    // Another outfit is rendering, so ours waits.
+    await queue.request({ id: 'busy', itemIds: ['x'] }, 'avatar.jpg');
+    await queue.request({ id: 'o1', itemIds: ['a', 'b'] }, 'avatar.jpg');
+    await queue.request({ id: 'o1', itemIds: ['a', 'c'] }, 'avatar.jpg');
+
+    const waiting = (await renders.forOutfit('o1')).filter((render) => render.status === 'queued');
+    expect(waiting.map((render) => render.fingerprint)).toEqual([
+      fingerprint('avatar.jpg', ['a', 'c']),
+    ]);
+    release(result);
+  });
+
+  it('forgets a render whose inputs changed while it waited, without a failure', async () => {
+    const { renders } = await setupDb();
+    const run = jest.fn(async () => {
+      throw new RenderSupersededError();
+    });
+    const queue = createRenderQueue({ renders, run });
+    await queue.request(outfit, 'avatar.jpg');
+    await queue.start();
+    expect(await renders.forOutfit('o1')).toEqual([]);
   });
 
   it('does nothing without an avatar or without pieces', async () => {
@@ -586,6 +652,21 @@ describe('try-on provider', () => {
   ])('maps HTTP %i to %s', async (status, reason) => {
     const provider = createGeminiProvider(respond(status, {}), () => 'm');
     expect(await reasonOf(provider.render(input, 'k'))).toBe(reason);
+  });
+
+  it('recognises an invalid key, which Gemini reports as a bad request', async () => {
+    const invalid = {
+      error: {
+        code: 400,
+        message: 'API key not valid. Please pass a valid API key.',
+        details: [{ reason: 'API_KEY_INVALID' }],
+      },
+    };
+    expect(
+      await reasonOf(createGeminiProvider(respond(400, invalid), () => 'm').render(input, 'k')),
+    ).toBe('noKey');
+    expect(isInvalidKey({ error: { message: 'Unsupported image format' } })).toBe(false);
+    expect(isInvalidKey(null)).toBe(false);
   });
 
   it('reports a declined request when the answer has no image', async () => {

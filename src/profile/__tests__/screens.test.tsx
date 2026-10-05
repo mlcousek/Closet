@@ -316,6 +316,7 @@ describe('profile editing', () => {
       expect(mockSave).toHaveBeenCalledWith({
         avatarPath: 'images/avatar/full.jpg',
         avatarSmallPath: 'images/avatar/small.jpg',
+        avatarStudioPath: null,
       }),
     );
     await waitFor(() =>
@@ -333,9 +334,22 @@ describe('profile editing', () => {
     fireEvent.press(await screen.findByTestId('remove-avatar'));
 
     await waitFor(() =>
-      expect(mockSave).toHaveBeenCalledWith({ avatarPath: null, avatarSmallPath: null }),
+      expect(mockSave).toHaveBeenCalledWith({
+        avatarPath: null,
+        avatarSmallPath: null,
+        avatarStudioPath: null,
+      }),
     );
     await waitFor(() => expect(mockRemoved).toHaveLength(2));
+  });
+
+  it('drops the studio photo made from the old photo when the photo is replaced', async () => {
+    mockProfile = { ...fullProfile, avatarStudioPath: 'images/avatar/studio.png' };
+    mockPickPhoto.mockResolvedValue({ status: 'picked', photo });
+    renderWithQuery(<EditProfileScreen />);
+    fireEvent.press(await screen.findByTestId('avatar-camera'));
+    await waitFor(() => expect(mockRemoved).toContain('images/avatar/studio.png'));
+    expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({ avatarStudioPath: null }));
   });
 
   it('keeps the avatar when removal is cancelled', async () => {

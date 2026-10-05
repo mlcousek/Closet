@@ -106,6 +106,17 @@ export function readGeminiImage(payload: unknown): EncodedImage {
   throw new TryOnError('declined');
 }
 
+/** True when an error response says the key itself was not accepted. */
+export function isInvalidKey(payload: unknown): boolean {
+  const error = (payload as { error?: { message?: string; details?: { reason?: string }[] } })
+    ?.error;
+  if (!error) return false;
+  return (
+    (error.details ?? []).some((detail) => detail?.reason === 'API_KEY_INVALID') ||
+    /api key not valid/i.test(error.message ?? '')
+  );
+}
+
 export function createGeminiProvider(
   fetchImpl: FetchLike = (url, init) => fetch(url, init),
   getModel: () => string = getImageModel,
@@ -155,7 +166,7 @@ export function createGeminiProvider(
     } finally {
       clearTimeout(timer);
     }
-    if (status === 401 || status === 403) throw new TryOnError('noKey');
+    if (status === 401 || status === 403 || isInvalidKey(payload)) throw new TryOnError('noKey');
     if (status === 429) throw new TryOnError('rateLimited');
     if (status < 200 || status >= 300) throw new TryOnError('error');
     return readGeminiImage(payload);
