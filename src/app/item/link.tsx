@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -32,6 +32,7 @@ async function download(url: string): Promise<string> {
 export default function LinkImportScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { target } = useLocalSearchParams<{ target?: string }>();
   const { colors, spacing, radius } = useTheme();
   const [link, setLink] = useState('');
   const [clipboardLink, setClipboardLink] = useState<string | null>(null);
@@ -85,6 +86,7 @@ export default function LinkImportScreen() {
         brand: product.brand,
         price: product.price,
         currency: product.currency,
+        target: target === 'wishlist' ? 'wishlist' : 'owned',
       });
       router.replace({ pathname: '/item/new', params: { source: 'link' } });
     } catch {

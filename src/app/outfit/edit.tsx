@@ -63,14 +63,21 @@ function Editor({ outfit, startItem }: { outfit: Outfit | null; startItem: Item 
   const [draft, setDraft] = useState(initial);
   const [season, setSeason] = useState<Season | null>(null);
   const [saving, setSaving] = useState(false);
-  const [withWishlist, setWithWishlist] = useState(false);
+  // On from the start when the outfit already involves a wishlist piece.
+  const [withWishlist, setWithWishlist] = useState(
+    () =>
+      startItem?.ownership === 'wishlist' ||
+      (outfit?.entries.some((entry) => entry.item.ownership === 'wishlist') ?? false),
+  );
   const { data: ownedItems = [] } = useItems({});
   const { data: wished = [] } = useItems({ ownership: 'wishlist' });
   // Wishlist pieces are offered only on request, so a purchase can be judged against the closet.
-  const owned = useMemo(
-    () => (withWishlist ? [...ownedItems, ...wished] : ownedItems),
-    [ownedItems, wished, withWishlist],
-  );
+  // Wishlist pieces that are part of the draft stay available even with the switch off.
+  const owned = useMemo(() => {
+    const chosen = new Set(draftPieces(draft).map((piece) => piece.itemId));
+    const offered = withWishlist ? wished : wished.filter((item) => chosen.has(item.id));
+    return [...(startItem ? [startItem] : []), ...ownedItems, ...offered];
+  }, [ownedItems, wished, withWishlist, draft, startItem]);
 
   // Items already in the outfit stay selectable even when archived or filtered out.
   const inOutfit = useMemo(() => outfit?.entries.map((entry) => entry.item) ?? [], [outfit]);

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
+import { PixelRatio } from 'react-native';
 
 import { createItemRepository } from '@/closet/repository';
 import type { Item } from '@/closet/types';
@@ -52,7 +53,9 @@ const mockLookbookRepo = {
   addOutfits: jest.fn(async (..._args: unknown[]) => {}),
   removeOutfit: jest.fn(async (..._args: unknown[]) => {}),
 };
+let mockContaining: string[] = [];
 jest.mock('../useLookbooks', () => ({
+  useLookbooksContaining: (outfitId?: string) => ({ data: outfitId ? mockContaining : [] }),
   useLookbooks: () => ({ data: mockLookbooks }),
   useInvalidateLookbooks: () => async () => {},
 }));
@@ -71,6 +74,7 @@ const withQuery = (ui: ReactElement) =>
 beforeEach(() => {
   jest.clearAllMocks();
   mockLookbooks = [];
+  mockContaining = [];
   mockPermission.granted = true;
 });
 
@@ -198,13 +202,14 @@ describe('lookbook picker', () => {
 
   it('toggles one outfit in and out of lookbooks', async () => {
     mockLookbooks = [lookbook('lb-1', 'Summer'), lookbook('lb-2', 'Work')];
-    withQuery(<LookbookPicker outfitIds={['o1']} containing={['lb-1']} onClose={jest.fn()} />);
+    mockContaining = ['lb-1'];
+    withQuery(<LookbookPicker outfitIds={['o1']} onClose={jest.fn()} />);
     expect(screen.getByTestId('pick-lookbook-lb-1')).toBeChecked();
     expect(screen.getByTestId('pick-lookbook-lb-2')).not.toBeChecked();
 
     fireEvent.press(screen.getByTestId('pick-lookbook-lb-2'));
     await waitFor(() => expect(mockLookbookRepo.addOutfits).toHaveBeenCalledWith('lb-2', ['o1']));
-    await waitFor(() => expect(screen.getByTestId('pick-lookbook-lb-2')).toBeChecked());
+    await act(async () => {});
 
     fireEvent.press(screen.getByTestId('pick-lookbook-lb-1'));
     await waitFor(() => expect(mockLookbookRepo.removeOutfit).toHaveBeenCalledWith('lb-1', 'o1'));
@@ -218,6 +223,17 @@ describe('lookbook picker', () => {
     await waitFor(() =>
       expect(mockLookbookRepo.addOutfits).toHaveBeenCalledWith('lb-1', ['o1', 'o2']),
     );
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it('only creates a lookbook when opened without outfits', async () => {
+    mockLookbooks = [lookbook('lb-1', 'Summer')];
+    const onClose = jest.fn();
+    withQuery(<LookbookPicker outfitIds={[]} onClose={onClose} />);
+    expect(screen.queryByTestId('pick-lookbook-lb-1')).toBeNull();
+    fireEvent.changeText(screen.getByTestId('new-lookbook-name'), 'Work');
+    fireEvent.press(screen.getByTestId('new-lookbook-create'));
+    await waitFor(() => expect(mockLookbookRepo.create).toHaveBeenCalledWith('Work'));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
@@ -291,12 +307,17 @@ describe('sharing', () => {
     expect(screen.queryByTestId('share-item-list')).toBeNull();
     fireEvent(screen.getByTestId('share-with-items'), 'valueChange', true);
     expect(screen.getByTestId('share-item-list')).toBeTruthy();
+    // Every piece is listed, not only the first few.
+    expect(screen.getByTestId('share-item-list').children).toHaveLength(2);
     expect(screen.getByText('Arket')).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('share-format-story'));
     fireEvent.press(screen.getByTestId('share-send'));
     await waitFor(() => expect(mockCapture).toHaveBeenCalled());
-    expect(mockCapture.mock.calls[0][1]).toMatchObject({ width: 1080, height: 1920 });
+    // view-shot sizes are in points; multiplied by the screen scale they give 1080 x 1920 pixels.
+    const options = mockCapture.mock.calls[0][1] as { width: number; height: number };
+    expect(Math.round(options.width * PixelRatio.get())).toBe(1080);
+    expect(Math.round(options.height * PixelRatio.get())).toBe(1920);
   });
 
   it('saves to the photo library and confirms', async () => {

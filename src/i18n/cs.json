@@ -526,7 +526,8 @@
     "includeInEditor": "Zahrnout kousky z wishlistu",
     "pricePaid": "Zaplacená cena",
     "bought": "Koupeno",
-    "boughtToast": "Přesunuto do šatníku"
+    "boughtToast": "Přesunuto do šatníku",
+    "savingTo": "Tento kousek se uloží do wishlistu."
   },
   "share": {
     "title": "Sdílet jako obrázek",

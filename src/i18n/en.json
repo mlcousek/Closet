@@ -526,7 +526,8 @@
     "includeInEditor": "Include wishlist pieces",
     "pricePaid": "Price paid",
     "bought": "I bought it",
-    "boughtToast": "Moved to your closet"
+    "boughtToast": "Moved to your closet",
+    "savingTo": "This item is saved to your wishlist."
   },
   "share": {
     "title": "Share as an image",

@@ -271,13 +271,15 @@ function ItemView({ item }: { item: Item }) {
                 />
               </View>
             ) : null}
-            <Button
-              testID="item-archive"
-              kind="secondary"
-              icon="archive-outline"
-              label={t(item.ownership === 'archived' ? 'item.unarchive' : 'item.archive')}
-              onPress={() => void toggleArchive()}
-            />
+            {item.ownership === 'wishlist' ? null : (
+              <Button
+                testID="item-archive"
+                kind="secondary"
+                icon="archive-outline"
+                label={t(item.ownership === 'archived' ? 'item.unarchive' : 'item.archive')}
+                onPress={() => void toggleArchive()}
+              />
+            )}
             <Button
               testID="item-delete"
               kind="danger"
@@ -308,5 +310,5 @@ export default function ItemScreen() {
       </Screen>
     );
   }
-  return <ItemView item={item} />;
+  return <ItemView key={`${item.id}:${item.price}`} item={item} />;
 }

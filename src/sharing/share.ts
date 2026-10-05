@@ -1,7 +1,7 @@
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import type { RefObject } from 'react';
-import type { View } from 'react-native';
+import { PixelRatio, type View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 export const SHARE_FORMATS = ['portrait', 'story', 'square'] as const;
@@ -49,8 +49,8 @@ export async function captureCard(card: RefObject<View | null>, format: ShareFor
     format: 'png',
     quality: 1,
     result: 'tmpfile',
-    width: EXPORT_WIDTH,
-    height: Math.round(EXPORT_WIDTH / FORMAT_RATIO[format]),
+    width: EXPORT_WIDTH / PixelRatio.get(),
+    height: Math.round(EXPORT_WIDTH / FORMAT_RATIO[format]) / PixelRatio.get(),
   });
 }
 

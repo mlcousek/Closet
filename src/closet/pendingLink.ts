@@ -9,6 +9,8 @@ export type PendingLinkItem = {
   brand: string | null;
   price: number | null;
   currency: string | null;
+  /** Whether the item is being added to the closet or to the wishlist. */
+  target: 'owned' | 'wishlist';
 };
 
 /**

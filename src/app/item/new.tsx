@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 import { AiUnavailableError, type AiUnavailableReason } from '@/ai/client';
 import { tagItem, type ItemTags } from '@/ai/tagging';
 import { Chips } from '@/closet/Chips';
-import { useClosetTab } from '@/closet/closetTab';
 import { itemImageDeps, toTagImage } from '@/closet/deviceImages';
 import { ItemForm } from '@/closet/ItemForm';
 import { storeItemImages } from '@/closet/itemImages';
@@ -19,7 +18,7 @@ import { AppText, Button, Screen } from '@/components/ui';
 import { pickPhoto } from '@/profile/photo';
 import { useTheme } from '@/theme/useTheme';
 
-type Params = { source?: 'camera' | 'library' | 'link' };
+type Params = { source?: 'camera' | 'library' | 'link'; target?: string };
 
 type Photo = { originalUri: string; cutoutUri: string | null };
 
@@ -27,7 +26,7 @@ type Photo = { originalUri: string; cutoutUri: string | null };
 export default function NewItemScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { source } = useLocalSearchParams<Params>();
+  const { source, target: targetParam } = useLocalSearchParams<Params>();
   const { colors, spacing, radius } = useTheme();
   const invalidateItems = useInvalidateItems();
 
@@ -41,10 +40,9 @@ export default function NewItemScreen() {
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   const started = useRef(false);
-  // Fixed when the screen opens: items added from the Wishlist tab go to the wishlist.
-  const [target] = useState(() =>
-    useClosetTab.getState().tab === 'wishlist' ? ('wishlist' as const) : ('owned' as const),
-  );
+  // Decided by where the add was started: the Wishlist tab passes it along, also through link import.
+  const target: 'owned' | 'wishlist' =
+    (fromLink?.target ?? targetParam) === 'wishlist' ? 'wishlist' : 'owned';
 
   const prepare = async (uri: string, size?: { width: number; height: number }) => {
     setStage('working');
@@ -226,6 +224,11 @@ export default function NewItemScreen() {
         label={t('addItem.anotherPhoto')}
         onPress={() => setStage('pick')}
       />
+      {target === 'wishlist' ? (
+        <AppText testID="saving-to-wishlist" variant="label" muted>
+          {t('wishlist.savingTo')}
+        </AppText>
+      ) : null}
       {unavailable ? (
         <AppText testID="tags-unavailable" muted>
           {t(`addItem.tagsUnavailable.${unavailable}`)}

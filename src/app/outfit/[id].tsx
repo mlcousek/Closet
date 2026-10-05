@@ -10,7 +10,6 @@ import { OCCASIONS, SEASONS } from '@/closet/taxonomy';
 import { AppText, Button, EmptyState, Field, Screen } from '@/components/ui';
 import { KeyNeededPrompt } from '@/ai/KeyNeededPrompt';
 import { LookbookPicker } from '@/lookbooks/LookbookPicker';
-import { useLookbooksContaining } from '@/lookbooks/useLookbooks';
 import { OutfitImage } from '@/outfits/OutfitImage';
 import { hasWishlistItem, outfitRepository, type Outfit } from '@/outfits/repository';
 import { useInvalidateOutfits, useOutfit, useRenderSummary } from '@/outfits/useOutfits';
@@ -31,7 +30,6 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
   const [showPrevious, setShowPrevious] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [pickingLookbook, setPickingLookbook] = useState(false);
-  const { data: inLookbooks = [] } = useLookbooksContaining(outfit.id);
 
   const update = async (info: Parameters<typeof outfitRepository.updateInfo>[1]) => {
     await outfitRepository.updateInfo(outfit.id, info);
@@ -265,13 +263,7 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
         />
       ) : null}
       {pickingLookbook ? (
-        <LookbookPicker
-          // Opens with the lookbooks that already hold this outfit ticked.
-          key={inLookbooks.join(',')}
-          outfitIds={[outfit.id]}
-          containing={inLookbooks}
-          onClose={() => setPickingLookbook(false)}
-        />
+        <LookbookPicker outfitIds={[outfit.id]} onClose={() => setPickingLookbook(false)} />
       ) : null}
     </Screen>
   );

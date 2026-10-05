@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { usePathname, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +9,7 @@ import { renderQueue } from '@/outfits/renderActions';
 import { outfitRepository } from '@/outfits/repository';
 import { useAddActions } from '@/shell/addActions';
 
+import { useClosetTab } from './closetTab';
 import { itemImageDeps } from './deviceImages';
 import { resumeImports, setImportListener, startBulkImport } from './importActions';
 import { removeItemImages } from './itemImages';
@@ -27,8 +28,19 @@ export function useClosetSetup(): void {
   const router = useRouter();
   const queryClient = useQueryClient();
   const register = useAddActions((state) => state.register);
+  const currentPath = usePathname();
+  const pathname = useRef(currentPath);
+  useEffect(() => {
+    pathname.current = currentPath;
+  }, [currentPath]);
 
   useEffect(() => {
+    // An item goes to the wishlist only when the add menu is opened on the Wishlist tab itself.
+    const target = () =>
+      pathname.current === '/closet' && useClosetTab.getState().tab === 'wishlist'
+        ? 'wishlist'
+        : 'owned';
+
     const pickMany = async () => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -60,14 +72,16 @@ export function useClosetSetup(): void {
         labelKey: 'addItem.menuPhoto',
         icon: 'camera-outline',
         order: 10,
-        onPress: () => router.push({ pathname: '/item/new', params: { source: 'camera' } }),
+        onPress: () =>
+          router.push({ pathname: '/item/new', params: { source: 'camera', target: target() } }),
       }),
       register({
         id: 'item-library',
         labelKey: 'addItem.menuLibrary',
         icon: 'image-outline',
         order: 11,
-        onPress: () => router.push({ pathname: '/item/new', params: { source: 'library' } }),
+        onPress: () =>
+          router.push({ pathname: '/item/new', params: { source: 'library', target: target() } }),
       }),
       register({
         id: 'item-bulk',
@@ -81,7 +95,7 @@ export function useClosetSetup(): void {
         labelKey: 'addItem.menuLink',
         icon: 'link-outline',
         order: 13,
-        onPress: () => router.push('/item/link'),
+        onPress: () => router.push({ pathname: '/item/link', params: { target: target() } }),
       }),
     ];
     unregister.push(

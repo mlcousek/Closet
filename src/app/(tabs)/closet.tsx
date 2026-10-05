@@ -301,7 +301,7 @@ export default function ClosetScreen() {
       title={t('wishlist.emptyTitle')}
       message={t('wishlist.emptyMessage')}
       actionLabel={t('wishlist.emptyAction')}
-      onAction={() => router.push('/item/link')}
+      onAction={() => router.push({ pathname: '/item/link', params: { target: 'wishlist' } })}
     />
   ) : total === 0 && !sheet.archived ? (
     <EmptyState
@@ -390,14 +390,16 @@ export default function ClosetScreen() {
             </Pressable>
           </View>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <View style={styles.fill}>
-              <Button
-                testID="selection-archive"
-                kind="secondary"
-                label={sheet.archived ? t('closet.unarchive') : t('closet.archive')}
-                onPress={() => void archiveSelected()}
-              />
-            </View>
+            {wishlist ? null : (
+              <View style={styles.fill}>
+                <Button
+                  testID="selection-archive"
+                  kind="secondary"
+                  label={sheet.archived ? t('closet.unarchive') : t('closet.archive')}
+                  onPress={() => void archiveSelected()}
+                />
+              </View>
+            )}
             <View style={styles.fill}>
               <Button
                 testID="selection-retag"

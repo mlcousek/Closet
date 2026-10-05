@@ -8,21 +8,20 @@ import { AppText, Button, Field } from '@/components/ui';
 import { useTheme } from '@/theme/useTheme';
 
 import { lookbookRepository } from './repository';
-import { useInvalidateLookbooks, useLookbooks } from './useLookbooks';
+import { useInvalidateLookbooks, useLookbooks, useLookbooksContaining } from './useLookbooks';
 
 /**
- * A sheet for putting outfits into lookbooks. With one outfit it shows which
- * lookbooks already contain it and toggles membership; with several it adds
- * them all to the lookbook that is tapped. A new lookbook can be made in place.
+ * A sheet for putting outfits into lookbooks.
+ * - One outfit: shows which lookbooks contain it and toggles membership.
+ * - Several outfits: adds them all to the lookbook that is tapped, then closes.
+ * - No outfits: only creates a new, empty lookbook.
+ * A new lookbook can always be made in place.
  */
 export function LookbookPicker({
   outfitIds,
-  containing = [],
   onClose,
 }: {
   outfitIds: string[];
-  /** Lookbooks that already contain the outfit, when there is exactly one. */
-  containing?: string[];
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -30,27 +29,40 @@ export function LookbookPicker({
   const insets = useSafeAreaInsets();
   const { data: lookbooks = [] } = useLookbooks();
   const invalidate = useInvalidateLookbooks();
-  const [name, setName] = useState('');
-  const [members, setMembers] = useState<string[]>(containing);
   const single = outfitIds.length === 1;
+  const creatingOnly = outfitIds.length === 0;
+  // Membership is read from the database, so it is right however the sheet was opened.
+  const { data: members = [] } = useLookbooksContaining(single ? outfitIds[0] : undefined);
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const toggle = async (lookbookId: string) => {
-    if (single && members.includes(lookbookId)) {
-      await lookbookRepository.removeOutfit(lookbookId, outfitIds[0]);
-      setMembers(members.filter((id) => id !== lookbookId));
-    } else {
-      await lookbookRepository.addOutfits(lookbookId, outfitIds);
-      setMembers([...members, lookbookId]);
+  const act = async (action: () => Promise<unknown>, closeAfter: boolean) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await action();
+      await invalidate();
+    } finally {
+      setBusy(false);
     }
-    await invalidate();
-    if (!single) onClose();
+    if (closeAfter) onClose();
   };
 
-  const create = async () => {
-    const created = await lookbookRepository.create(name);
-    setName('');
-    await toggle(created.id);
-  };
+  const toggle = (lookbookId: string) =>
+    act(
+      () =>
+        single && members.includes(lookbookId)
+          ? lookbookRepository.removeOutfit(lookbookId, outfitIds[0])
+          : lookbookRepository.addOutfits(lookbookId, outfitIds),
+      !single,
+    );
+
+  const create = () =>
+    act(async () => {
+      const created = await lookbookRepository.create(name);
+      setName('');
+      await lookbookRepository.addOutfits(created.id, outfitIds);
+    }, !single);
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -70,41 +82,43 @@ export function LookbookPicker({
           gap: spacing.md,
         }}
       >
-        <AppText variant="heading">{t('lookbooks.addTo')}</AppText>
-        {lookbooks.map((lookbook) => {
-          const selected = members.includes(lookbook.id);
-          return (
-            <Pressable
-              key={lookbook.id}
-              testID={`pick-lookbook-${lookbook.id}`}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: selected }}
-              onPress={() => void toggle(lookbook.id)}
-              style={[styles.row, { gap: spacing.md, paddingVertical: spacing.sm }]}
-            >
-              <Ionicons
-                name={selected ? 'checkbox' : 'square-outline'}
-                size={22}
-                color={colors.text}
-              />
-              <AppText style={styles.fill}>{lookbook.name}</AppText>
-              <AppText muted>{lookbook.outfitIds.length}</AppText>
-            </Pressable>
-          );
-        })}
+        <AppText variant="heading">{t(creatingOnly ? 'lookbooks.add' : 'lookbooks.addTo')}</AppText>
+        {creatingOnly
+          ? null
+          : lookbooks.map((lookbook) => {
+              const selected = single && members.includes(lookbook.id);
+              return (
+                <Pressable
+                  key={lookbook.id}
+                  testID={`pick-lookbook-${lookbook.id}`}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selected }}
+                  onPress={() => void toggle(lookbook.id)}
+                  style={[styles.row, { gap: spacing.md, paddingVertical: spacing.sm }]}
+                >
+                  <Ionicons
+                    name={selected ? 'checkbox' : 'square-outline'}
+                    size={22}
+                    color={colors.text}
+                  />
+                  <AppText style={styles.fill}>{lookbook.name}</AppText>
+                  <AppText muted>{lookbook.outfitIds.length}</AppText>
+                </Pressable>
+              );
+            })}
         <View style={[styles.row, { gap: spacing.sm, alignItems: 'flex-end' }]}>
           <View style={styles.fill}>
             <Field
               testID="new-lookbook-name"
+              label={t('lookbooks.newPlaceholder')}
               value={name}
               onChangeText={setName}
-              placeholder={t('lookbooks.newPlaceholder')}
             />
           </View>
           <Button
             testID="new-lookbook-create"
             label={t('lookbooks.create')}
-            disabled={!name.trim()}
+            disabled={!name.trim() || busy}
             onPress={() => void create()}
           />
         </View>

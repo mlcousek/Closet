@@ -251,10 +251,36 @@ describe('wishlist', () => {
     await settle();
     expect(screen.getByText('Your wishlist is empty')).toBeTruthy();
     fireEvent.press(screen.getByText('Add from a shop link'));
-    expect(mockRouter.push).toHaveBeenCalledWith('/item/link');
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/item/link',
+      params: { target: 'wishlist' },
+    });
   });
 
   it('saves a new item to the wishlist when it is added from the Wishlist tab', async () => {
+    mockParams = { source: 'library', target: 'wishlist' };
+    mockPickPhoto.mockResolvedValue({
+      status: 'picked',
+      photo: { uri: 'file:///tmp/p.jpg', width: 10, height: 10 },
+    });
+    mockTagItem.mockResolvedValue({
+      name: 'Coat',
+      category: 'outerwear',
+      subcategory: null,
+      colours: [],
+      seasons: [],
+      occasions: [],
+      warmth: null,
+      brand: null,
+    });
+    renderWithQuery(<NewItemScreen />);
+    expect(await screen.findByTestId('saving-to-wishlist')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('item-save'));
+    await waitFor(() => expect(mockRepo.create).toHaveBeenCalled());
+    expect(mockRepo.create.mock.calls[0][2]).toEqual({ ownership: 'wishlist' });
+  });
+
+  it('does not send a new item to the wishlist just because the Wishlist tab was left open', async () => {
     useClosetTab.setState({ tab: 'wishlist' });
     mockParams = { source: 'library' };
     mockPickPhoto.mockResolvedValue({
@@ -274,7 +300,15 @@ describe('wishlist', () => {
     renderWithQuery(<NewItemScreen />);
     fireEvent.press(await screen.findByTestId('item-save'));
     await waitFor(() => expect(mockRepo.create).toHaveBeenCalled());
-    expect(mockRepo.create.mock.calls[0][2]).toEqual({ ownership: 'wishlist' });
+    expect(mockRepo.create.mock.calls[0][2]).toEqual({ ownership: 'owned' });
+  });
+
+  it('offers no archive action for wishlist items', async () => {
+    mockItems = [item('coat', { ownership: 'wishlist' })];
+    mockParams = { id: 'coat' };
+    renderWithQuery(<ItemScreen />);
+    await screen.findByTestId('item-wishlist');
+    expect(screen.queryByTestId('item-archive')).toBeNull();
   });
 
   it('marks a wishlist item as bought with the price paid', async () => {
@@ -563,6 +597,7 @@ describe('adding an item from a photo', () => {
       price: 1290,
       currency: 'CZK',
       sourceUrl: 'https://shop.example/p/1?ref=a%26b',
+      target: 'owned',
     });
     mockTagItem.mockResolvedValue({ ...tags, name: 'Some shirt', brand: 'Guess' });
     renderWithQuery(<NewItemScreen />);

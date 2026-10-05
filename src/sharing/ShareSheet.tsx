@@ -153,9 +153,12 @@ export function ShareSheet({
             </View>
           )}
           {single && withItems ? (
-            <View testID="share-item-list" style={{ flexDirection: 'row', gap: 6 }}>
-              {outfits[0].items.slice(0, 5).map((item) => (
-                <View key={item.id} style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+            <View
+              testID="share-item-list"
+              style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}
+            >
+              {outfits[0].items.map((item) => (
+                <View key={item.id} style={{ width: 40, alignItems: 'center', gap: 2 }}>
                   <Image
                     source={{ uri: imageStore.uri(item.thumbPath) }}
                     contentFit="contain"

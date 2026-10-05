@@ -39,7 +39,7 @@ const config: ExpoConfig = {
       'expo-media-library',
       {
         savePhotosPermission: 'Closet saves outfit images you export to your photo library.',
-        photosPermission: false,
+        photosPermission: 'Closet uses your photo library to add photos of you and your clothes.',
       },
     ],
     [
