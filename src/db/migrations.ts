@@ -150,6 +150,30 @@ export const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS lookbook_outfits_outfit ON lookbook_outfits (outfit_id);
     `,
   },
+  {
+    version: 6,
+    sql: `
+      CREATE TABLE IF NOT EXISTS calendar_entries (
+        id TEXT PRIMARY KEY NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER,
+        day TEXT NOT NULL,
+        outfit_id TEXT NOT NULL,
+        state TEXT NOT NULL DEFAULT 'planned',
+        position INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS calendar_entries_day ON calendar_entries (day);
+
+      CREATE TABLE IF NOT EXISTS wear_events (
+        entry_id TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        day TEXT NOT NULL,
+        PRIMARY KEY (entry_id, item_id)
+      );
+      CREATE INDEX IF NOT EXISTS wear_events_item ON wear_events (item_id, day);
+    `,
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = migrations[migrations.length - 1].version;

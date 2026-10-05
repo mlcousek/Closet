@@ -128,7 +128,27 @@ export const lookbookOutfits = sqliteTable('lookbook_outfits', {
   position: integer('position').notNull().default(0),
 });
 
+/** An outfit planned for, or worn on, a day. Days are local dates written as YYYY-MM-DD. */
+export const calendarEntries = sqliteTable('calendar_entries', {
+  ...baseColumns,
+  day: text('day').notNull(),
+  outfitId: text('outfit_id').notNull(),
+  /** 'planned' or 'worn'. */
+  state: text('state').notNull().default('planned'),
+  /** Order within the day; the first entry is the one shown in grids and strips. */
+  position: integer('position').notNull().default(0),
+});
+
+/** One row per item per worn entry. Wear counts are derived from these, never stored on items. */
+export const wearEvents = sqliteTable('wear_events', {
+  entryId: text('entry_id').notNull(),
+  itemId: text('item_id').notNull(),
+  day: text('day').notNull(),
+});
+
 export const schema = {
+  calendarEntries,
+  wearEvents,
   lookbooks,
   lookbookOutfits,
   appSettings,
