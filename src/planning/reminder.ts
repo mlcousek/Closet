@@ -4,6 +4,25 @@ import { getReminderTime, setReminderTime, type ReminderTime } from './settings'
 
 const REMINDER_ID = 'daily-outfit-reminder';
 
+/**
+ * Makes reminders appear while the app is open and take the user to Home when
+ * tapped. Returns a function that undoes the tap handling.
+ */
+export function installReminderHandling(openHome: () => void): () => void {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+  const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+    if (response.notification.request.identifier === REMINDER_ID) openHome();
+  });
+  return () => subscription.remove();
+}
+
 /** Reads "7:30" or "07:30" as a time of day, or null when it is not one. */
 export function parseTime(text: string): ReminderTime | null {
   const match = /^\s*(\d{1,2})[:.](\d{2})\s*$/.exec(text);

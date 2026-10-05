@@ -4,7 +4,7 @@ import { getLocales } from 'expo-localization';
 import { getSetting, setSetting } from '@/db/settings';
 import { defaultTemperatureUnit, type TemperatureUnit } from '@/i18n/format';
 
-import type { Place, Weather, WeatherStore } from './weather';
+import { roundCoordinate, type Place, type Weather, type WeatherStore } from './weather';
 
 const CITY = 'weather.city';
 const CACHE = 'weather.cache';
@@ -62,8 +62,9 @@ export async function resolvePlace(): Promise<PlaceResult> {
       status: 'ok',
       place: {
         name: '',
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
+        // Rounded to about a kilometre before it is used or cached anywhere.
+        latitude: roundCoordinate(position.coords.latitude),
+        longitude: roundCoordinate(position.coords.longitude),
       },
     };
   } catch {

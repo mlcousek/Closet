@@ -104,7 +104,7 @@ export default function HomeScreen() {
 
       <View testID="week-strip" style={{ flexDirection: 'row', gap: spacing.xs }}>
         {week.map((day) => {
-          const first = byDay?.get(day)?.[0];
+          const first = byDay?.get(day)?.find((entry) => outfitsById.has(entry.outfitId));
           const outfit = first ? outfitsById.get(first.outfitId) : undefined;
           const isSelected = day === selected;
           return (

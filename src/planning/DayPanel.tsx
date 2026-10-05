@@ -10,11 +10,11 @@ import { isAutoRenderOn } from '@/outfits/renderActions';
 import { outfitRepository, type Outfit } from '@/outfits/repository';
 import { useInvalidateOutfits, useOutfits, useRenderSummary } from '@/outfits/useOutfits';
 import { useRenderRequest } from '@/outfits/useRenderRequest';
-import { deleteWithUndo } from '@/shell/toast';
+import { deleteWithUndo, useToast } from '@/shell/toast';
 import { useTheme } from '@/theme/useTheme';
 
 import { FutureWearError, calendarRepository, type CalendarEntry } from './calendar';
-import { addDays, today, type Day } from './dates';
+import { addDays, fromDay, today, type Day } from './dates';
 import { getTemperatureUnit } from './settings';
 import { isWearable, type Suggestion } from './suggestions';
 import { useInvalidatePlanning, useSuggestions } from './usePlanning';
@@ -101,7 +101,7 @@ function DayPicker({
       weekday: 'short',
       day: 'numeric',
       month: 'short',
-    }).format(new Date(`${day}T12:00:00`));
+    }).format(fromDay(day));
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={onClose} />
@@ -165,6 +165,7 @@ export function DayPanel({
   const invalidateOutfits = useInvalidateOutfits();
   const requestRender = useRenderRequest();
   const summarise = useRenderSummary();
+  const showToast = useToast((state) => state.show);
   const { profile, suggestions, ready } = useSuggestions(day);
   const [skipped, setSkipped] = useState(0);
   const [picking, setPicking] = useState<Picking>(null);
@@ -173,16 +174,25 @@ export function DayPanel({
   const isFuture = day > today();
   const isPast = day < today();
   const shown = entries.filter((entry) => outfitsById.has(entry.outfitId));
+  // Entries whose outfit has since been deleted still count in the log, so they stay removable.
+  const orphaned = entries.filter((entry) => !outfitsById.has(entry.outfitId));
+  const [busy, setBusy] = useState(false);
   const suggestion: Suggestion | undefined =
     suggestions.length > 0 ? suggestions[skipped % suggestions.length] : undefined;
 
   const done = async (action: () => Promise<unknown>) => {
+    if (busy) return;
+    setBusy(true);
     try {
       await action();
     } catch (error) {
-      if (!(error instanceof FutureWearError)) throw error;
+      // A future day cannot be worn; anything else is reported, never left unhandled.
+      if (!(error instanceof FutureWearError))
+        showToast({ message: t('common.somethingWentWrong') });
+    } finally {
+      setBusy(false);
+      await invalidatePlanning();
     }
-    await invalidatePlanning();
   };
 
   /** Puts an outfit on the day: worn for past days, planned otherwise unless asked to mark it worn. */
@@ -192,6 +202,7 @@ export function DayPanel({
     );
 
   const accept = async (chosen: Suggestion, worn: boolean) => {
+    if (busy) return;
     let outfit = chosen.outfit;
     if (!outfit) {
       // A new combination becomes a saved outfit first.
@@ -285,6 +296,20 @@ export function DayPanel({
           </View>
         );
       })}
+
+      {orphaned.map((entry) => (
+        <View key={entry.id} testID={`day-orphan-${entry.id}`} style={{ gap: spacing.sm }}>
+          <AppText muted style={{ textAlign: 'center' }}>
+            {t('planning.deletedOutfit')}
+          </AppText>
+          <Button
+            testID={`day-remove-${entry.id}`}
+            kind="secondary"
+            label={t('common.remove')}
+            onPress={() => void remove(entry)}
+          />
+        </View>
+      ))}
 
       {shown.length === 0 && !isPast && ready && suggestion ? (
         <View testID="day-suggestion" style={{ gap: spacing.sm }}>

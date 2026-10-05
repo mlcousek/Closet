@@ -87,7 +87,8 @@ export default function CalendarScreen() {
             {week.map((day, column) => {
               if (!day) return <View key={column} style={{ flex: 1 }} />;
               const entries = byDay?.get(day) ?? [];
-              const outfit = entries[0] ? outfitsById.get(entries[0].outfitId) : undefined;
+              const live = entries.filter((entry) => outfitsById.has(entry.outfitId));
+              const outfit = live[0] ? outfitsById.get(live[0].outfitId) : undefined;
               const isSelected = day === selected;
               return (
                 <Pressable
@@ -115,7 +116,7 @@ export default function CalendarScreen() {
                   >
                     {fromDay(day).getDate()}
                   </AppText>
-                  <View style={{ flex: 1, opacity: entries[0]?.state === 'planned' ? 0.55 : 1 }}>
+                  <View style={{ flex: 1, opacity: live[0]?.state === 'planned' ? 0.55 : 1 }}>
                     {outfit ? (
                       <OutfitImage
                         items={outfit.entries.map((entry) => entry.item)}
@@ -123,14 +124,14 @@ export default function CalendarScreen() {
                       />
                     ) : null}
                   </View>
-                  {entries.length > 1 ? (
+                  {live.length > 1 ? (
                     <AppText
                       testID={`calendar-more-${day}`}
                       variant="caption"
                       muted
                       style={{ textAlign: 'center' }}
                     >
-                      +{entries.length - 1}
+                      +{live.length - 1}
                     </AppText>
                   ) : null}
                 </Pressable>

@@ -60,13 +60,14 @@ export function createCalendarRepository(
       .where(and(eq(outfitItems.outfitId, entry.outfitId), isNull(items.deletedAt)))
       .all()
       .map((row) => row.id);
-    db().delete(wearEvents).where(eq(wearEvents.entryId, entry.id)).run();
-    if (itemIds.length > 0) {
-      db()
-        .insert(wearEvents)
-        .values(itemIds.map((itemId) => ({ entryId: entry.id, itemId, day: entry.day })))
-        .run();
-    }
+    db().transaction((tx) => {
+      tx.delete(wearEvents).where(eq(wearEvents.entryId, entry.id)).run();
+      if (itemIds.length > 0) {
+        tx.insert(wearEvents)
+          .values(itemIds.map((itemId) => ({ entryId: entry.id, itemId, day: entry.day })))
+          .run();
+      }
+    });
   };
 
   const clearWear = (entryId: string) =>

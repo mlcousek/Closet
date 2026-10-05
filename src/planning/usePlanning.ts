@@ -5,7 +5,7 @@ import { useOutfits } from '@/outfits/useOutfits';
 
 import { calendarRepository, type CalendarEntry } from './calendar';
 import { addDays, today, type Day } from './dates';
-import { resolvePlace, weatherStore } from './settings';
+import { getChosenCity, resolvePlace, weatherStore } from './settings';
 import { RULES, dayProfile, suggest, type DayProfile, type Suggestion } from './suggestions';
 import { loadWeather, type DayWeather, type WeatherResult } from './weather';
 
@@ -81,17 +81,18 @@ export function useSuggestions(day: Day): {
   const { data: outfits, isPending: outfitsPending } = useOutfits({});
   const { data: owned, isPending: itemsPending } = useItems({});
   const { data: history } = useQuery({
-    queryKey: [CALENDAR, 'history', today()],
+    queryKey: [CALENDAR, 'history', today(), owned?.length ?? 0],
     queryFn: async () => {
       const recent = await calendarRepository.recentlyWorn(addDays(today(), -RULES.recentDays));
       return {
         recentOutfitIds: recent.outfitIds,
         recentItemIds: recent.itemIds,
-        wearCounts: new Map<string, number>(),
+        wearCounts: await calendarRepository.wearCounts((owned ?? []).map((item) => item.id)),
       };
     },
   });
-  const southern = (weather?.weather?.place.latitude ?? 1) < 0;
+  // Without weather the chosen city still says which hemisphere the seasons follow.
+  const southern = (weather?.weather?.place.latitude ?? getChosenCity()?.latitude ?? 1) < 0;
   const profile = dayProfile(day, weatherFor(weather, day), southern);
   return {
     profile,

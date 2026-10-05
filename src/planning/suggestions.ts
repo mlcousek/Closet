@@ -38,8 +38,6 @@ export const RULES = {
   score: {
     base: 100,
     perWarmthStep: 18,
-    // Large enough that an outfit without the outer layer a day needs is never suggested.
-    missingOuter: 50,
     unneededOuter: 30,
     wrongSeason: 20,
     wornRecently: 40,
@@ -127,6 +125,9 @@ export function reasonFor(profile: DayProfile): Reason {
   return (['hot', 'warm', 'mild', 'cool', 'cold'] as const)[profile.band - 1];
 }
 
+/** The score of an outfit that breaks a hard rule for the day. */
+export const UNSUITABLE = -Infinity;
+
 /** Scores a set of pieces for a day. Higher is better; below the threshold is unsuitable. */
 export function scoreItems(
   items: Item[],
@@ -146,11 +147,13 @@ export function scoreItems(
     // An outer layer makes up for lighter pieces underneath.
     const effective = hasOuter ? average + 0.5 : average;
     score -= Math.abs(effective - profile.band) * weights.perWarmthStep;
-    // Hard limits: nothing light alone on a cold day, nothing warm on a hot day.
-    if (profile.band >= 4 && body.every((item) => warmthOf(item) <= 2) && !hasOuter) score -= 60;
-    if (profile.band === 1 && items.some((item) => warmthOf(item) >= 4)) score -= 60;
+    // Hard limits, which no bonus can outweigh: nothing made only of light pieces on a cold
+    // day, with or without a coat over it, and nothing warm on a hot day.
+    if (profile.band >= 4 && body.every((item) => warmthOf(item) <= 2)) return UNSUITABLE;
+    if (profile.band === 1 && items.some((item) => warmthOf(item) >= 4)) return UNSUITABLE;
   }
-  if (profile.needsOuter && !hasOuter) score -= weights.missingOuter;
+  // A day that needs an outer layer never gets an outfit without one.
+  if (profile.needsOuter && !hasOuter) return UNSUITABLE;
   if (!profile.needsOuter && hasOuter && profile.band <= 2) score -= weights.unneededOuter;
 
   const tagged = [...(extra.seasons ?? []), ...items.flatMap((item) => item.seasons)];
@@ -338,7 +341,8 @@ export function suggest(input: {
   );
   const all = [...saved, ...generated.sort((a, b) => b.score - a.score)].slice(0, limit);
   // A closet without outerwear still deserves a suggestion on a cold day.
-  if (all.length === 0 && profile.needsOuter) {
+  const hasOuterwear = owned.some((item) => item.ownership === 'owned' && slotOf(item) === 'outer');
+  if (all.length === 0 && profile.needsOuter && !hasOuterwear) {
     return suggest({ ...input, profile: { ...profile, needsOuter: false } });
   }
   return all;

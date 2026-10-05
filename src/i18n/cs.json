@@ -579,7 +579,8 @@
       "cold": "Teplé kousky a kabát do zimy ({{temperature}})",
       "rain": "Se svrchní vrstvou do deště ({{temperature}})",
       "season": "Vybráno podle ročního období, protože chybí předpověď"
-    }
+    },
+    "deletedOutfit": "Outfit, který byl mezitím smazán."
   },
   "weather": {
     "title": "Počasí",

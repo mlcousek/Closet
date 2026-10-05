@@ -579,7 +579,8 @@
       "cold": "Warm pieces and a coat for the cold ({{temperature}})",
       "rain": "With an outer layer for the rain ({{temperature}})",
       "season": "Chosen for the season, because there is no forecast"
-    }
+    },
+    "deletedOutfit": "An outfit that has since been deleted."
   },
   "weather": {
     "title": "Weather",

@@ -531,6 +531,22 @@ describe('suggestions', () => {
     expect(suggestions[0].reason).toBe('rain');
   });
 
+  it('never lets a favourite without a coat, or light pieces under a coat, through on a cold wet day', () => {
+    const lovedNoCoat = outfitOf('loved-no-coat', [jumper, woolTrousers, sneakers], {
+      favourite: true,
+    });
+    const lightUnderCoat = outfitOf('light-under-coat', [tank, shorts, coat], { favourite: true });
+    const ids = suggest({
+      day: '2026-12-02',
+      profile: coldWet,
+      outfits: [lovedNoCoat, lightUnderCoat, winterLook],
+      owned: closet,
+    }).map((suggestion) => suggestion.outfit?.id);
+    expect(ids).toContain('winter');
+    expect(ids).not.toContain('loved-no-coat');
+    expect(ids).not.toContain('light-under-coat');
+  });
+
   it('on a hot day suggests nothing with warm pieces', () => {
     const suggestions = suggest({ day: '2026-07-15', profile: hot, outfits: all, owned: closet });
     expect(suggestions[0].outfit?.id).toBe('summer');

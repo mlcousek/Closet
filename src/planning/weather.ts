@@ -108,6 +108,7 @@ export async function fetchWeather(
     'daily=apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,weather_code',
     'timezone=auto',
     'forecast_days=14',
+    'past_days=1',
   ].join('&');
   const response = await fetchImpl(`https://api.open-meteo.com/v1/forecast?${query}`);
   if (!response.ok) throw new Error('Weather request failed');
