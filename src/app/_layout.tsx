@@ -50,6 +50,12 @@ export default function RootLayout() {
             <Stack.Screen name="item/link" options={{ title: t('linkImport.title') }} />
             <Stack.Screen name="import/index" options={{ title: t('importFlow.title') }} />
             <Stack.Screen name="import/review" options={{ title: t('importFlow.reviewTitle') }} />
+            <Stack.Screen name="outfit/[id]" options={{ title: t('outfits.title') }} />
+            <Stack.Screen
+              name="outfit/edit"
+              // The editor asks before discarding changes, which a swipe back would skip.
+              options={{ title: t('outfitEditor.newTitle'), gestureEnabled: false }}
+            />
             <Stack.Screen name="settings/index" options={{ title: t('settings.title') }} />
             <Stack.Screen name="settings/ai-keys" options={{ title: t('ai.title') }} />
           </Stack>

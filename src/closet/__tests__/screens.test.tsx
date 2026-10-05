@@ -150,6 +150,12 @@ jest.mock('@/ai/client', () => {
   return { AiUnavailableError };
 });
 
+const mockCountUsing = jest.fn(async (_ids: string[]) => 0);
+jest.mock('@/outfits/repository', () => ({
+  outfitRepository: { countUsing: (ids: string[]) => mockCountUsing(ids) },
+}));
+jest.mock('@/outfits/useOutfits', () => ({ useInvalidateOutfits: () => async () => {} }));
+
 const mockPickPhoto = jest.fn();
 jest.mock('@/profile/photo', () => ({ pickPhoto: (source: string) => mockPickPhoto(source) }));
 
@@ -292,7 +298,9 @@ describe('closet screen', () => {
 
     fireEvent.press(screen.getByTestId('selection-delete'));
 
+    await waitFor(() => expect(alert).toHaveBeenCalled());
     expect(alert.mock.calls[0][0]).toBe('Delete 3 items?');
+    expect(alert.mock.calls[0][1]).not.toMatch(/Outfits using/);
     await waitFor(() => expect(mockRepo.remove).toHaveBeenCalledWith(['shirt', 'skirt', 'boots']));
     expect(await screen.findByText('Your closet is empty')).toBeTruthy();
   });
@@ -638,6 +646,29 @@ describe('item detail', () => {
     expect(useToast.getState().toast).toMatchObject({
       message: 'Item deleted',
       actionLabel: 'Undo',
+    });
+  });
+
+  it('warns how many outfits are affected before deleting a used item', async () => {
+    mockItems = [full];
+    mockParams = { id: 'coat' };
+    mockCountUsing.mockResolvedValueOnce(2);
+    const alert = confirmAlerts();
+    renderWithQuery(<ItemScreen />);
+    fireEvent.press(await screen.findByTestId('item-delete'));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    expect(alert.mock.calls[0][1]).toMatch(/Outfits using this item: 2/);
+    expect(mockCountUsing).toHaveBeenCalledWith(['coat']);
+  });
+
+  it('starts an outfit from the item', async () => {
+    mockItems = [full];
+    mockParams = { id: 'coat' };
+    renderWithQuery(<ItemScreen />);
+    fireEvent.press(await screen.findByTestId('item-create-outfit'));
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/outfit/edit',
+      params: { itemId: 'coat' },
     });
   });
 

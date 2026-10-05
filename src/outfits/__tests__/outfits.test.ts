@@ -1,0 +1,631 @@
+import { TryOnError, createGeminiProvider, readGeminiImage, tryOnPrompt } from '@/ai/tryOn';
+import { createItemRepository } from '@/closet/repository';
+import type { Slot } from '@/closet/taxonomy';
+import type { ItemDetails } from '@/closet/types';
+import { createTestDb } from '@/db/testing';
+
+import {
+  EDITOR_SLOTS,
+  addRow,
+  draftFromItem,
+  draftFromPieces,
+  draftPieces,
+  emptyDraft,
+  isDraftEmpty,
+  isSlotActive,
+  removeRow,
+  sameOutfit,
+  select,
+  setHidden,
+  shuffle,
+} from '../draft';
+import { createOutfitRepository } from '../repository';
+import { RenderFailedError, createRenderQueue } from '../renderQueue';
+import { createRenderRepository, createUsageLog, fingerprint, summariseRenders } from '../renders';
+
+jest.mock('expo-crypto', () => ({ randomUUID: () => require('node:crypto').randomUUID() }));
+jest.mock('expo-sqlite', () => ({}));
+jest.mock('@/db/settings', () => ({ getSetting: () => null, setSetting: jest.fn() }));
+
+const details = (patch: Partial<ItemDetails> = {}): ItemDetails => ({
+  name: null,
+  category: 'tops',
+  subcategory: null,
+  colours: [],
+  seasons: [],
+  occasions: [],
+  warmth: null,
+  brand: null,
+  size: null,
+  price: null,
+  currency: null,
+  purchasedAt: null,
+  notes: null,
+  sourceUrl: null,
+  ...patch,
+});
+const images = {
+  originalPath: 'images/items/o.jpg',
+  cutoutPath: null,
+  thumbPath: 'images/items/t.jpg',
+};
+
+describe('outfit draft rules', () => {
+  it('starts empty and cannot be saved empty', () => {
+    expect(isDraftEmpty(emptyDraft())).toBe(true);
+    expect(draftPieces(emptyDraft())).toEqual([]);
+  });
+
+  it('collects the chosen pieces by slot', () => {
+    let draft = select(emptyDraft(), 'top', 0, 'shirt');
+    draft = select(draft, 'bottom', 0, 'skirt');
+    draft = select(draft, 'shoes', 0, 'boots');
+    expect(draftPieces(draft)).toEqual([
+      { itemId: 'shirt', slot: 'top', position: 0 },
+      { itemId: 'skirt', slot: 'bottom', position: 0 },
+      { itemId: 'boots', slot: 'shoes', position: 0 },
+    ]);
+  });
+
+  it('clears top and bottom when a full-body piece is chosen, and marks them as not needed', () => {
+    let draft = select(emptyDraft(), 'top', 0, 'shirt');
+    draft = select(draft, 'bottom', 0, 'skirt');
+    draft = select(draft, 'fullBody', 0, 'dress');
+    expect(draftPieces(draft)).toEqual([{ itemId: 'dress', slot: 'fullBody', position: 0 }]);
+    expect(isSlotActive(draft, 'top')).toBe(false);
+    expect(isSlotActive(draft, 'bottom')).toBe(false);
+  });
+
+  it('drops the full-body piece when a top is chosen afterwards', () => {
+    let draft = select(emptyDraft(), 'fullBody', 0, 'dress');
+    draft = select(draft, 'top', 0, 'shirt');
+    expect(draftPieces(draft)).toEqual([{ itemId: 'shirt', slot: 'top', position: 0 }]);
+  });
+
+  it('allows several pieces only in layering slots', () => {
+    let draft = select(emptyDraft(), 'accessory', 0, 'scarf');
+    draft = addRow(draft, 'accessory');
+    draft = select(draft, 'accessory', 1, 'hat');
+    expect(draftPieces(draft).map((piece) => [piece.itemId, piece.position])).toEqual([
+      ['scarf', 0],
+      ['hat', 1],
+    ]);
+    expect(addRow(draft, 'shoes')).toBe(draft);
+    expect(addRow(draft, 'bag')).toBe(draft);
+  });
+
+  it('does not let the same piece be worn twice', () => {
+    let draft = select(emptyDraft(), 'top', 0, 'shirt');
+    draft = addRow(draft, 'top');
+    expect(select(draft, 'top', 1, 'shirt')).toBe(draft);
+  });
+
+  it('removes an extra row but always keeps one', () => {
+    let draft = addRow(select(emptyDraft(), 'top', 0, 'shirt'), 'top');
+    draft = select(draft, 'top', 1, 'vest');
+    draft = removeRow(draft, 'top', 0);
+    expect(draft.rows.top).toEqual(['vest']);
+    expect(removeRow(draft, 'top', 0).rows.top).toEqual([null]);
+  });
+
+  it('leaves a hidden slot out and restores it when shown again', () => {
+    let draft = select(emptyDraft(), 'shoes', 0, 'boots');
+    draft = setHidden(draft, 'shoes', true);
+    expect(draftPieces(draft)).toEqual([]);
+    draft = setHidden(draft, 'shoes', false);
+    expect(draftPieces(draft)).toEqual([{ itemId: 'boots', slot: 'shoes', position: 0 }]);
+  });
+
+  it('opens with a closet item in its slot', () => {
+    expect(draftPieces(draftFromItem({ id: 'd1', category: 'dresses' }))).toEqual([
+      { itemId: 'd1', slot: 'fullBody', position: 0 },
+    ]);
+    expect(draftPieces(draftFromItem({ id: 'n1', category: 'jewellery' }))[0].slot).toBe(
+      'accessory',
+    );
+  });
+
+  it('round-trips saved pieces and detects changes', () => {
+    const pieces = [
+      { itemId: 'coat', slot: 'outer' as const, position: 0 },
+      { itemId: 'shirt', slot: 'top' as const, position: 0 },
+      { itemId: 'vest', slot: 'top' as const, position: 1 },
+      { itemId: 'boots', slot: 'shoes' as const, position: 0 },
+    ];
+    const draft = draftFromPieces(pieces);
+    expect(draftPieces(draft)).toEqual(pieces);
+    expect(sameOutfit(draft, draftFromPieces(pieces))).toBe(true);
+    expect(sameOutfit(draft, select(draft, 'shoes', 0, 'sandals'))).toBe(false);
+    // Hiding an empty slot is not a change to the outfit.
+    expect(sameOutfit(draft, setHidden(draft, 'bag', true))).toBe(true);
+  });
+
+  it('shuffles only among the items of each slot and respects the slot rules', () => {
+    const offered = Object.fromEntries(
+      EDITOR_SLOTS.map((slot) => [slot, [{ id: `${slot}-a` }, { id: `${slot}-b` }]]),
+    ) as Record<Slot, { id: string }[]>;
+    for (const value of [0, 0.29, 0.31, 0.6, 0.99]) {
+      const pieces = draftPieces(shuffle(emptyDraft(), offered, () => value));
+      expect(pieces.length).toBeGreaterThan(0);
+      for (const piece of pieces) expect(piece.itemId.startsWith(`${piece.slot}-`)).toBe(true);
+      const slots = pieces.map((piece) => piece.slot);
+      const hasDress = slots.includes('fullBody');
+      expect(hasDress && (slots.includes('top') || slots.includes('bottom'))).toBe(false);
+      expect(slots.filter((slot) => slot === 'shoes')).toHaveLength(1);
+    }
+  });
+
+  it('gives the same shuffle for the same random source and skips hidden slots', () => {
+    const offered = Object.fromEntries(
+      EDITOR_SLOTS.map((slot) => [slot, [{ id: `${slot}-a` }, { id: `${slot}-b` }]]),
+    ) as Record<Slot, { id: string }[]>;
+    const hidden = setHidden(emptyDraft(), 'bag', true);
+    const first = draftPieces(shuffle(hidden, offered, () => 0.5));
+    expect(draftPieces(shuffle(hidden, offered, () => 0.5))).toEqual(first);
+    expect(first.some((piece) => piece.slot === 'bag')).toBe(false);
+  });
+});
+
+const setupDb = async () => {
+  const { db } = await createTestDb();
+  let clock = 1000;
+  const now = () => clock++;
+  const items = createItemRepository(() => db, now);
+  const outfits = createOutfitRepository(() => db, now);
+  const renders = createRenderRepository(() => db, now);
+  const shirt = await items.create(details({ name: 'Shirt', category: 'tops' }), images);
+  const skirt = await items.create(details({ name: 'Skirt', category: 'bottoms' }), images);
+  const boots = await items.create(details({ name: 'Boots', category: 'shoes' }), images);
+  const pieces = [
+    { itemId: shirt.id, slot: 'top' as const, position: 0 },
+    { itemId: skirt.id, slot: 'bottom' as const, position: 0 },
+    { itemId: boots.id, slot: 'shoes' as const, position: 0 },
+  ];
+  return { db, now, items, outfits, renders, shirt, skirt, boots, pieces };
+};
+
+describe('outfit repository', () => {
+  it('stores an outfit with its pieces in editor order', async () => {
+    const { outfits, pieces, shirt, skirt, boots } = await setupDb();
+    const outfit = await outfits.create([...pieces].reverse(), { name: 'Friday' });
+    expect(outfit.name).toBe('Friday');
+    expect(outfit.entries.map((entry) => [entry.item.id, entry.slot])).toEqual([
+      [shirt.id, 'top'],
+      [skirt.id, 'bottom'],
+      [boots.id, 'shoes'],
+    ]);
+    expect((await outfits.list()).map((entry) => entry.id)).toEqual([outfit.id]);
+  });
+
+  it('refuses an outfit without pieces', async () => {
+    const { outfits, pieces } = await setupDb();
+    await expect(outfits.create([])).rejects.toThrow();
+    const outfit = await outfits.create(pieces);
+    await expect(outfits.setPieces(outfit.id, [])).rejects.toThrow();
+  });
+
+  it('replaces the pieces of an outfit', async () => {
+    const { outfits, pieces, shirt } = await setupDb();
+    const outfit = await outfits.create(pieces);
+    const updated = await outfits.setPieces(outfit.id, [pieces[0]]);
+    expect(updated!.entries.map((entry) => entry.item.id)).toEqual([shirt.id]);
+  });
+
+  it('filters by favourite, season and occasion', async () => {
+    const { outfits, pieces } = await setupDb();
+    const summer = await outfits.create(pieces, { seasons: ['summer'], occasions: ['party'] });
+    const work = await outfits.create(pieces, { occasions: ['work'], favourite: true });
+    const ids = async (filter: Parameters<typeof outfits.list>[0]) =>
+      (await outfits.list(filter)).map((outfit) => outfit.id);
+    expect(await ids({ favourite: true })).toEqual([work.id]);
+    expect(await ids({ season: 'summer' })).toEqual([summer.id]);
+    expect(await ids({ occasion: 'work' })).toEqual([work.id]);
+    expect(await ids({ season: 'summer', occasion: 'work' })).toEqual([]);
+    expect(await ids({})).toEqual([work.id, summer.id]);
+  });
+
+  it('renames, marks as favourite and duplicates', async () => {
+    const { outfits, pieces } = await setupDb();
+    const outfit = await outfits.create(pieces, { name: 'Friday', favourite: true });
+    await outfits.updateInfo(outfit.id, { name: 'Saturday' });
+    const copy = await outfits.duplicate(outfit.id);
+    expect(copy).toMatchObject({ name: 'Saturday', favourite: false });
+    expect(copy!.id).not.toBe(outfit.id);
+    expect(copy!.entries.map((entry) => entry.item.id)).toEqual(
+      outfit.entries.map((entry) => entry.item.id),
+    );
+  });
+
+  it('deletes an outfit without touching its items, and restores it on undo', async () => {
+    const { outfits, items, pieces } = await setupDb();
+    const outfit = await outfits.create(pieces);
+    await outfits.remove(outfit.id);
+    expect(await outfits.list()).toEqual([]);
+    expect(await items.count()).toBe(3);
+    await outfits.restore(outfit.id);
+    expect((await outfits.get(outfit.id))!.entries).toHaveLength(3);
+  });
+
+  it('counts the outfits that use an item', async () => {
+    const { outfits, pieces, shirt, boots } = await setupDb();
+    const first = await outfits.create(pieces);
+    await outfits.create([pieces[0]]);
+    expect(await outfits.countUsing([shirt.id])).toBe(2);
+    expect(await outfits.countUsing([boots.id])).toBe(1);
+    expect(await outfits.countUsing([shirt.id, boots.id])).toBe(2);
+    await outfits.remove(first.id);
+    expect(await outfits.countUsing([boots.id])).toBe(0);
+  });
+
+  it('drops a deleted item from outfits and brings it back when the delete is undone', async () => {
+    const { outfits, items, pieces, shirt } = await setupDb();
+    const outfit = await outfits.create(pieces);
+    await items.remove([shirt.id]);
+    expect((await outfits.get(outfit.id))!.entries).toHaveLength(2);
+    await items.restore([shirt.id]);
+    expect((await outfits.get(outfit.id))!.entries).toHaveLength(3);
+  });
+
+  it('keeps an archived item in its outfits, marked as archived', async () => {
+    const { outfits, items, pieces, shirt } = await setupDb();
+    const outfit = await outfits.create(pieces);
+    await items.archive([shirt.id]);
+    const entry = (await outfits.get(outfit.id))!.entries.find(
+      (candidate) => candidate.item.id === shirt.id,
+    );
+    expect(entry?.item.ownership).toBe('archived');
+  });
+});
+
+describe('renders', () => {
+  it('builds a fingerprint that ignores item order and changes with the avatar or pieces', () => {
+    expect(fingerprint('a.jpg', ['2', '1'])).toBe(fingerprint('a.jpg', ['1', '2']));
+    expect(fingerprint('a.jpg', ['1', '2'])).not.toBe(fingerprint('b.jpg', ['1', '2']));
+    expect(fingerprint('a.jpg', ['1', '2'])).not.toBe(fingerprint('a.jpg', ['1']));
+  });
+
+  it('summarises what to show for an outfit', async () => {
+    const { renders } = await setupDb();
+    const done = { imagePath: 'r1.png', thumbPath: 'r1-t.jpg', provider: 'gemini' };
+
+    expect(summariseRenders([], 'fp')).toMatchObject({
+      current: null,
+      pending: null,
+      failed: null,
+    });
+
+    const first = await renders.enqueue('o1', 'fp');
+    expect(summariseRenders(await renders.forOutfit('o1'), 'fp').pending?.id).toBe(first.id);
+
+    await renders.markDone(first.id, done);
+    let summary = summariseRenders(await renders.forOutfit('o1'), 'fp');
+    expect(summary).toMatchObject({ pending: null, failed: null, outdated: false });
+    expect(summary.current?.imagePath).toBe('r1.png');
+
+    // A regenerate that fails keeps the previous render on show.
+    const second = await renders.enqueue('o1', 'fp');
+    await renders.markFailed(second.id, 'declined');
+    summary = summariseRenders(await renders.forOutfit('o1'), 'fp');
+    expect(summary.current?.id).toBe(first.id);
+    expect(summary.failed?.failure).toBe('declined');
+
+    // A regenerate that succeeds becomes current, with the old one to step back to.
+    const third = await renders.enqueue('o1', 'fp');
+    await renders.markDone(third.id, { ...done, imagePath: 'r3.png' });
+    summary = summariseRenders(await renders.forOutfit('o1'), 'fp');
+    expect(summary.current?.imagePath).toBe('r3.png');
+    expect(summary.previous?.id).toBe(first.id);
+    expect(summary.failed).toBeNull();
+
+    // The avatar changed, or a piece was removed: the render is kept but outdated.
+    expect(summariseRenders(await renders.forOutfit('o1'), 'other').outdated).toBe(true);
+    expect(summariseRenders(await renders.forOutfit('o1'), null).outdated).toBe(false);
+  });
+
+  it('counts usage for the current month and in total', async () => {
+    const { db } = await setupDb();
+    let time = new Date(2026, 8, 20).getTime();
+    const usage = createUsageLog(
+      () => db,
+      () => time,
+    );
+    await usage.record('render');
+    time = new Date(2026, 9, 2).getTime();
+    await usage.record('render');
+    await usage.record('render');
+    await usage.record('studio');
+    expect(await usage.counts('render')).toEqual({ month: 2, total: 3 });
+    expect(await usage.counts('studio')).toEqual({ month: 1, total: 1 });
+    expect(await usage.counts('tag')).toEqual({ month: 0, total: 0 });
+  });
+});
+
+describe('render queue', () => {
+  const result = { imagePath: 'r.png', thumbPath: 'r-t.jpg', provider: 'gemini' };
+  const outfit = { id: 'o1', itemIds: ['a', 'b'] };
+
+  it('renders after a request and reports the result', async () => {
+    const { renders } = await setupDb();
+    const run = jest.fn(async () => result);
+    const onChange = jest.fn();
+    const queue = createRenderQueue({ renders, run, onChange });
+
+    const outcome = await queue.request(outfit, 'avatar.jpg');
+    expect(outcome.kind).toBe('queued');
+    await queue.start();
+
+    expect(run).toHaveBeenCalledTimes(1);
+    const [render] = await renders.forOutfit('o1');
+    expect(render).toMatchObject({ status: 'done', imagePath: 'r.png' });
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it('reuses a finished render when the pieces and avatar are unchanged', async () => {
+    const { renders } = await setupDb();
+    const run = jest.fn(async () => result);
+    const queue = createRenderQueue({ renders, run });
+    await queue.request(outfit, 'avatar.jpg');
+    await queue.start();
+
+    const again = await queue.request({ id: 'o1', itemIds: ['b', 'a'] }, 'avatar.jpg');
+    await queue.start();
+    expect(again.kind).toBe('reused');
+    expect(run).toHaveBeenCalledTimes(1);
+
+    // Another outfit made of the same pieces gets the same picture without a new request.
+    const other = await queue.request({ id: 'o2', itemIds: ['a', 'b'] }, 'avatar.jpg');
+    expect(other.kind).toBe('reused');
+    expect((await renders.forOutfit('o2'))[0]).toMatchObject({
+      status: 'done',
+      imagePath: 'r.png',
+    });
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders again when the pieces or the avatar changed, or when forced', async () => {
+    const { renders } = await setupDb();
+    const run = jest.fn(async () => result);
+    const queue = createRenderQueue({ renders, run });
+    await queue.request(outfit, 'avatar.jpg');
+    await queue.start();
+
+    expect((await queue.request({ id: 'o1', itemIds: ['a'] }, 'avatar.jpg')).kind).toBe('queued');
+    await queue.start();
+    expect((await queue.request(outfit, 'studio.jpg')).kind).toBe('queued');
+    await queue.start();
+    expect((await queue.request(outfit, 'avatar.jpg', true)).kind).toBe('queued');
+    await queue.start();
+    expect(run).toHaveBeenCalledTimes(4);
+  });
+
+  it('does nothing without an avatar or without pieces', async () => {
+    const { renders } = await setupDb();
+    const run = jest.fn(async () => result);
+    const queue = createRenderQueue({ renders, run });
+    expect(await queue.request(outfit, null)).toEqual({ kind: 'skipped', reason: 'noAvatar' });
+    expect(await queue.request({ id: 'o1', itemIds: [] }, 'a.jpg')).toEqual({
+      kind: 'skipped',
+      reason: 'empty',
+    });
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it('records why a render failed and never retries by itself', async () => {
+    const { renders } = await setupDb();
+    const run = jest.fn(async () => {
+      throw new RenderFailedError('declined');
+    });
+    const queue = createRenderQueue({ renders, run });
+    await queue.request(outfit, 'avatar.jpg');
+    await queue.start();
+    await queue.start();
+
+    expect(run).toHaveBeenCalledTimes(1);
+    expect((await renders.forOutfit('o1'))[0]).toMatchObject({
+      status: 'failed',
+      failure: 'declined',
+    });
+  });
+
+  it('keeps the previous render when a regenerate fails', async () => {
+    const { renders } = await setupDb();
+    let fail = false;
+    const queue = createRenderQueue({
+      renders,
+      run: async () => {
+        if (fail) throw new RenderFailedError('timeout');
+        return result;
+      },
+    });
+    await queue.request(outfit, 'avatar.jpg');
+    await queue.start();
+    fail = true;
+    await queue.request(outfit, 'avatar.jpg', true);
+    await queue.start();
+
+    const summary = summariseRenders(
+      await renders.forOutfit('o1'),
+      fingerprint('avatar.jpg', ['a', 'b']),
+    );
+    expect(summary.current?.imagePath).toBe('r.png');
+    expect(summary.failed?.failure).toBe('timeout');
+  });
+
+  it('does not queue the same outfit twice while one render is waiting', async () => {
+    const { renders } = await setupDb();
+    let release: (value: typeof result) => void = () => {};
+    const run = jest.fn(() => new Promise<typeof result>((resolve) => (release = resolve)));
+    const queue = createRenderQueue({ renders, run });
+    await queue.request(outfit, 'avatar.jpg');
+    await queue.request(outfit, 'avatar.jpg');
+    expect(await renders.forOutfit('o1')).toHaveLength(1);
+    release(result);
+    await queue.start();
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs one render at a time', async () => {
+    const { renders } = await setupDb();
+    let active = 0;
+    let peak = 0;
+    const queue = createRenderQueue({
+      renders,
+      run: async () => {
+        active++;
+        peak = Math.max(peak, active);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        active--;
+        return result;
+      },
+    });
+    await queue.request({ id: 'o1', itemIds: ['a'] }, 'avatar.jpg');
+    await queue.request({ id: 'o2', itemIds: ['b'] }, 'avatar.jpg');
+    await queue.request({ id: 'o3', itemIds: ['c'] }, 'avatar.jpg');
+    await queue.start();
+    expect(peak).toBe(1);
+  });
+
+  it('on restart fails the interrupted render and continues the waiting ones', async () => {
+    const { renders } = await setupDb();
+    await renders.enqueue('o1', 'fp1');
+    await renders.enqueue('o2', 'fp2');
+    await renders.claimNext(); // o1 was running when the app closed
+    const run = jest.fn(async () => result);
+    const queue = createRenderQueue({ renders, run });
+
+    await queue.resume();
+    await queue.start();
+
+    expect((await renders.forOutfit('o1'))[0]).toMatchObject({
+      status: 'failed',
+      failure: 'interrupted',
+    });
+    expect((await renders.forOutfit('o2'))[0].status).toBe('done');
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('try-on provider', () => {
+  const input = {
+    avatar: { base64: 'AVATAR', mimeType: 'image/jpeg' },
+    pieces: [
+      {
+        slotLabel: 'top',
+        description: 'pink crop top',
+        image: { base64: 'TOP', mimeType: 'image/png' },
+      },
+      {
+        slotLabel: 'bottom',
+        description: 'yellow skirt',
+        image: { base64: 'SKIRT', mimeType: 'image/png' },
+      },
+    ],
+    hints: { gender: 'woman', bodyType: 'average' },
+  };
+  const imageResponse = {
+    candidates: [
+      {
+        content: {
+          parts: [{ text: 'here' }, { inlineData: { mimeType: 'image/png', data: 'OUT' } }],
+        },
+      },
+    ],
+  };
+  const respond = (status: number, body: unknown = imageResponse) =>
+    jest.fn(async () => ({ status, json: async () => body }));
+
+  it('describes every piece and insists on keeping the person and the pieces unchanged', () => {
+    const prompt = tryOnPrompt(input);
+    expect(prompt).toContain('Image 2: top (pink crop top)');
+    expect(prompt).toContain('Image 3: bottom (yellow skirt)');
+    expect(prompt).toContain('average build, woman');
+    expect(prompt).toMatch(/face, hair, skin tone, body shape/);
+    expect(prompt).toMatch(/Do not add any clothing/);
+    expect(tryOnPrompt({ ...input, hints: { gender: null, bodyType: null } })).toContain(
+      'image of the person from image 1',
+    );
+  });
+
+  it('sends the avatar first, then the pieces, with the key in a header', async () => {
+    const fetchMock = respond(200);
+    const provider = createGeminiProvider(fetchMock, () => 'test-model');
+
+    expect(await provider.render(input, 'secret-key')).toEqual({
+      base64: 'OUT',
+      mimeType: 'image/png',
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      { headers: Record<string, string>; body: string },
+    ];
+    expect(url).toContain('/models/test-model:generateContent');
+    expect(url).not.toContain('secret-key');
+    expect(init.headers['x-goog-api-key']).toBe('secret-key');
+    const parts = JSON.parse(init.body).contents[0].parts;
+    expect(
+      parts.slice(1).map((part: { inlineData: { data: string } }) => part.inlineData.data),
+    ).toEqual(['AVATAR', 'TOP', 'SKIRT']);
+  });
+
+  const reasonOf = async (promise: Promise<unknown>) => {
+    try {
+      await promise;
+    } catch (error) {
+      return error instanceof TryOnError ? error.reason : 'not-mapped';
+    }
+    return 'no-error';
+  };
+
+  it.each([
+    [401, 'noKey'],
+    [403, 'noKey'],
+    [429, 'rateLimited'],
+    [400, 'error'],
+    [500, 'error'],
+  ])('maps HTTP %i to %s', async (status, reason) => {
+    const provider = createGeminiProvider(respond(status, {}), () => 'm');
+    expect(await reasonOf(provider.render(input, 'k'))).toBe(reason);
+  });
+
+  it('reports a declined request when the answer has no image', async () => {
+    const blocked = { promptFeedback: { blockReason: 'SAFETY' }, candidates: [] };
+    expect(
+      await reasonOf(createGeminiProvider(respond(200, blocked), () => 'm').render(input, 'k')),
+    ).toBe('declined');
+    expect(() => readGeminiImage({ candidates: [{ finishReason: 'IMAGE_SAFETY' }] })).toThrow(
+      TryOnError,
+    );
+    expect(() => readGeminiImage(null)).toThrow(TryOnError);
+  });
+
+  it('reports no connection and a timeout separately', async () => {
+    const offline = jest.fn(async () => {
+      throw new Error('network');
+    });
+    expect(await reasonOf(createGeminiProvider(offline, () => 'm').render(input, 'k'))).toBe(
+      'offline',
+    );
+
+    const hanging = jest.fn(
+      (_url: string, init: { signal?: AbortSignal }) =>
+        new Promise<never>((_resolve, reject) =>
+          init.signal?.addEventListener('abort', () => reject(new Error('aborted'))),
+        ),
+    );
+    expect(await reasonOf(createGeminiProvider(hanging, () => 'm', 20).render(input, 'k'))).toBe(
+      'timeout',
+    );
+  });
+
+  it('asks for a studio avatar from the photo alone', async () => {
+    const fetchMock = respond(200);
+    const provider = createGeminiProvider(fetchMock, () => 'm');
+    await provider.studioAvatar(input.avatar, input.hints, 'k');
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0] as unknown as [string, { body: string }])[1].body,
+    );
+    expect(body.contents[0].parts).toHaveLength(2);
+    expect(body.contents[0].parts[0].text).toMatch(/studio version/);
+  });
+});

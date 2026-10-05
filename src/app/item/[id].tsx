@@ -14,6 +14,8 @@ import { displayPath, type Item, type ItemDetails } from '@/closet/types';
 import { useInvalidateItems, useItem } from '@/closet/useItems';
 import { AppText, Button, EmptyState, Row, Screen } from '@/components/ui';
 import { formatCurrency, formatDate, formatLocale } from '@/i18n/format';
+import { outfitRepository } from '@/outfits/repository';
+import { useInvalidateOutfits } from '@/outfits/useOutfits';
 import { pickPhoto } from '@/profile/photo';
 import { deleteWithUndo, useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
@@ -24,6 +26,7 @@ function ItemView({ item }: { item: Item }) {
   const router = useRouter();
   const { colors, spacing, radius } = useTheme();
   const invalidateItems = useInvalidateItems();
+  const invalidateOutfits = useInvalidateOutfits();
   const showToast = useToast((state) => state.show);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -73,8 +76,14 @@ function ItemView({ item }: { item: Item }) {
     await invalidateItems();
   };
 
-  const remove = () => {
-    Alert.alert(t('item.deleteTitle'), t('item.deleteMessage'), [
+  const remove = async () => {
+    // Deleting an item also takes it out of the outfits that use it, so say how many.
+    const used = await outfitRepository.countUsing([item.id]);
+    const message =
+      used > 0
+        ? `${t('item.deleteMessage')} ${t('item.deleteUsedMessage', { count: used })}`
+        : t('item.deleteMessage');
+    Alert.alert(t('item.deleteTitle'), message, [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.delete'),
@@ -86,7 +95,10 @@ function ItemView({ item }: { item: Item }) {
             restore: () => itemRepository.restore([item.id]),
             message: t('item.deletedToast'),
             undoLabel: t('common.undo'),
-            onChange: () => void invalidateItems(),
+            onChange: () => {
+              void invalidateItems();
+              void invalidateOutfits();
+            },
           });
         },
       },
@@ -191,6 +203,13 @@ function ItemView({ item }: { item: Item }) {
               onPress={() => setEditing(true)}
             />
             <Button
+              testID="item-create-outfit"
+              kind="secondary"
+              icon="albums-outline"
+              label={t('outfits.createFromItem')}
+              onPress={() => router.push({ pathname: '/outfit/edit', params: { itemId: item.id } })}
+            />
+            <Button
               testID="item-replace-image"
               kind="secondary"
               icon="image-outline"
@@ -219,7 +238,7 @@ function ItemView({ item }: { item: Item }) {
               kind="danger"
               icon="trash-outline"
               label={t('item.delete')}
-              onPress={remove}
+              onPress={() => void remove()}
             />
           </View>
         </>

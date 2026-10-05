@@ -80,6 +80,54 @@ export const migrations: Migration[] = [
       );
     `,
   },
+  {
+    version: 4,
+    sql: `
+      ALTER TABLE profiles ADD COLUMN avatar_studio_path TEXT;
+
+      CREATE TABLE IF NOT EXISTS outfits (
+        id TEXT PRIMARY KEY NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER,
+        name TEXT,
+        notes TEXT,
+        favourite INTEGER NOT NULL DEFAULT 0,
+        seasons TEXT NOT NULL DEFAULT '[]',
+        occasions TEXT NOT NULL DEFAULT '[]'
+      );
+
+      CREATE TABLE IF NOT EXISTS outfit_items (
+        outfit_id TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        slot TEXT NOT NULL,
+        position INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (outfit_id, item_id)
+      );
+      CREATE INDEX IF NOT EXISTS outfit_items_item ON outfit_items (item_id);
+
+      CREATE TABLE IF NOT EXISTS renders (
+        id TEXT PRIMARY KEY NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER,
+        outfit_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'queued',
+        fingerprint TEXT NOT NULL,
+        provider TEXT,
+        image_path TEXT,
+        thumb_path TEXT,
+        error TEXT
+      );
+      CREATE INDEX IF NOT EXISTS renders_outfit ON renders (outfit_id, created_at);
+
+      CREATE TABLE IF NOT EXISTS ai_usage (
+        id TEXT PRIMARY KEY NOT NULL,
+        created_at INTEGER NOT NULL,
+        kind TEXT NOT NULL
+      );
+    `,
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = migrations[migrations.length - 1].version;

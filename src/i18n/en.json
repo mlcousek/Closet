@@ -315,7 +315,8 @@
     "deleteManyMessage": "The items and their photos are removed from your closet.",
     "needsReview": "{{count}} imported items need review",
     "review": "Review",
-    "importRunning": "Importing {{done}} of {{total}}"
+    "importRunning": "Importing {{done}} of {{total}}",
+    "deleteManyUsedMessage": "Outfits using these items: {{count}}. The items are removed from them too."
   },
   "addItem": {
     "menuPhoto": "Take a photo of an item",
@@ -376,7 +377,8 @@
     "deleteMessage": "The item and its photos are removed from your closet.",
     "deletedToast": "Item deleted",
     "notFound": "This item no longer exists.",
-    "added": "Added {{date}}"
+    "added": "Added {{date}}",
+    "deleteUsedMessage": "Outfits using this item: {{count}}. It is removed from them too."
   },
   "importFlow": {
     "title": "Import",
@@ -409,5 +411,89 @@
       "download": "The photo could not be downloaded."
     },
     "fallback": "Add from a photo instead"
+  },
+  "slot": {
+    "outer": "Outer layer",
+    "top": "Tops",
+    "fullBody": "Dresses and jumpsuits",
+    "bottom": "Bottoms",
+    "shoes": "Shoes",
+    "bag": "Bag",
+    "accessory": "Other pieces"
+  },
+  "outfitEditor": {
+    "newTitle": "New outfit",
+    "editTitle": "Edit outfit",
+    "empty": "Pick pieces below to build an outfit.",
+    "shuffle": "Shuffle",
+    "add": "Add",
+    "hide": "Hide",
+    "show": "Show",
+    "notNeeded": "Not needed with a dress or jumpsuit.",
+    "noItems": "Nothing in your closet for this yet. Tap to add an item.",
+    "saved": "Saved look",
+    "discardTitle": "Discard changes?",
+    "discardMessage": "This outfit has changes that are not saved.",
+    "discard": "Discard",
+    "keepEditing": "Keep editing"
+  },
+  "outfits": {
+    "title": "Outfit",
+    "unnamed": "Unnamed outfit",
+    "name": "Name",
+    "favourites": "Favourites",
+    "favourite": "Favourite",
+    "noResultsTitle": "No outfits match",
+    "noResultsMessage": "No saved outfit has these filters.",
+    "pieces": "Pieces ({{count}})",
+    "edit": "Edit pieces",
+    "duplicate": "Duplicate",
+    "delete": "Delete outfit",
+    "deleteTitle": "Delete this outfit?",
+    "deleteMessage": "The outfit is removed. Its pieces stay in your closet.",
+    "deletedToast": "Outfit deleted",
+    "notFound": "This outfit no longer exists.",
+    "menuCreate": "Create an outfit",
+    "createFromItem": "Create an outfit with this"
+  },
+  "tryOn": {
+    "render": "Try it on me",
+    "regenerate": "Regenerate",
+    "inProgress": "Rendering this outfit on you. You can keep using the app.",
+    "outdated": "This picture was made before your photo or the pieces changed. Regenerate to refresh it.",
+    "showPrevious": "Previous picture",
+    "showLatest": "Latest picture",
+    "noAvatar": "Add a full-body photo to see outfits on you.",
+    "addAvatar": "Add photo",
+    "disclosureTitle": "Send images to the image provider?",
+    "disclosureMessage": "To render an outfit on you, your photo and the pictures of the pieces are sent to Google Gemini with your own key. This is asked only once.",
+    "disclosureAccept": "Send and render",
+    "failure": {
+      "noAvatar": "There is no photo of you to render on. Add one in your profile.",
+      "offline": "No connection, so nothing was sent and nothing was charged. Try again when you are online.",
+      "declined": "The provider declined to render this outfit. The flat preview is shown instead.",
+      "rateLimited": "The provider is busy or your quota is used up. Try again later.",
+      "timeout": "The provider took too long to answer. Try again.",
+      "interrupted": "The app was closed before this render finished. Try again.",
+      "error": "The render did not work this time. Try again."
+    },
+    "settingsTitle": "Outfit renders",
+    "autoRender": "Render when I save an outfit",
+    "usage": "{{month}} renders this month · {{total}} in total",
+    "imageModel": "Image model",
+    "textModel": "Text model",
+    "modelHint": "Leave empty to use the default."
+  },
+  "studio": {
+    "title": "Studio photo",
+    "explain": "A studio version of your photo, on a plain background in a neutral pose, makes outfit renders more consistent. Creating one is a single paid request.",
+    "create": "Create studio photo",
+    "creating": "Creating your studio photo…",
+    "review": "Use this as the base for outfit renders?",
+    "accept": "Use this",
+    "reject": "Keep my original photo",
+    "inUse": "Renders use your studio photo.",
+    "remove": "Go back to my original photo",
+    "failed": "The studio photo could not be created."
   }
 }

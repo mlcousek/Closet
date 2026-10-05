@@ -5,6 +5,7 @@ import { Alert, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppText, Button, Field, Screen } from '@/components/ui';
+import { StudioAvatar } from '@/outfits/StudioAvatar';
 import { AvatarPicker } from '@/profile/AvatarPicker';
 import { discardAvatar, storeAvatarAnd } from '@/profile/avatar';
 import { avatarDeps, type PickedPhoto } from '@/profile/photo';
@@ -122,6 +123,8 @@ function EditForm({ profile }: { profile: Profile }) {
           />
         ) : null}
       </View>
+
+      <StudioAvatar profile={profile} />
 
       <View style={{ gap: spacing.sm }}>
         <AppText variant="label" muted>

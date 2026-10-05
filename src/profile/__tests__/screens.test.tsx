@@ -26,6 +26,7 @@ jest.mock('expo-router', () => {
 });
 
 jest.mock('@/closet/ImportIndicator', () => ({ ImportIndicator: () => null }));
+jest.mock('@/outfits/StudioAvatar', () => ({ StudioAvatar: () => null }));
 jest.mock('@/closet/useClosetSetup', () => ({ useClosetSetup: () => {} }));
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
@@ -48,6 +49,7 @@ const mockSave = jest.fn(async (input: Partial<Profile>) => {
     sizeShoes: null,
     avatarPath: null,
     avatarSmallPath: null,
+    avatarStudioPath: null,
     ...mockProfile,
     ...input,
   };
@@ -95,6 +97,7 @@ const fullProfile: Profile = {
   sizeShoes: '38',
   avatarPath: 'images/avatar/old.jpg',
   avatarSmallPath: 'images/avatar/old-small.jpg',
+  avatarStudioPath: null,
 };
 
 beforeEach(() => {

@@ -6,6 +6,7 @@ import { keyManager } from '@/ai/keys';
 import { PROVIDER_IDS, type ProviderId } from '@/ai/providers';
 import { useKeyInfo, useRefreshKeyInfo } from '@/ai/useKeyInfo';
 import { AppText, Button, Screen } from '@/components/ui';
+import { RenderSettings } from '@/outfits/RenderSettings';
 import { useTheme } from '@/theme/useTheme';
 
 function ProviderCard({ provider }: { provider: ProviderId }) {
@@ -159,6 +160,7 @@ export default function AiKeysScreen() {
       {PROVIDER_IDS.map((provider) => (
         <ProviderCard key={provider} provider={provider} />
       ))}
+      <RenderSettings />
     </Screen>
   );
 }

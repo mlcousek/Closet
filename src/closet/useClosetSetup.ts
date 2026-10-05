@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { renderQueue } from '@/outfits/renderActions';
+import { outfitRepository } from '@/outfits/repository';
 import { useAddActions } from '@/shell/addActions';
 
 import { itemImageDeps } from './deviceImages';
@@ -82,15 +84,27 @@ export function useClosetSetup(): void {
         onPress: () => router.push('/item/link'),
       }),
     ];
+    unregister.push(
+      register({
+        id: 'outfit-create',
+        labelKey: 'outfits.menuCreate',
+        icon: 'albums-outline',
+        order: 20,
+        onPress: () => router.push('/outfit/edit'),
+      }),
+    );
     return () => unregister.forEach((remove) => remove());
   }, [register, router, t]);
 
   useEffect(() => {
     setImportListener(() => void invalidateItems(queryClient));
     void resumeImports();
+    void renderQueue.resume();
     void itemRepository
       .purgeDeleted(Date.now() - PURGE_AFTER_MS)
       .then(async (purged) => {
+        // Items that are gone for good no longer belong to any outfit.
+        await outfitRepository.forgetItems(purged.map((item) => item.id));
         for (const item of purged) await removeItemImages(item, itemImageDeps);
       })
       .catch(() => {});

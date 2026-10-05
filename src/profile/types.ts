@@ -23,6 +23,7 @@ export type Profile = {
   sizeShoes: string | null;
   avatarPath: string | null;
   avatarSmallPath: string | null;
+  avatarStudioPath: string | null;
 };
 
 export type ProfileInput = Partial<Omit<Profile, 'id'>>;

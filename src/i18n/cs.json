@@ -315,7 +315,8 @@
     "deleteManyMessage": "Kousky i jejich fotky se odstraní ze šatníku.",
     "needsReview": "Importované kousky ke kontrole: {{count}}",
     "review": "Zkontrolovat",
-    "importRunning": "Import: {{done}} z {{total}}"
+    "importRunning": "Import: {{done}} z {{total}}",
+    "deleteManyUsedMessage": "Outfity s těmito kousky: {{count}}. Kousky se odstraní i z nich."
   },
   "addItem": {
     "menuPhoto": "Vyfotit kousek",
@@ -376,7 +377,8 @@
     "deleteMessage": "Kousek i jeho fotky se odstraní ze šatníku.",
     "deletedToast": "Kousek smazán",
     "notFound": "Tento kousek už neexistuje.",
-    "added": "Přidáno {{date}}"
+    "added": "Přidáno {{date}}",
+    "deleteUsedMessage": "Outfity s tímto kouskem: {{count}}. Odstraní se i z nich."
   },
   "importFlow": {
     "title": "Import",
@@ -409,5 +411,89 @@
       "download": "Fotku se nepodařilo stáhnout."
     },
     "fallback": "Přidat raději z fotky"
+  },
+  "slot": {
+    "outer": "Svrchní vrstva",
+    "top": "Svršky",
+    "fullBody": "Šaty a overaly",
+    "bottom": "Spodní díly",
+    "shoes": "Boty",
+    "bag": "Taška",
+    "accessory": "Další kousky"
+  },
+  "outfitEditor": {
+    "newTitle": "Nový outfit",
+    "editTitle": "Úprava outfitu",
+    "empty": "Vyberte kousky níže a sestavte outfit.",
+    "shuffle": "Zamíchat",
+    "add": "Přidat",
+    "hide": "Skrýt",
+    "show": "Zobrazit",
+    "notNeeded": "Se šaty nebo overalem není potřeba.",
+    "noItems": "V šatníku pro tuto část zatím nic není. Klepnutím přidáte kousek.",
+    "saved": "Outfit uložen",
+    "discardTitle": "Zahodit změny?",
+    "discardMessage": "Tento outfit má neuložené změny.",
+    "discard": "Zahodit",
+    "keepEditing": "Pokračovat v úpravách"
+  },
+  "outfits": {
+    "title": "Outfit",
+    "unnamed": "Outfit bez názvu",
+    "name": "Název",
+    "favourites": "Oblíbené",
+    "favourite": "Oblíbený",
+    "noResultsTitle": "Žádný outfit neodpovídá",
+    "noResultsMessage": "Těmto filtrům neodpovídá žádný uložený outfit.",
+    "pieces": "Kousky ({{count}})",
+    "edit": "Upravit kousky",
+    "duplicate": "Duplikovat",
+    "delete": "Smazat outfit",
+    "deleteTitle": "Smazat tento outfit?",
+    "deleteMessage": "Outfit se odstraní. Jeho kousky zůstanou v šatníku.",
+    "deletedToast": "Outfit smazán",
+    "notFound": "Tento outfit už neexistuje.",
+    "menuCreate": "Vytvořit outfit",
+    "createFromItem": "Vytvořit outfit s tímto kouskem"
+  },
+  "tryOn": {
+    "render": "Vyzkoušet na mně",
+    "regenerate": "Vykreslit znovu",
+    "inProgress": "Outfit se na vás vykresluje. Aplikaci můžete dál používat.",
+    "outdated": "Tento obrázek vznikl, než se změnila vaše fotka nebo kousky. Vykreslete ho znovu, ať je aktuální.",
+    "showPrevious": "Předchozí obrázek",
+    "showLatest": "Nejnovější obrázek",
+    "noAvatar": "Přidejte fotku celé postavy, abyste viděli outfity na sobě.",
+    "addAvatar": "Přidat fotku",
+    "disclosureTitle": "Odeslat obrázky poskytovateli?",
+    "disclosureMessage": "Aby se outfit vykreslil na vás, odešle se vaše fotka a obrázky kousků službě Google Gemini s vaším vlastním klíčem. Ptáme se jen jednou.",
+    "disclosureAccept": "Odeslat a vykreslit",
+    "failure": {
+      "noAvatar": "Chybí vaše fotka, na kterou by se dalo vykreslovat. Přidejte ji v profilu.",
+      "offline": "Bez připojení se nic neodeslalo a nic se neúčtovalo. Zkuste to znovu, až budete online.",
+      "declined": "Poskytovatel odmítl tento outfit vykreslit. Místo toho se zobrazuje plochý náhled.",
+      "rateLimited": "Poskytovatel je vytížený nebo máte vyčerpanou kvótu. Zkuste to později.",
+      "timeout": "Poskytovatel odpovídal příliš dlouho. Zkuste to znovu.",
+      "interrupted": "Aplikace se zavřela dřív, než se vykreslení dokončilo. Zkuste to znovu.",
+      "error": "Vykreslení se tentokrát nepovedlo. Zkuste to znovu."
+    },
+    "settingsTitle": "Vykreslování outfitů",
+    "autoRender": "Vykreslit při uložení outfitu",
+    "usage": "Tento měsíc: {{month}} · Celkem: {{total}}",
+    "imageModel": "Model pro obrázky",
+    "textModel": "Model pro text",
+    "modelHint": "Nechte prázdné pro výchozí model."
+  },
+  "studio": {
+    "title": "Studiová fotka",
+    "explain": "Studiová verze vaší fotky, na jednobarevném pozadí a v neutrálním postoji, dělá vykreslené outfity jednotnější. Její vytvoření je jeden placený požadavek.",
+    "create": "Vytvořit studiovou fotku",
+    "creating": "Vytvářím vaši studiovou fotku…",
+    "review": "Použít ji jako základ pro vykreslování outfitů?",
+    "accept": "Použít",
+    "reject": "Ponechat původní fotku",
+    "inUse": "Vykreslování používá vaši studiovou fotku.",
+    "remove": "Vrátit se k původní fotce",
+    "failed": "Studiovou fotku se nepodařilo vytvořit."
   }
 }

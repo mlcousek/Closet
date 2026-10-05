@@ -25,6 +25,7 @@ import {
 import type { Item, ItemFilter } from '@/closet/types';
 import { useBrands, useInvalidateItems, useItemCount, useItems } from '@/closet/useItems';
 import { AppText, Button, EmptyState, Field, Screen } from '@/components/ui';
+import { outfitRepository } from '@/outfits/repository';
 import { useAddActions } from '@/shell/addActions';
 import { deleteWithUndo, useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
@@ -155,9 +156,15 @@ export default function ClosetScreen() {
     if (!sheet.archived) showToast({ message: t('closet.archivedToast') });
   };
 
-  const deleteSelected = () => {
+  const deleteSelected = async () => {
     const ids = selected;
-    Alert.alert(t('closet.deleteManyTitle', { count: ids.length }), t('closet.deleteManyMessage'), [
+    // Deleting items also takes them out of the outfits that use them, so say how many.
+    const used = await outfitRepository.countUsing(ids);
+    const message =
+      used > 0
+        ? `${t('closet.deleteManyMessage')} ${t('closet.deleteManyUsedMessage', { count: used })}`
+        : t('closet.deleteManyMessage');
+    Alert.alert(t('closet.deleteManyTitle', { count: ids.length }), message, [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.delete'),
@@ -347,7 +354,7 @@ export default function ClosetScreen() {
                 testID="selection-delete"
                 kind="danger"
                 label={t('common.delete')}
-                onPress={deleteSelected}
+                onPress={() => void deleteSelected()}
               />
             </View>
           </View>

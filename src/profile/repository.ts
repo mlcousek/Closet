@@ -18,6 +18,7 @@ function toProfile(row: Row): Profile {
     sizeShoes: row.sizeShoes,
     avatarPath: row.avatarPath,
     avatarSmallPath: row.avatarSmallPath,
+    avatarStudioPath: row.avatarStudioPath,
   };
 }
 
