@@ -1,0 +1,100 @@
+{
+  "common": {
+    "cancel": "Zrušit",
+    "save": "Uložit",
+    "delete": "Smazat",
+    "remove": "Odebrat",
+    "undo": "Vrátit zpět",
+    "confirm": "Potvrdit",
+    "close": "Zavřít",
+    "deleted": "Smazáno",
+    "somethingWentWrong": "Něco se nepovedlo. Zkuste to prosím znovu."
+  },
+  "tabs": {
+    "home": "Domů",
+    "closet": "Šatník",
+    "outfits": "Outfity",
+    "calendar": "Kalendář",
+    "profile": "Profil"
+  },
+  "addMenu": {
+    "open": "Přidat",
+    "title": "Přidat do šatníku",
+    "empty": "Zatím není co přidat. Další možnosti přibudou s příští aktualizací."
+  },
+  "empty": {
+    "home": {
+      "title": "Vítejte ve svém šatníku",
+      "message": "Přidejte pár kousků oblečení a sestavte outfit. Dnešní look se pak objeví tady.",
+      "action": "Přidat první kousek"
+    },
+    "closet": {
+      "title": "Šatník je prázdný",
+      "message": "Tady najdete všechno své oblečení. Začněte tím, že vyfotíte první kousek.",
+      "action": "Přidat první kousek"
+    },
+    "outfits": {
+      "title": "Zatím žádné outfity",
+      "message": "Skládejte kousky ze šatníku do outfitů a prohlédněte si je na sobě.",
+      "action": "Vytvořit outfit"
+    },
+    "calendar": {
+      "title": "Nic naplánováno",
+      "message": "Naplánujte si, co si obléknete, a veďte si přehled, co jste který den měli na sobě.",
+      "action": "Naplánovat outfit"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "settings": "Nastavení"
+  },
+  "settings": {
+    "title": "Nastavení",
+    "language": "Jazyk",
+    "languageSystem": "Podle zařízení",
+    "languageEn": "English",
+    "languageCs": "Čeština",
+    "aiKeys": "Klíče poskytovatelů AI",
+    "backup": "Záloha",
+    "exportBackup": "Exportovat zálohu",
+    "importBackup": "Obnovit ze zálohy",
+    "version": "Verze",
+    "build": "Sestavení {{build}}"
+  },
+  "backup": {
+    "exportFailed": "Zálohu se nepodařilo vytvořit.",
+    "importConfirmTitle": "Nahradit všechna data?",
+    "importConfirmMessage": "Vše, co je teď v aplikaci, bude nahrazeno obsahem zálohy. Tento krok nelze vrátit.",
+    "importConfirmAction": "Nahradit",
+    "importDone": "Záloha byla obnovena.",
+    "importInvalid": "Tento soubor není záloha aplikace Closet. Nic se nezměnilo.",
+    "importNewer": "Tato záloha pochází z novější verze aplikace. Aktualizujte aplikaci a zkuste to znovu."
+  },
+  "ai": {
+    "title": "Klíče poskytovatelů AI",
+    "intro": "Funkce AI používají vaše vlastní účty u poskytovatelů. Klíče jsou uložené jen v klíčence tohoto zařízení a nikdy nejsou součástí záloh.",
+    "providers": {
+      "anthropic": {
+        "name": "Anthropic Claude",
+        "purpose": "Popisuje oblečení z fotek a navrhuje outfity."
+      },
+      "image": {
+        "name": "Google Gemini",
+        "purpose": "Vykresluje outfity na vaší fotce."
+      }
+    },
+    "keyPlaceholder": "Vložte svůj klíč",
+    "saved": "Klíč uložen",
+    "test": "Otestovat",
+    "connected": "Připojeno",
+    "notConnected": "Nepřipojeno",
+    "notTested": "Neotestováno",
+    "rejected": "Poskytovatel tento klíč odmítl. Zkontrolujte, že je zkopírovaný celý a stále platný.",
+    "testFailed": "Poskytovatele se nepodařilo kontaktovat. Zkontrolujte připojení a zkuste to znovu.",
+    "removeConfirmTitle": "Odebrat tento klíč?",
+    "removeConfirmMessage": "Funkce, které tohoto poskytovatele používají, přestanou fungovat, dokud klíč znovu nepřidáte.",
+    "keyNeededTitle": "Je potřeba klíč poskytovatele",
+    "keyNeededMessage": "Tato funkce používá službu {{provider}}. Přidejte svůj klíč v Nastavení.",
+    "openKeySettings": "Otevřít nastavení klíčů"
+  }
+}

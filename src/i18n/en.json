@@ -1,0 +1,100 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "remove": "Remove",
+    "undo": "Undo",
+    "confirm": "Confirm",
+    "close": "Close",
+    "deleted": "Deleted",
+    "somethingWentWrong": "Something went wrong. Please try again."
+  },
+  "tabs": {
+    "home": "Home",
+    "closet": "Closet",
+    "outfits": "Outfits",
+    "calendar": "Calendar",
+    "profile": "Profile"
+  },
+  "addMenu": {
+    "open": "Add",
+    "title": "Add to your closet",
+    "empty": "Nothing can be added yet. More options arrive with the next update."
+  },
+  "empty": {
+    "home": {
+      "title": "Welcome to your closet",
+      "message": "Add a few clothes and build an outfit, and today's look will appear here.",
+      "action": "Add your first item"
+    },
+    "closet": {
+      "title": "Your closet is empty",
+      "message": "This is where all your clothes live. Photograph a piece to get started.",
+      "action": "Add your first item"
+    },
+    "outfits": {
+      "title": "No outfits yet",
+      "message": "Combine pieces from your closet into outfits and see them on you.",
+      "action": "Create an outfit"
+    },
+    "calendar": {
+      "title": "Nothing planned",
+      "message": "Plan what to wear and keep a log of what you wore each day.",
+      "action": "Plan an outfit"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageSystem": "Same as device",
+    "languageEn": "English",
+    "languageCs": "Čeština",
+    "aiKeys": "AI provider keys",
+    "backup": "Backup",
+    "exportBackup": "Export backup",
+    "importBackup": "Restore from backup",
+    "version": "Version",
+    "build": "Build {{build}}"
+  },
+  "backup": {
+    "exportFailed": "The backup could not be created.",
+    "importConfirmTitle": "Replace all data?",
+    "importConfirmMessage": "Everything currently in the app will be replaced by the contents of the backup. This cannot be undone.",
+    "importConfirmAction": "Replace",
+    "importDone": "Backup restored.",
+    "importInvalid": "This file is not a Closet backup. Nothing was changed.",
+    "importNewer": "This backup comes from a newer version of the app. Update the app and try again."
+  },
+  "ai": {
+    "title": "AI provider keys",
+    "intro": "AI features use your own provider accounts. Keys are stored only in this device's keychain and are never included in backups.",
+    "providers": {
+      "anthropic": {
+        "name": "Anthropic Claude",
+        "purpose": "Tags clothes from photos and styles outfits."
+      },
+      "image": {
+        "name": "Google Gemini",
+        "purpose": "Renders outfits on your photo."
+      }
+    },
+    "keyPlaceholder": "Paste your key",
+    "saved": "Key saved",
+    "test": "Test",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "notTested": "Not tested",
+    "rejected": "The provider rejected this key. Check that it was copied completely and is still active.",
+    "testFailed": "The provider could not be reached. Check your connection and try again.",
+    "removeConfirmTitle": "Remove this key?",
+    "removeConfirmMessage": "Features that use this provider will stop working until you add a key again.",
+    "keyNeededTitle": "A provider key is needed",
+    "keyNeededMessage": "This feature uses {{provider}}. Add your key in Settings to use it.",
+    "openKeySettings": "Open key settings"
+  }
+}
