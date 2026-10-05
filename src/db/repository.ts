@@ -14,7 +14,9 @@ type BaseTable = SQLiteTable & {
 type Managed = 'id' | 'createdAt' | 'updatedAt' | 'deletedAt';
 
 export type Repository<T extends BaseTable> = {
-  create(values: Omit<InferInsertModel<T>, Managed> & { id?: string }): Promise<InferSelectModel<T>>;
+  create(
+    values: Omit<InferInsertModel<T>, Managed> & { id?: string },
+  ): Promise<InferSelectModel<T>>;
   update(
     id: string,
     patch: Partial<Omit<InferInsertModel<T>, Managed>>,

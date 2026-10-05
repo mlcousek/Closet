@@ -69,12 +69,11 @@ describe('backup', () => {
   it('contains only the manifest, the database and images', async () => {
     const archive = await createBackupArchive(populated().fs, info);
     const zip = await JSZip.loadAsync(archive, { base64: true });
-    expect(Object.keys(zip.files).filter((name) => !zip.files[name].dir).sort()).toEqual([
-      'closet.db',
-      'images/avatar/b.jpg',
-      'images/items/a.png',
-      'manifest.json',
-    ]);
+    expect(
+      Object.keys(zip.files)
+        .filter((name) => !zip.files[name].dir)
+        .sort(),
+    ).toEqual(['closet.db', 'images/avatar/b.jpg', 'images/items/a.png', 'manifest.json']);
   });
 
   it('accepts a backup from an older schema version', async () => {
@@ -117,7 +116,10 @@ describe('backup', () => {
 
   it('rejects entries outside the image folder', async () => {
     const zip = new JSZip();
-    zip.file('manifest.json', JSON.stringify({ app: 'closet', formatVersion: 1, schemaVersion: 1 }));
+    zip.file(
+      'manifest.json',
+      JSON.stringify({ app: 'closet', formatVersion: 1, schemaVersion: 1 }),
+    );
     zip.file('closet.db', 'x');
     zip.file('SQLite/other.db', 'x');
     await expectUnchanged(await zip.generateAsync({ type: 'base64' }), 'invalid');

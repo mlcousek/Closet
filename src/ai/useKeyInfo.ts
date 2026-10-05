@@ -14,5 +14,6 @@ export function useKeyInfo(provider: ProviderId) {
 
 export function useRefreshKeyInfo() {
   const client = useQueryClient();
-  return (provider: ProviderId) => client.invalidateQueries({ queryKey: keyInfoQueryKey(provider) });
+  return (provider: ProviderId) =>
+    client.invalidateQueries({ queryKey: keyInfoQueryKey(provider) });
 }

@@ -6,7 +6,7 @@ const IS_DEV = process.env.APP_VARIANT === 'development';
 const config: ExpoConfig = {
   name: IS_DEV ? 'Closet Dev' : 'Closet',
   slug: 'closet',
-  version: '0.1.0',
+  version: process.env.APP_VERSION ?? '0.1.0',
   orientation: 'portrait',
   icon: IS_DEV ? './assets/images/icon-dev.png' : './assets/images/icon.png',
   scheme: IS_DEV ? 'closet-dev' : 'closet',
