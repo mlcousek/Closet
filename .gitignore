@@ -1,9 +1,13 @@
 node_modules/
 .expo/
 dist/
-ios/
-android/
+web-build/
+expo-env.d.ts
+/ios
+/android
 *.ipa
 .env
 .env.*
 .DS_Store
+*.tsbuildinfo
+coverage/
