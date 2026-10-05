@@ -5,6 +5,7 @@ import { initReactI18next } from 'react-i18next';
 
 import cs from './src/i18n/cs.json';
 import en from './src/i18n/en.json';
+import { useToast } from './src/shell/toast';
 
 jest.mock(
   'react-native-safe-area-context',
@@ -30,5 +31,7 @@ if (!i18n.isInitialized) {
 }
 
 afterEach(async () => {
+  // Clears the pending auto-hide timer so workers can exit.
+  useToast.getState().dismiss();
   if (i18n.language !== 'en') await act(() => i18n.changeLanguage('en'));
 });

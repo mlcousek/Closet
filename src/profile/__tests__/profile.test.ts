@@ -3,13 +3,7 @@ import { createTestDb } from '@/db/testing';
 import { assessAvatar, discardAvatar, smallSize, storeAvatar, type AvatarDeps } from '../avatar';
 import { dayPart, greetingKey } from '../greeting';
 import { createProfileRepository } from '../repository';
-import {
-  cmToFeetInches,
-  feetInchesToCm,
-  formatHeight,
-  lengthSystem,
-  parseHeight,
-} from '../units';
+import { cmToFeetInches, feetInchesToCm, formatHeight, lengthSystem, parseHeight } from '../units';
 
 jest.mock('expo-crypto', () => ({
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -139,7 +133,10 @@ describe('avatar storage', () => {
 
   it('stores the original and a downscaled copy', async () => {
     const { deps, saved } = makeDeps();
-    const stored = await storeAvatar({ uri: 'file:///tmp/full.jpg', width: 3000, height: 4000 }, deps);
+    const stored = await storeAvatar(
+      { uri: 'file:///tmp/full.jpg', width: 3000, height: 4000 },
+      deps,
+    );
     expect(stored).toEqual({
       avatarPath: 'images/avatar/0.jpg',
       avatarSmallPath: 'images/avatar/1.jpg',

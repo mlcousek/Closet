@@ -14,7 +14,9 @@ import type { Profile } from '../types';
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
 jest.mock('expo-router', () => {
   const { Text, View } = require('react-native');
-  const Tabs = ({ children }: { children: unknown }) => <View testID="tabs">{children as never}</View>;
+  const Tabs = ({ children }: { children: unknown }) => (
+    <View testID="tabs">{children as never}</View>
+  );
   Tabs.Screen = () => null;
   return {
     useRouter: () => mockRouter,
