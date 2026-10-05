@@ -108,6 +108,7 @@ export default function SettingsScreen() {
               accessibilityRole="radio"
               accessibilityState={{ selected }}
               testID={`language-${option.value ?? 'system'}`}
+              disabled={busy}
               onPress={() => void chooseLanguage(option.value)}
               style={{
                 paddingHorizontal: spacing.lg,

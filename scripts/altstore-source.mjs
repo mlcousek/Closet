@@ -41,7 +41,7 @@ const source = {
           date: new Date().toISOString(),
           downloadURL: `${base}/releases/download/${args.tag}/Closet.ipa`,
           size: statSync(args.ipa).size,
-          minOSVersion: '17.0',
+          minOSVersion: '16.4',
         },
       ],
     },

@@ -6,6 +6,9 @@ export function createMemoryFs(initial: Record<string, string> = {}) {
   /** Contents of files outside the document directory that copyIn can read. */
   const external = new Map<string, string>();
 
+  /** Destinations for which the next move fails once, to simulate a write error. */
+  const failMoveTo = new Set<string>();
+
   const fs: FsAdapter = {
     uri: (path) => `file:///documents/${path}`,
     exists: async (path) =>
@@ -14,6 +17,15 @@ export function createMemoryFs(initial: Record<string, string> = {}) {
     remove: async (path) => {
       for (const key of [...files.keys()]) {
         if (key === path || key.startsWith(`${path}/`)) files.delete(key);
+      }
+    },
+    move: async (fromPath, toPath) => {
+      if (failMoveTo.delete(toPath)) throw new Error(`Cannot move to ${toPath}`);
+      for (const key of [...files.keys()]) {
+        if (key === fromPath || key.startsWith(`${fromPath}/`)) {
+          files.set(toPath + key.slice(fromPath.length), files.get(key)!);
+          files.delete(key);
+        }
       }
     },
     copyIn: async (fromUri, toPath) => {
@@ -32,5 +44,5 @@ export function createMemoryFs(initial: Record<string, string> = {}) {
     },
   };
 
-  return { fs, files, external };
+  return { fs, files, external, failMoveTo };
 }

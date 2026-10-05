@@ -3,10 +3,17 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
-import { checkpointDb, closeDb, openDb } from '@/db/client';
+import { checkpointDb, closeDb, openDb, setDbLocked } from '@/db/client';
 import { LATEST_SCHEMA_VERSION } from '@/db/migrations';
 
-import { createBackupArchive, restoreBackupArchive } from './backup';
+import {
+  BackupError,
+  createBackupArchive,
+  finishRestore,
+  rollbackRestore,
+  stageBackup,
+  swapInStagedBackup,
+} from './backup';
 import { expoFs } from './fs';
 
 const base64 = { encoding: FileSystem.EncodingType.Base64 };
@@ -32,14 +39,32 @@ export async function pickBackupFile(): Promise<string | null> {
 }
 
 /**
- * Replaces all data with the archive contents. Throws BackupError without
- * changing anything when the archive is not a usable backup.
+ * Replaces all data with the archive contents. The archive is validated and
+ * unpacked before anything is touched, and the previous data is kept until the
+ * restored database has opened, so a bad archive throws BackupError and leaves
+ * the app as it was.
  */
 export async function importBackup(archiveBase64: string): Promise<void> {
+  await stageBackup(expoFs, archiveBase64, LATEST_SCHEMA_VERSION);
+
+  // From here until the database is open again nothing else may open it.
+  setDbLocked(true);
   closeDb();
   try {
-    await restoreBackupArchive(expoFs, archiveBase64, LATEST_SCHEMA_VERSION);
+    await swapInStagedBackup(expoFs);
+    try {
+      setDbLocked(false);
+      openDb();
+    } catch {
+      // The restored file would not open or migrate: go back to the previous data.
+      closeDb();
+      setDbLocked(true);
+      await rollbackRestore(expoFs);
+      throw new BackupError('invalid');
+    }
   } finally {
+    setDbLocked(false);
     openDb();
   }
+  await finishRestore(expoFs);
 }

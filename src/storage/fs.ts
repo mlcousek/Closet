@@ -10,6 +10,8 @@ export type FsAdapter = {
   exists(path: string): Promise<boolean>;
   makeDir(path: string): Promise<void>;
   remove(path: string): Promise<void>;
+  /** Moves a file or directory within the document directory. */
+  move(fromPath: string, toPath: string): Promise<void>;
   /** Copies a file from any URI into the document directory. */
   copyIn(fromUri: string, toPath: string): Promise<void>;
   /** All files under a directory, recursively, as paths relative to the document directory. */
@@ -44,6 +46,11 @@ export const expoFs: FsAdapter = {
   exists: async (path) => (await FileSystem.getInfoAsync(root() + path)).exists,
   makeDir: (path) => FileSystem.makeDirectoryAsync(root() + path, { intermediates: true }),
   remove: (path) => FileSystem.deleteAsync(root() + path, { idempotent: true }),
+  move: async (fromPath, toPath) => {
+    const parent = parentOf(toPath);
+    if (parent) await FileSystem.makeDirectoryAsync(root() + parent, { intermediates: true });
+    await FileSystem.moveAsync({ from: root() + fromPath, to: root() + toPath });
+  },
   copyIn: async (fromUri, toPath) => {
     const parent = parentOf(toPath);
     if (parent) await FileSystem.makeDirectoryAsync(root() + parent, { intermediates: true });

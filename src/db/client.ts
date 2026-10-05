@@ -11,6 +11,7 @@ export type Db = BaseSQLiteDatabase<'sync', unknown, typeof schema>;
 
 let sqlite: SQLite.SQLiteDatabase | null = null;
 let db: Db | null = null;
+let locked = false;
 
 function toRawDb(handle: SQLite.SQLiteDatabase): RawDb {
   return {
@@ -24,6 +25,7 @@ function toRawDb(handle: SQLite.SQLiteDatabase): RawDb {
 /** Opens the database and applies pending migrations. Safe to call repeatedly. */
 export function openDb(): Db {
   if (db) return db;
+  if (locked) throw new Error('The database is being replaced and cannot be opened yet.');
   sqlite = SQLite.openDatabaseSync(DB_NAME);
   sqlite.execSync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   runMigrations(toRawDb(sqlite));
@@ -44,6 +46,11 @@ export function closeDb(): void {
   sqlite?.closeSync();
   sqlite = null;
   db = null;
+}
+
+/** While locked the database cannot be opened, so a restore can replace its file safely. */
+export function setDbLocked(value: boolean): void {
+  locked = value;
 }
 
 /** Overrides the database, for tests. */

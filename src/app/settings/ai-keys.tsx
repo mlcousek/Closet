@@ -19,19 +19,28 @@ function ProviderCard({ provider }: { provider: ProviderId }) {
 
   const save = async () => {
     setError(null);
-    await keyManager.saveKey(provider, draft);
-    setDraft('');
+    try {
+      await keyManager.saveKey(provider, draft);
+      setDraft('');
+    } catch {
+      setError(t('common.somethingWentWrong'));
+    }
     await refresh(provider);
   };
 
   const test = async () => {
     setTesting(true);
     setError(null);
-    const result = await keyManager.testKey(provider);
-    if (result === 'rejected') setError(t('ai.rejected'));
-    if (result === 'unreachable') setError(t('ai.testFailed'));
-    await refresh(provider);
-    setTesting(false);
+    try {
+      const result = await keyManager.testKey(provider);
+      if (result === 'rejected') setError(t('ai.rejected'));
+      if (result === 'unreachable') setError(t('ai.testFailed'));
+      await refresh(provider);
+    } catch {
+      setError(t('common.somethingWentWrong'));
+    } finally {
+      setTesting(false);
+    }
   };
 
   const remove = () => {
