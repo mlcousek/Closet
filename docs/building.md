@@ -39,10 +39,10 @@ gh run download --dir build
 
 You get two files:
 
-| File | App name on the phone | Use |
-|---|---|---|
-| `Closet.ipa` | Closet | The real app, with the code bundled in. |
-| `Closet-Dev.ipa` | Closet Dev | Development client. Loads code from your PC so changes appear in seconds. |
+| File             | App name on the phone | Use                                                                       |
+| ---------------- | --------------------- | ------------------------------------------------------------------------- |
+| `Closet.ipa`     | Closet                | The real app, with the code bundled in.                                   |
+| `Closet-Dev.ipa` | Closet Dev            | Development client. Loads code from your PC so changes appear in seconds. |
 
 They have different bundle identifiers, so both can be installed at once and they do not share data.
 

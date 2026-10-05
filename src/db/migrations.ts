@@ -38,6 +38,48 @@ export const migrations: Migration[] = [
       );
     `,
   },
+  {
+    version: 3,
+    sql: `
+      CREATE TABLE IF NOT EXISTS items (
+        id TEXT PRIMARY KEY NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER,
+        name TEXT,
+        category TEXT NOT NULL,
+        subcategory TEXT,
+        colours TEXT NOT NULL DEFAULT '[]',
+        seasons TEXT NOT NULL DEFAULT '[]',
+        occasions TEXT NOT NULL DEFAULT '[]',
+        warmth INTEGER,
+        brand TEXT,
+        size TEXT,
+        price REAL,
+        currency TEXT,
+        purchased_at INTEGER,
+        notes TEXT,
+        source_url TEXT,
+        ownership TEXT NOT NULL DEFAULT 'owned',
+        original_path TEXT NOT NULL,
+        cutout_path TEXT,
+        thumb_path TEXT NOT NULL,
+        needs_review INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS items_listing ON items (deleted_at, ownership, category);
+
+      CREATE TABLE IF NOT EXISTS import_jobs (
+        id TEXT PRIMARY KEY NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER,
+        source_path TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'queued',
+        error TEXT,
+        item_id TEXT
+      );
+    `,
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = migrations[migrations.length - 1].version;

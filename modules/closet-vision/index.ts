@@ -9,8 +9,11 @@ export type PersonBox = {
   confidence: number;
 };
 
+export type Cutout = { uri: string; width: number; height: number };
+
 type ClosetVisionNative = {
   detectPeople(uri: string): Promise<PersonBox[]>;
+  removeBackground(uri: string): Promise<Cutout | null>;
 };
 
 // Optional so the JavaScript still loads in a client built before this module existed.
@@ -22,4 +25,14 @@ export const isVisionAvailable = native !== null;
 export async function detectPeople(uri: string): Promise<PersonBox[] | null> {
   if (!native) return null;
   return native.detectPeople(uri);
+}
+
+/**
+ * The main subject of a photo on a transparent background, trimmed to the
+ * subject, as a temporary PNG. Null when no subject can be isolated or the
+ * feature is not available (older build, or iOS before 17).
+ */
+export async function removeBackground(uri: string): Promise<Cutout | null> {
+  if (!native?.removeBackground) return null;
+  return native.removeBackground(uri);
 }

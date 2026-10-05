@@ -36,6 +36,54 @@ public class ClosetVisionModule: Module {
         ]
       }
     }
+
+    // Isolates the main subject of a photo on a transparent background,
+    // trimmed to the subject. Writes a PNG to the temporary directory and
+    // returns its URI and size, or nil when no subject is found or the
+    // system is older than iOS 17.
+    AsyncFunction("removeBackground") { (uri: String) -> [String: Any]? in
+      guard #available(iOS 17.0, *) else {
+        return nil
+      }
+      let image = try loadImage(uri)
+      let request = VNGenerateForegroundInstanceMaskRequest()
+      let handler = VNImageRequestHandler(
+        cgImage: image.cgImage,
+        orientation: image.orientation,
+        options: [:]
+      )
+      try handler.perform([request])
+      guard let observation = request.results?.first, !observation.allInstances.isEmpty else {
+        return nil
+      }
+      let buffer = try observation.generateMaskedImage(
+        ofInstances: observation.allInstances,
+        from: handler,
+        croppedToInstancesExtent: true
+      )
+      let ciImage = CIImage(cvPixelBuffer: buffer)
+      let context = CIContext()
+      guard
+        let cutout = context.createCGImage(ciImage, from: ciImage.extent),
+        let data = UIImage(cgImage: cutout).pngData()
+      else {
+        throw ImageWriteException()
+      }
+      let target = FileManager.default.temporaryDirectory
+        .appendingPathComponent("cutout-\(UUID().uuidString).png")
+      try data.write(to: target)
+      return [
+        "uri": target.absoluteString,
+        "width": cutout.width,
+        "height": cutout.height
+      ]
+    }
+  }
+}
+
+final class ImageWriteException: Exception {
+  override var reason: String {
+    "The cutout could not be saved."
   }
 }
 
