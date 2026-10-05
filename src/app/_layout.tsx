@@ -40,6 +40,11 @@ export default function RootLayout() {
         >
           <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="onboarding"
+              options={{ headerShown: false, gestureEnabled: false }}
+            />
+            <Stack.Screen name="profile/edit" options={{ title: t('profile.editTitle') }} />
             <Stack.Screen name="settings/index" options={{ title: t('settings.title') }} />
             <Stack.Screen name="settings/ai-keys" options={{ title: t('ai.title') }} />
           </Stack>

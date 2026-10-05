@@ -35,7 +35,19 @@ const config: ExpoConfig = {
     'expo-localization',
     'expo-sharing',
     'expo-document-picker',
+    [
+      'expo-image-picker',
+      {
+        cameraPermission: 'Closet uses the camera to photograph you and your clothes.',
+        photosPermission: 'Closet uses your photo library to add photos of you and your clothes.',
+        microphonePermission: false,
+      },
+    ],
   ],
+  locales: {
+    en: './locales/en.json',
+    cs: './locales/cs.json',
+  },
   experiments: {
     typedRoutes: true,
     reactCompiler: true,

@@ -6,8 +6,10 @@ import {
   ScrollView,
   StyleSheet,
   Text as RNText,
+  TextInput,
   View,
   type StyleProp,
+  type TextInputProps,
   type TextProps,
   type ViewStyle,
 } from 'react-native';
@@ -175,6 +177,54 @@ export function Row({
     </Pressable>
   ) : (
     content
+  );
+}
+
+export function Field({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType,
+  autoFocus,
+  testID,
+}: {
+  label?: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  keyboardType?: TextInputProps['keyboardType'];
+  autoFocus?: boolean;
+  testID?: string;
+}) {
+  const { colors, spacing, radius } = useTheme();
+  return (
+    <View style={{ gap: spacing.xs }}>
+      {label ? (
+        <AppText variant="label" muted>
+          {label}
+        </AppText>
+      ) : null}
+      <TextInput
+        testID={testID}
+        accessibilityLabel={label ?? placeholder}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textMuted}
+        keyboardType={keyboardType}
+        autoFocus={autoFocus}
+        style={{
+          color: colors.text,
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderWidth: 1,
+          borderRadius: radius.sm,
+          padding: spacing.md,
+          fontSize: 16,
+        }}
+      />
+    </View>
   );
 }
 

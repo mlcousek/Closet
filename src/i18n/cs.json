@@ -8,7 +8,13 @@
     "confirm": "Potvrdit",
     "close": "Zavřít",
     "deleted": "Smazáno",
-    "somethingWentWrong": "Něco se nepovedlo. Zkuste to prosím znovu."
+    "somethingWentWrong": "Něco se nepovedlo. Zkuste to prosím znovu.",
+    "next": "Pokračovat",
+    "skip": "Přeskočit",
+    "back": "Zpět",
+    "edit": "Upravit",
+    "done": "Hotovo",
+    "notSet": "Nenastaveno"
   },
   "tabs": {
     "home": "Domů",
@@ -46,7 +52,21 @@
   },
   "profile": {
     "title": "Profil",
-    "settings": "Nastavení"
+    "settings": "Nastavení",
+    "edit": "Upravit profil",
+    "editTitle": "Úprava profilu",
+    "name": "Jméno",
+    "nameRequired": "Zadejte jméno, abyste mohli pokračovat.",
+    "sizes": "Velikosti",
+    "height": "Výška",
+    "heightPlaceholderMetric": "cm",
+    "heightPlaceholderImperial": "stopy a palce, například 5 7",
+    "heightInvalid": "Tohle nevypadá jako výška. Zkontrolujte ji, nebo pole nechte prázdné.",
+    "sizeTop": "Svršky",
+    "sizeBottom": "Spodní díly",
+    "sizeShoes": "Boty",
+    "noPhoto": "Zatím bez fotky",
+    "saved": "Profil uložen"
   },
   "settings": {
     "title": "Nastavení",
@@ -96,5 +116,61 @@
     "keyNeededTitle": "Je potřeba klíč poskytovatele",
     "keyNeededMessage": "Tato funkce používá službu {{provider}}. Přidejte svůj klíč v Nastavení.",
     "openKeySettings": "Otevřít nastavení klíčů"
+  },
+  "greeting": {
+    "morning": "Dobré ráno, {{name}}",
+    "afternoon": "Dobré odpoledne, {{name}}",
+    "evening": "Dobrý večer, {{name}}",
+    "night": "Dobrou noc, {{name}}"
+  },
+  "gender": {
+    "title": "Pohlaví",
+    "woman": "Žena",
+    "man": "Muž",
+    "unspecified": "Nechci uvádět"
+  },
+  "bodyType": {
+    "title": "Typ postavy",
+    "slim": "Štíhlá",
+    "athletic": "Sportovní",
+    "average": "Průměrná",
+    "curvy": "Plnější křivky",
+    "plus": "Plus size"
+  },
+  "onboarding": {
+    "welcomeTitle": "Vítejte ve svém šatníku",
+    "welcomeMessage": "Vyfoťte své oblečení, skládejte outfity a prohlédněte si je na sobě. Nejdřív pár otázek, aby vás aplikace uměla obléknout.",
+    "start": "Začít",
+    "nameTitle": "Jak vám máme říkat?",
+    "namePlaceholder": "Vaše jméno",
+    "genderTitle": "Koho oblékáme?",
+    "genderMessage": "Pomáhá to při vykreslování outfitů a návrzích. Všechny kategorie oblečení zůstanou dostupné, ať zvolíte cokoli.",
+    "bodyTypeTitle": "Která postava je vám nejblíž?",
+    "bodyTypeMessage": "Slouží jen jako nápověda při vykreslování outfitů na vás.",
+    "avatarTitle": "Přidejte fotku celé postavy",
+    "finish": "Dokončit",
+    "saveFailed": "Profil se nepodařilo uložit. Zkuste to prosím znovu."
+  },
+  "avatar": {
+    "title": "Vaše fotka",
+    "guidance": "Postavte se rovně čelem k foťáku při dobrém světle, v přiléhavém oblečení, a ať je v záběru celá postava od hlavy po chodidla. Požádejte někoho o vyfocení nebo použijte samospoušť.",
+    "exampleGood": "Celá postava",
+    "exampleBad": "Oříznutá",
+    "takePhoto": "Vyfotit",
+    "retake": "Vyfotit znovu",
+    "chooseFromLibrary": "Vybrat z knihovny",
+    "keep": "Přesto tuto fotku použít",
+    "remove": "Odebrat fotku",
+    "removeConfirmTitle": "Odebrat vaši fotku?",
+    "removeConfirmMessage": "Fotka se smaže z tohoto zařízení. Při vykreslování outfitů budete požádáni o novou.",
+    "privacy": "Vaše fotka zůstává v tomto zařízení. Poskytovateli obrázků se odešle jen tehdy, když požádáte o vykreslení outfitu.",
+    "denied": "Closet nemá přístup k fotoaparátu nebo fotkám. Povolit ho můžete v nastavení systému.",
+    "openSystemSettings": "Otevřít nastavení systému",
+    "issue": {
+      "noPerson": "Na fotce nebyla nalezena žádná osoba. Vykreslení outfitů potřebuje zřetelnou fotku vás.",
+      "severalPeople": "Na fotce je víc než jedna osoba. Vykreslení funguje nejlépe, když jste na ní jen vy.",
+      "cutOff": "Část postavy je zřejmě mimo záběr. Vykreslení funguje nejlépe, když jste vidět od hlavy po chodidla.",
+      "tooSmall": "Na fotce jste dost malí. Když se postavíte blíž k foťáku, bude vykreslení lepší."
+    }
   }
 }

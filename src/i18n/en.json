@@ -8,7 +8,13 @@
     "confirm": "Confirm",
     "close": "Close",
     "deleted": "Deleted",
-    "somethingWentWrong": "Something went wrong. Please try again."
+    "somethingWentWrong": "Something went wrong. Please try again.",
+    "next": "Continue",
+    "skip": "Skip",
+    "back": "Back",
+    "edit": "Edit",
+    "done": "Done",
+    "notSet": "Not set"
   },
   "tabs": {
     "home": "Home",
@@ -46,7 +52,21 @@
   },
   "profile": {
     "title": "Profile",
-    "settings": "Settings"
+    "settings": "Settings",
+    "edit": "Edit profile",
+    "editTitle": "Edit profile",
+    "name": "Name",
+    "nameRequired": "Enter a name to continue.",
+    "sizes": "Sizes",
+    "height": "Height",
+    "heightPlaceholderMetric": "cm",
+    "heightPlaceholderImperial": "ft in, for example 5 7",
+    "heightInvalid": "This does not look like a height. Check it or leave it empty.",
+    "sizeTop": "Tops",
+    "sizeBottom": "Bottoms",
+    "sizeShoes": "Shoes",
+    "noPhoto": "No photo yet",
+    "saved": "Profile saved"
   },
   "settings": {
     "title": "Settings",
@@ -96,5 +116,61 @@
     "keyNeededTitle": "A provider key is needed",
     "keyNeededMessage": "This feature uses {{provider}}. Add your key in Settings to use it.",
     "openKeySettings": "Open key settings"
+  },
+  "greeting": {
+    "morning": "Good morning, {{name}}",
+    "afternoon": "Good afternoon, {{name}}",
+    "evening": "Good evening, {{name}}",
+    "night": "Good night, {{name}}"
+  },
+  "gender": {
+    "title": "Gender",
+    "woman": "Woman",
+    "man": "Man",
+    "unspecified": "Prefer not to say"
+  },
+  "bodyType": {
+    "title": "Body type",
+    "slim": "Slim",
+    "athletic": "Athletic",
+    "average": "Average",
+    "curvy": "Curvy",
+    "plus": "Plus"
+  },
+  "onboarding": {
+    "welcomeTitle": "Welcome to your closet",
+    "welcomeMessage": "Photograph your clothes, put outfits together and see them on yourself. A few questions first, so the app can dress you.",
+    "start": "Get started",
+    "nameTitle": "What should we call you?",
+    "namePlaceholder": "Your name",
+    "genderTitle": "Who are we dressing?",
+    "genderMessage": "This helps with outfit renders and suggestions. All clothing categories stay available whatever you choose.",
+    "bodyTypeTitle": "Which shape is closest to yours?",
+    "bodyTypeMessage": "Used only as a hint when rendering outfits on you.",
+    "avatarTitle": "Add a full-body photo",
+    "finish": "Finish",
+    "saveFailed": "Your profile could not be saved. Please try again."
+  },
+  "avatar": {
+    "title": "Your photo",
+    "guidance": "Stand straight facing the camera in good light, in fitted clothes, with your whole body from head to feet in the frame. Ask someone to take it or use a timer.",
+    "exampleGood": "Whole body",
+    "exampleBad": "Cut off",
+    "takePhoto": "Take a photo",
+    "retake": "Take another",
+    "chooseFromLibrary": "Choose from library",
+    "keep": "Keep this photo anyway",
+    "remove": "Remove photo",
+    "removeConfirmTitle": "Remove your photo?",
+    "removeConfirmMessage": "The photo is deleted from this device. Outfit renders will ask for a new one.",
+    "privacy": "Your photo stays on this device. It is sent to the image provider only when you ask for an outfit render.",
+    "denied": "Closet has no access to the camera or your photos. You can allow it in the system settings.",
+    "openSystemSettings": "Open system settings",
+    "issue": {
+      "noPerson": "No person was found in this photo. Outfit renders need a clear photo of you.",
+      "severalPeople": "There is more than one person in this photo. Renders work best with only you in it.",
+      "cutOff": "Part of your body seems to be outside the frame. Renders work best when you are visible from head to feet.",
+      "tooSmall": "You are quite small in this photo. Standing closer to the camera gives better renders."
+    }
   }
 }
