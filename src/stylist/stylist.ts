@@ -33,8 +33,10 @@ export function buildCatalogue(
   const must = new Set(options.mustInclude ?? []);
   const warmth = (item: Item) => item.warmth ?? DEFAULT_WARMTH[item.category];
   const profile = options.profile;
+  // A closet that fits is sent whole: the model judges warmth better than a cut-off does.
+  const narrow = items.length > CATALOGUE_LIMIT;
   const fits = (item: Item) => {
-    if (must.has(item.id) || !profile) return true;
+    if (must.has(item.id) || !profile || !narrow || item.warmth === null) return true;
     const slot = CATEGORY_SLOT[item.category];
     if (!['top', 'bottom', 'fullBody', 'outer'].includes(slot)) return true;
     return Math.abs(warmth(item) - profile.band) <= 2;
@@ -58,7 +60,14 @@ export function buildCatalogue(
   return { text: lines.join('\n'), ids: new Set(chosen.map((item) => item.id)) };
 }
 
-export type Proposal = { pieces: OutfitPiece[]; rationale: string };
+export type Proposal = {
+  pieces: OutfitPiece[];
+  rationale: string;
+  /** The outfit this proposal was saved as, so saving twice does not create two. */
+  outfitId?: string;
+  /** Set once the proposal was put in the calendar. */
+  planned?: boolean;
+};
 
 type RawOutfit = { itemIds: string[]; rationale: string };
 
@@ -71,7 +80,12 @@ type RawOutfit = { itemIds: string[]; rationale: string };
 export function validateProposals(
   raw: RawOutfit[],
   items: Item[],
-  options: { mustInclude?: string | null; allowWishlist?: string | null } = {},
+  options: {
+    mustInclude?: string | null;
+    allowWishlist?: string | null;
+    /** Keeps outfits that repeat an earlier one, for a trip where days may share an outfit. */
+    keepDuplicates?: boolean;
+  } = {},
 ): Proposal[] {
   const byId = new Map(items.map((item) => [item.id, item]));
   const proposals: Proposal[] = [];
@@ -99,7 +113,7 @@ export function validateProposals(
     if (fullBody === 1 && (count('top') > 0 || count('bottom') > 0)) continue;
     if (fullBody === 0 && (count('top') === 0 || count('bottom') === 0)) continue;
     const key = [...ids].sort().join(',');
-    if (seen.has(key)) continue;
+    if (seen.has(key) && !options.keepDuplicates) continue;
     seen.add(key);
     const positions = new Map<Slot, number>();
     proposals.push({
@@ -135,6 +149,10 @@ export type StylistRequest = {
   wearCounts?: Map<string, number>;
   /** How many outfits to ask for; three unless a trip needs one per day. */
   count?: number;
+  /** Lets days of a trip share an outfit. */
+  keepDuplicates?: boolean;
+  /** Called once the provider has answered, which is when the request has been paid for. */
+  onAnswered?: () => Promise<void> | void;
 };
 
 function instructions(input: StylistRequest): string {
@@ -150,7 +168,7 @@ Propose ${input.count ?? 3} different outfits for the request. Rules:
 - Suit the weather when it is given, and prefer pieces that have been worn less when the choice is otherwise equal.
 - For each outfit write a rationale of one or two sentences in ${
     input.language === 'cs' ? 'Czech' : 'English'
-  }, speaking to the person directly and saying why it suits the request.${
+  }, speaking to the person directly and saying why it suits the request, and the weather when it is given.${
     input.hints.gender || input.hints.bodyType
       ? `\nAbout the person: ${[input.hints.gender, input.hints.bodyType && `${input.hints.bodyType} build`].filter(Boolean).join(', ')}.`
       : ''
@@ -202,7 +220,7 @@ export async function proposeOutfits(
     });
     const response = await anthropic.beta.messages.parse({
       model,
-      max_tokens: 8000,
+      max_tokens: (input.count ?? 3) > 8 ? 16000 : 8000,
       betas,
       ...(fallbacks ? { fallbacks } : {}),
       system: instructions(input),
@@ -212,12 +230,14 @@ export async function proposeOutfits(
         ...(effort ? { effort } : {}),
       },
     });
+    await input.onAnswered?.();
     if (response.stop_reason === 'refusal' || !response.parsed_output) {
       throw new AiUnavailableError('error');
     }
     return validateProposals(response.parsed_output.outfits, input.items, {
       mustInclude: input.mustInclude,
       allowWishlist: input.mustInclude,
+      keepDuplicates: input.keepDuplicates,
     });
   } catch (error) {
     throw toUnavailable(error);

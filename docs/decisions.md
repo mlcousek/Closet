@@ -52,3 +52,6 @@ The spec lets the user filter the items offered in a row. The editor has one sea
 - **Dates are typed as YYYY-MM-DD** in the trip form, as for the purchase date of an item. There is no date picker in the app yet.
 
 **Not yet verified:** the display's keep-awake, rotation, dimming and start-while-charging behaviour, and every stylist request, have only been exercised in tests with mocks.
+- **Trip activities are the closet's occasions.** The design named city, beach, hiking and travel day. Items are tagged with occasions (casual, work, formal, party, sport, home, outdoor), so a day's activity is one of those and filters by the same tag; a second vocabulary would have matched nothing in the closet.
+- **Reuse limits are fixed.** Tops and dresses twice, bottoms three times, two pairs of shoes (three beyond a week), in `TRIP_RULES`. There is no setting for them yet. When the closet is too small, the limits give way before a day is left without an outfit.
+- **Statistics are about items.** The overview counts saved outfits, but there are no most and least worn outfits, no worst-value list and no "not worn for a long time" list; "not worn in this period" shows the first eight.

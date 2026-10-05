@@ -31,6 +31,7 @@ import { useTheme } from '@/theme/useTheme';
 import { dayInputs, generateTrip, styleTrip } from '@/trips/actions';
 import { tripWeather } from '@/trips/forecast';
 import { packingList, pickDayOutfit, shoeLimitFor } from '@/trips/plan';
+import { isDisclosed, setDisclosed } from '@/stylist/sessions';
 import { TRIPS, addTripToCalendar, tripRepository, type Trip } from '@/trips/repository';
 
 function Check({
@@ -103,7 +104,7 @@ function TripView({ trip }: { trip: Trip }) {
   const { data: keyInfo } = useKeyInfo('anthropic');
   const { data: profile } = useProfile();
   const dayList = trip.days.map((day) => day.day);
-  const { data: weather = [] } = useQuery({
+  const { data: weather = [], isPending: weatherPending } = useQuery({
     queryKey: [TRIPS, 'weather', trip.id, trip.startDay, trip.endDay],
     queryFn: () => tripWeather(trip.place, dayList),
     staleTime: 60 * 60 * 1000,
@@ -112,7 +113,7 @@ function TripView({ trip }: { trip: Trip }) {
   const referenced = [
     ...new Set([
       ...trip.days.flatMap((day) => day.pieces.map((piece) => piece.itemId)),
-      ...trip.packing.filter((entry) => entry.kind === 'item').map((entry) => entry.key),
+      ...trip.packing.filter((entry) => entry.kind !== 'text').map((entry) => entry.key),
     ]),
   ].filter((id) => !owned.some((item) => item.id === id));
   const { data: others = [] } = useItemsById(referenced);
@@ -121,6 +122,7 @@ function TripView({ trip }: { trip: Trip }) {
   const [shown, setShown] = useState<Record<string, string[]>>({});
   const [extraText, setExtraText] = useState('');
   const [picking, setPicking] = useState(false);
+  const [round, setRound] = useState(0);
 
   const items = new Map<string, Item>([...owned, ...others].map((item) => [item.id, item]));
   const locale = formatLocale(i18n.language === 'cs' ? 'cs' : 'en', getLocales()[0]?.regionCode);
@@ -160,10 +162,12 @@ function TripView({ trip }: { trip: Trip }) {
     await change(() => tripRepository.setDay(trip.id, day.day, { pieces, activity }));
   };
 
-  const suggest = async () => {
+  const suggestNow = async () => {
     setBusy('suggest');
     try {
-      await generateTrip(trip, owned, weather.length > 0 ? weather : undefined);
+      // A new round each time, so asking again really gives another plan.
+      await generateTrip(trip, owned, weather.length > 0 ? weather : undefined, undefined, round);
+      setRound(round + 1);
       setShown({});
       await refresh();
     } finally {
@@ -171,7 +175,39 @@ function TripView({ trip }: { trip: Trip }) {
     }
   };
 
-  const askStylist = async () => {
+  /** Asks before outfits that are already there, chosen by hand or paid for, are replaced. */
+  const confirmReplace = (action: () => void) => {
+    if (!trip.days.some((day) => day.pieces.length > 0)) {
+      action();
+      return;
+    }
+    Alert.alert(t('trips.replaceTitle'), t('trips.replaceMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('trips.replaceAction'), onPress: action },
+    ]);
+  };
+  const suggest = () => confirmReplace(() => void suggestNow());
+
+  /** The stylist explains once what it sends, wherever it is first used. */
+  const askStylist = () => {
+    const proceed = () => confirmReplace(() => void askStylistNow());
+    if (isDisclosed()) {
+      proceed();
+      return;
+    }
+    Alert.alert(t('stylist.disclosureTitle'), t('stylist.disclosure'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('stylist.disclosureAccept'),
+        onPress: () => {
+          setDisclosed();
+          proceed();
+        },
+      },
+    ]);
+  };
+
+  const askStylistNow = async () => {
     setBusy('stylist');
     try {
       const filled = await styleTrip(trip, weather, {
@@ -179,8 +215,8 @@ function TripView({ trip }: { trip: Trip }) {
         language: i18n.language === 'cs' ? 'cs' : 'en',
         hints: { gender: profile?.gender ?? null, bodyType: profile?.bodyType ?? null },
         wearCounts: await calendarRepository.wearCounts(owned.map((item) => item.id)),
+        onAnswered: () => usageLog.record('stylist'),
       });
-      await usageLog.record('stylist');
       await refresh();
       if (filled === 0) showToast({ message: t('trips.stylistIncomplete') });
     } catch (error) {
@@ -231,11 +267,11 @@ function TripView({ trip }: { trip: Trip }) {
     ]);
   };
 
-  const extraIds = trip.packing.filter((entry) => entry.kind === 'item').map((entry) => entry.key);
+  const extraIds = trip.packing.filter((entry) => entry.kind === 'extra').map((entry) => entry.key);
   const groups = packingList(trip.days, [...items.values()], extraIds);
   const outfitIds = new Set(trip.days.flatMap((day) => day.pieces.map((piece) => piece.itemId)));
   const packedIds = new Set(
-    trip.packing.filter((entry) => entry.kind === 'item' && entry.packed).map((entry) => entry.key),
+    trip.packing.filter((entry) => entry.kind !== 'text' && entry.packed).map((entry) => entry.key),
   );
   const texts = trip.packing.filter((entry) => entry.kind === 'text');
   const listed = groups.flatMap((group) => group.entries.map((entry) => entry.item.id));
@@ -263,7 +299,7 @@ function TripView({ trip }: { trip: Trip }) {
           label={t(hasOutfits ? 'trips.suggestAgain' : 'trips.suggest')}
           loading={busy === 'suggest'}
           disabled={busy !== null}
-          onPress={() => void suggest()}
+          onPress={suggest}
         />
         {keyInfo?.hasKey ? (
           <Button
@@ -272,8 +308,9 @@ function TripView({ trip }: { trip: Trip }) {
             icon="sparkles-outline"
             label={t('trips.askStylist')}
             loading={busy === 'stylist'}
-            disabled={busy !== null}
-            onPress={() => void askStylist()}
+            // The request describes each day's weather, so it waits until that has loaded.
+            disabled={busy !== null || weatherPending}
+            onPress={askStylist}
           />
         ) : null}
       </View>
@@ -318,9 +355,10 @@ function TripView({ trip }: { trip: Trip }) {
                 label: t(`taxonomy.occasion.${occasion}`),
               }))}
               selected={day.activity ? [day.activity] : []}
-              onToggle={(occasion) =>
-                void repick(index, day.activity === occasion ? null : occasion)
-              }
+              onToggle={(occasion) => {
+                if (busy !== null || weatherPending) return;
+                void repick(index, day.activity === occasion ? null : occasion);
+              }}
             />
             {pieces.length > 0 ? (
               <View style={{ height: 180 }}>
@@ -340,7 +378,7 @@ function TripView({ trip }: { trip: Trip }) {
                 kind="secondary"
                 icon="swap-horizontal"
                 label={t('trips.swap')}
-                disabled={busy !== null}
+                disabled={busy !== null || weatherPending}
                 onPress={() => void repick(index, day.activity)}
               />
               {day.outfitId ? (

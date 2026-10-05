@@ -645,7 +645,7 @@
     "costNote": "Každý požadavek se odesílá společnosti Anthropic s vaším klíčem a platíte ho vy.",
     "usage": "Požadavky na stylistu: {{month}} tento měsíc, {{total}} celkem",
     "disclosureTitle": "Před prvním požadavkem",
-    "disclosure": "Stylista odesílá společnosti Anthropic textový seznam vašeho oblečení: typ, název, barvy, teplotu, příležitosti a jak často jste každý kousek měli na sobě, spolu s vaším požadavkem, pohlavím a typem postavy, pokud jste je vyplnili, a počasím ve zvolený den. Fotky se neodesílají. Požadavky používají váš vlastní klíč a platíte je vy.",
+    "disclosure": "Stylista odesílá společnosti Anthropic textový seznam vašeho oblečení: typ, název, barvy, hřejivost, příležitosti a jak často jste každý kousek měli na sobě, spolu s vaším požadavkem, pohlavím a typem postavy, pokud jste je vyplnili, a počasím ve zvolený den. U cesty odesílá také cíl, data a účel jednotlivých dní. Fotky se neodesílají. Požadavky používají váš vlastní klíč a platíte je vy.",
     "disclosureAccept": "Rozumím",
     "errors": {
       "noKey": "Pro stylistu přidejte v Nastavení svůj klíč Anthropic.",
@@ -653,7 +653,8 @@
       "rejectedKey": "Anthropic váš klíč odmítl. Zkontrolujte ho v Nastavení.",
       "rateLimited": "Příliš mnoho požadavků. Zkuste to za chvíli.",
       "error": "Stylista nedokázal odpovědět. Zkuste to prosím znovu."
-    }
+    },
+    "wishlistPiece": "Obsahuje kousek z vašeho seznamu přání."
   },
   "stats": {
     "title": "Statistiky skříně",
@@ -663,7 +664,7 @@
       "30d": "30 dní",
       "90d": "90 dní",
       "year": "Rok",
-      "all": "Celá doba"
+      "all": "Za celou dobu"
     },
     "overview": "Přehled",
     "value": "Hodnota: {{value}}",
@@ -680,7 +681,8 @@
     "costPerWear": "Nejlepší cena za nošení",
     "noCost": "Cena za nošení potřebuje kousky, které mají cenu a byly aspoň jednou nošené.",
     "costPerWearValue": "Cena za nošení: {{cost}}",
-    "costPerWearUnworn": "Cena za nošení: zatím nenošeno"
+    "costPerWearUnworn": "Cena za nošení: zatím nenošeno",
+    "outfits": "Uložené outfity: {{count}}"
   },
   "trips": {
     "title": "Cesty",
@@ -708,7 +710,7 @@
     "suggestAgain": "Navrhnout vše znovu",
     "askStylist": "Nechat vybrat AI stylistu",
     "stylistIncomplete": "Stylista nezvládl outfit na každý den. Nic se nezměnilo.",
-    "typical": "obvykle",
+    "typical": "obvyklé počasí",
     "noForecast": "Bez předpovědi",
     "noOutfit": "Na tento den se nepodařilo sestavit outfit.",
     "noAlternative": "Na tento den už jiný outfit není.",
@@ -719,7 +721,7 @@
     "nothingToAdd": "Do kalendáře není co nového přidat",
     "packing": "Seznam na balení",
     "progress": "Sbaleno {{packed}} z {{total}}",
-    "wornOn": "Den {{days}}",
+    "wornOn": "Dny: {{days}}",
     "extra": "Navíc",
     "extraPlaceholder": "Pas, nabíječka…",
     "add": "Přidat",
@@ -727,7 +729,10 @@
     "delete": "Smazat cestu",
     "deleteTitle": "Smazat tuto cestu?",
     "deleteMessage": "Outfity, které už jsou v kalendáři, zůstanou.",
-    "deletedToast": "Cesta smazána"
+    "deletedToast": "Cesta smazána",
+    "replaceTitle": "Nahradit outfity?",
+    "replaceMessage": "Outfity, které jsou pro tuto cestu zatím vybrané, se nahradí.",
+    "replaceAction": "Nahradit"
   },
   "display": {
     "title": "Režim displeje",

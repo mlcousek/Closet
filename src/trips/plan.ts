@@ -74,31 +74,48 @@ export function pickDayOutfit(input: {
       pieces.filter((piece) => piece.slot === 'shoes').map((piece) => piece.itemId),
     ),
   );
-  const available = input.owned.filter((item) => {
-    if (item.ownership !== 'owned') return false;
-    if (day.activity && item.occasions.length > 0 && !item.occasions.includes(day.activity)) {
-      return false;
-    }
-    const limit = TRIP_RULES.maxWears[slotOf(item)];
-    if (limit !== undefined && (wears.get(item.id) ?? 0) >= limit) return false;
-    if (slotOf(item) === 'shoes' && packedShoes.size >= input.shoeLimit) {
-      return packedShoes.has(item.id);
-    }
-    return true;
-  });
+  const available = (rules: { activity: boolean; limits: boolean }) =>
+    input.owned.filter((item) => {
+      if (item.ownership !== 'owned') return false;
+      if (
+        rules.activity &&
+        day.activity &&
+        item.occasions.length > 0 &&
+        !item.occasions.includes(day.activity)
+      ) {
+        return false;
+      }
+      const limit = TRIP_RULES.maxWears[slotOf(item)];
+      if (rules.limits && limit !== undefined && (wears.get(item.id) ?? 0) >= limit) return false;
+      if (slotOf(item) === 'shoes' && packedShoes.size >= input.shoeLimit) {
+        return packedShoes.has(item.id);
+      }
+      return true;
+    });
 
-  const candidates = (profile: DayProfile): Suggestion[] =>
+  const candidates = (items: Item[], profile: DayProfile): Suggestion[] =>
     generateCombinations(
-      available,
+      items,
       profile,
       NO_HISTORY,
       seededRandom(`${input.tripSeed}:${day.day}:${input.salt ?? 0}`),
       6,
     ).filter((candidate) => !(input.exclude ?? []).includes(keyOf(candidate.pieces)));
-  let options = candidates(day.profile);
-  // A closet without a suitable coat still gets an outfit, as on the Home screen.
-  if (options.length === 0 && day.profile.needsOuter) {
-    options = candidates({ ...day.profile, needsOuter: false });
+  // Each attempt gives up one wish, so a small closet still dresses every day: first pieces
+  // tagged for other occasions are allowed, then wearing a piece more often than planned,
+  // and last going without a coat the closet does not have.
+  let options: Suggestion[] = [];
+  for (const rules of [
+    { activity: true, limits: true },
+    { activity: false, limits: true },
+    { activity: false, limits: false },
+  ]) {
+    const items = available(rules);
+    options = candidates(items, day.profile);
+    if (options.length === 0 && day.profile.needsOuter) {
+      options = candidates(items, { ...day.profile, needsOuter: false });
+    }
+    if (options.length > 0) break;
   }
   const value = (candidate: Suggestion) =>
     candidate.score +
@@ -111,6 +128,8 @@ export function planTrip(input: {
   tripSeed: string;
   days: TripDayInput[];
   owned: Item[];
+  /** Changes the plan, for suggesting everything again. */
+  salt?: number;
 }): { day: Day; pieces: OutfitPiece[] }[] {
   const shoeLimit = shoeLimitFor(input.days.length);
   const chosen: OutfitPiece[][] = [];
@@ -121,6 +140,7 @@ export function planTrip(input: {
       owned: input.owned,
       others: chosen,
       shoeLimit,
+      salt: input.salt,
     });
     chosen.push(pieces);
     return { day: day.day, pieces };

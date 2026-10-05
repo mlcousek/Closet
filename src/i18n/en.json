@@ -645,7 +645,7 @@
     "costNote": "Each request is sent to Anthropic with your key and is paid for by you.",
     "usage": "Stylist requests: {{month}} this month, {{total}} in total",
     "disclosureTitle": "Before the first request",
-    "disclosure": "The stylist sends a text list of your clothes to Anthropic: type, name, colours, warmth, occasions and how often you wore each piece, together with your request, your gender and body type if you set them, and the weather of the chosen day. No photos are sent. Requests use your own key and you pay for them.",
+    "disclosure": "The stylist sends a text list of your clothes to Anthropic: type, name, colours, warmth, occasions and how often you wore each piece, together with your request, your gender and body type if you set them, and the weather of the chosen day. For a trip it also sends the destination, the dates and what each day is for. No photos are sent. Requests use your own key and you pay for them.",
     "disclosureAccept": "Understood",
     "errors": {
       "noKey": "Add your Anthropic key in Settings to use the stylist.",
@@ -653,7 +653,8 @@
       "rejectedKey": "Anthropic rejected your key. Check it in Settings.",
       "rateLimited": "Too many requests right now. Try again in a moment.",
       "error": "The stylist could not answer. Please try again."
-    }
+    },
+    "wishlistPiece": "Contains a piece from your wishlist."
   },
   "stats": {
     "title": "Closet statistics",
@@ -680,7 +681,8 @@
     "costPerWear": "Best cost per wear",
     "noCost": "Cost per wear needs items that have a price and were worn at least once.",
     "costPerWearValue": "Cost per wear: {{cost}}",
-    "costPerWearUnworn": "Cost per wear: not worn yet"
+    "costPerWearUnworn": "Cost per wear: not worn yet",
+    "outfits": "Saved outfits: {{count}}"
   },
   "trips": {
     "title": "Trips",
@@ -719,7 +721,7 @@
     "nothingToAdd": "Nothing new to add to the calendar",
     "packing": "Packing list",
     "progress": "{{packed}} of {{total}} packed",
-    "wornOn": "Day {{days}}",
+    "wornOn": "Days: {{days}}",
     "extra": "Extra",
     "extraPlaceholder": "Passport, charger…",
     "add": "Add",
@@ -727,7 +729,10 @@
     "delete": "Delete trip",
     "deleteTitle": "Delete this trip?",
     "deleteMessage": "Outfits already added to the calendar are kept.",
-    "deletedToast": "Trip deleted"
+    "deletedToast": "Trip deleted",
+    "replaceTitle": "Replace the outfits?",
+    "replaceMessage": "The outfits chosen for this trip so far will be replaced.",
+    "replaceAction": "Replace"
   },
   "display": {
     "title": "Display mode",

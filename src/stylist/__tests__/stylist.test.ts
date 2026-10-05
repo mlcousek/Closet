@@ -81,14 +81,25 @@ describe('catalogue', () => {
   });
 
   it('leaves out pieces far from the day and keeps a required item', () => {
-    const light = buildCatalogue(closet, { profile: hot });
+    // A closet that fits is sent whole, whatever the weather.
+    expect(buildCatalogue(closet, { profile: hot }).ids.has('jumper')).toBe(true);
+
+    const big = [
+      ...closet,
+      ...Array.from({ length: CATALOGUE_LIMIT }, (_, index) =>
+        item(`wool-${index}`, 'tops', { warmth: 5 }),
+      ),
+    ];
+    const light = buildCatalogue(big, { profile: hot });
     expect(light.ids.has('jumper')).toBe(false);
+    expect(light.ids.has('wool-0')).toBe(false);
     expect(light.ids.has('tee')).toBe(true);
-    // Shoes say little about warmth and always stay.
+    // Pieces without a warmth are never left out on a guess, and shoes always stay.
+    expect(light.ids.has('jeans')).toBe(true);
     expect(light.ids.has('boots')).toBe(true);
-    expect(
-      buildCatalogue(closet, { profile: hot, mustInclude: ['jumper'] }).ids.has('jumper'),
-    ).toBe(true);
+    expect(buildCatalogue(big, { profile: hot, mustInclude: ['jumper'] }).ids.has('jumper')).toBe(
+      true,
+    );
   });
 
   it('is capped, with a required item first', () => {
@@ -142,6 +153,16 @@ describe('validation', () => {
       closet,
     );
     expect(result.map((proposal) => proposal.rationale)).toEqual(['a', 'c']);
+  });
+
+  it('keeps repeated outfits when a trip asks for one per day', () => {
+    const raw = [
+      { itemIds: ['tee', 'jeans'], rationale: 'day 1' },
+      { itemIds: ['dress'], rationale: 'day 2' },
+      { itemIds: ['jeans', 'tee'], rationale: 'day 3' },
+    ];
+    expect(validateProposals(raw, closet, { keepDuplicates: true })).toHaveLength(3);
+    expect(validateProposals(raw, closet)).toHaveLength(2);
   });
 
   it('requires the chosen item in every proposal, also when it is on the wishlist', () => {
@@ -232,9 +253,20 @@ describe('request', () => {
   it('reports a refusal and a missing key as unavailable', async () => {
     const parse = jest.fn(async () => ({ stop_reason: 'refusal', parsed_output: null }));
     const client = { beta: { messages: { parse } } } as unknown as Anthropic;
-    await expect(proposeOutfits({ ...base, request: 'x' }, client)).rejects.toMatchObject({
-      reason: 'error',
-    });
+    const onAnswered = jest.fn();
+    await expect(
+      proposeOutfits({ ...base, request: 'x', onAnswered }, client),
+    ).rejects.toMatchObject({ reason: 'error' });
+    // The provider answered, so the request is counted although nothing usable came back.
+    expect(onAnswered).toHaveBeenCalledTimes(1);
+
+    const failing = {
+      beta: { messages: { parse: jest.fn().mockRejectedValue(new Error('network')) } },
+    } as unknown as Anthropic;
+    await expect(
+      proposeOutfits({ ...base, request: 'x', onAnswered }, failing),
+    ).rejects.toMatchObject({ reason: 'error' });
+    expect(onAnswered).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -275,6 +307,13 @@ describe('sessions', () => {
     await sessions.restore(first.id);
     expect(await sessions.list()).toHaveLength(2);
     expect(await sessions.addTurn('missing', { request: 'x', proposals: [] })).toBeNull();
+
+    await sessions.markProposal(first.id, 1, 0, { outfitId: 'o1' });
+    await sessions.markProposal(first.id, 1, 0, { planned: true });
+    await sessions.markProposal(first.id, 5, 0, { planned: true });
+    const marked = (await sessions.get(first.id))!;
+    expect(marked.turns[1].proposals[0]).toMatchObject({ outfitId: 'o1', planned: true });
+    expect(marked.turns[0].proposals[0].outfitId).toBeUndefined();
   });
 
   it('counts stylist requests in the usage log', async () => {

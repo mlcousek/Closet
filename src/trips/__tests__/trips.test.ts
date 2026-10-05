@@ -117,10 +117,13 @@ describe('statistics', () => {
     expect(month.usageShare).toBe(0.5);
     expect(month.trend).toEqual([
       { month: '2026-09', count: 1 },
-      { month: '2026-10', count: 2 },
+      // Two pieces worn on the same day are one day of wearing.
+      { month: '2026-10', count: 1 },
     ]);
     expect(stats('all').wearCount).toBe(6);
-    expect(stats('year').trend).toHaveLength(12);
+    // A rolling year touches thirteen calendar months, and none of its wears is dropped.
+    expect(stats('year').trend).toHaveLength(13);
+    expect(stats('year').trend[0].month).toBe('2025-10');
   });
 
   it('works out cost per wear over the whole history, best value first', () => {
@@ -189,10 +192,60 @@ describe('trip outfits', () => {
     expect(planTrip({ tripSeed: 'trip', days: tripDays(6), owned: closet })).toEqual(plan);
   });
 
-  it('leaves a day empty when the closet runs out', () => {
+  it('wears a piece more often rather than leaving a day without an outfit', () => {
     const small = [item('top', 'tops'), item('bottom', 'bottoms')];
     const plan = planTrip({ tripSeed: 'trip', days: tripDays(4), owned: small });
-    expect(plan.map((day) => day.pieces.length)).toEqual([2, 2, 0, 0]);
+    expect(plan.map((day) => day.pieces.length)).toEqual([2, 2, 2, 2]);
+    expect(planTrip({ tripSeed: 'trip', days: tripDays(2), owned: [item('top', 'tops')] })).toEqual(
+      [
+        { day: '2026-11-01', pieces: [] },
+        { day: '2026-11-02', pieces: [] },
+      ],
+    );
+  });
+
+  it('dresses a cold day fully, with the coat on top', () => {
+    const cold: DayProfile = { ...mild, band: 5, needsOuter: true, season: 'winter' };
+    const winter = [
+      item('jumper', 'tops', { warmth: 5 }),
+      item('wool', 'bottoms', { warmth: 4 }),
+      item('boots', 'shoes', { warmth: 4 }),
+      item('coat', 'outerwear', { warmth: 5 }),
+    ];
+    const [day] = planTrip({
+      tripSeed: 'trip',
+      days: [{ day: '2026-12-01', profile: cold, activity: null }],
+      owned: winter,
+    });
+    expect(day.pieces.map((piece) => piece.itemId).sort()).toEqual([
+      'boots',
+      'coat',
+      'jumper',
+      'wool',
+    ]);
+  });
+
+  it('falls back to other pieces when nothing is tagged for the activity', () => {
+    const tagged = [
+      item('formal-top', 'tops', { occasions: ['formal'] }),
+      item('casual-bottom', 'bottoms', { occasions: ['casual'] }),
+    ];
+    const pieces = pickDayOutfit({
+      tripSeed: 'trip',
+      day: { day: '2026-11-01', profile: mild, activity: 'formal' },
+      owned: tagged,
+      others: [],
+      shoeLimit: 2,
+    });
+    expect(pieces.map((piece) => piece.itemId).sort()).toEqual(['casual-bottom', 'formal-top']);
+  });
+
+  it('gives another plan when asked again', () => {
+    const first = planTrip({ tripSeed: 'trip', days: tripDays(5), owned: closet });
+    const rounds = [1, 2, 3].map((salt) =>
+      planTrip({ tripSeed: 'trip', days: tripDays(5), owned: closet, salt }),
+    );
+    expect(rounds.some((plan) => JSON.stringify(plan) !== JSON.stringify(first))).toBe(true);
   });
 
   it('respects the activity of a day and offers something else on swap', () => {
@@ -348,10 +401,11 @@ describe('trip repository', () => {
       pieces,
       outfitId: 'saved',
     });
-    // A swapped outfit is no longer the saved one.
+    // A swapped outfit stays linked: the saved outfit takes the new pieces.
     await trips.setDay(trip.id, '2026-10-31', { pieces: [pieces[0]] });
     loaded = (await trips.get(trip.id))!;
-    expect(loaded.days[1].outfitId).toBeNull();
+    expect(loaded.days[1].outfitId).toBe('saved');
+    expect(loaded.days[1].pieces).toEqual([pieces[0]]);
     expect(loaded.days[1].activity).toBe('formal');
   });
 
@@ -379,7 +433,8 @@ describe('trip repository', () => {
     await trips.removeEntry(trip.id, 'umbrella');
     packing = (await trips.get(trip.id))!.packing;
     expect(packing.map((entry) => [entry.kind, entry.packed]).sort()).toEqual([
-      ['item', false],
+      // The ticked piece that was also added by hand is an extra now.
+      ['extra', false],
       ['text', true],
     ]);
   });
@@ -427,6 +482,18 @@ describe('trip repository', () => {
       'Rome 2026-10-06',
       'Rome 2026-10-07',
     ]);
+
+    // Swapping a day that is already in the calendar changes its outfit, and adds nothing.
+    const linked = (await trips.get(trip.id))!.days[2].outfitId!;
+    await trips.setDay(trip.id, '2026-10-06', { pieces: [pieces[0]] });
+    expect(await addTripToCalendar((await trips.get(trip.id))!, deps)).toBe(0);
+    expect((await outfits.get(linked))?.entries).toHaveLength(0);
+    expect(
+      query(`SELECT item_id FROM outfit_items WHERE outfit_id = '${linked}'`).map(
+        (row) => row.item_id,
+      ),
+    ).toEqual(['top']);
+    expect(await calendar.range('2026-10-01', '2026-10-31')).toHaveLength(2);
 
     await trips.remove(trip.id);
     expect(await trips.list('2026-10-05')).toEqual([]);

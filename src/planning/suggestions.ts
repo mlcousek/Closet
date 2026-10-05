@@ -236,10 +236,13 @@ export function generateCombinations(
     const jitter = () => random() * 12;
     const leastWorn = (item: Item) =>
       (history.wearCounts.get(item.id) ?? 0) === 0 ? RULES.score.leastWornBonus : 0;
+    // While the outfit is being built it has no outer layer yet, so that rule waits for the
+    // finished set; otherwise every first pick would be unsuitable and only the coat would remain.
+    const building = { ...profile, needsOuter: false };
     const add = (candidates: Item[]) => {
       const pick = pickBest(
         candidates,
-        (item) => scoreItems([...chosen, item], profile, history) + leastWorn(item) + jitter(),
+        (item) => scoreItems([...chosen, item], building, history) + leastWorn(item) + jitter(),
       );
       if (pick) chosen.push(pick);
     };
@@ -252,6 +255,8 @@ export function generateCombinations(
     } else continue;
     add(bySlot('shoes'));
     if (profile.needsOuter) add(bySlot('outer'));
+    // No piece that covers the body suited the day: a coat and shoes alone are not an outfit.
+    if (!chosen.some((item) => ['top', 'bottom', 'fullBody'].includes(slotOf(item)))) continue;
 
     const key = chosen
       .map((item) => item.id)

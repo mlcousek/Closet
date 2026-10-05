@@ -11,6 +11,7 @@ import { useClosetTab } from '@/closet/closetTab';
 import { COLOURS, isCategory } from '@/closet/taxonomy';
 import type { Item } from '@/closet/types';
 import { useItems } from '@/closet/useItems';
+import { useOutfits } from '@/outfits/useOutfits';
 import { AppText, EmptyState, Screen } from '@/components/ui';
 import { formatLocale } from '@/i18n/format';
 import { calendarRepository } from '@/planning/calendar';
@@ -79,6 +80,7 @@ export default function StatsScreen() {
   const { spacing } = useTheme();
   const [period, setPeriod] = useState<Period>('90d');
   const { data: items, isPending } = useItems({});
+  const { data: outfits = [] } = useOutfits({});
   const { data: wears } = useQuery({
     queryKey: ['calendar', 'wearLog'],
     queryFn: () => calendarRepository.wearLog(),
@@ -116,6 +118,7 @@ export default function StatsScreen() {
 
       <Section title={t('stats.overview')}>
         <AppText testID="stats-count">{t('closet.count', { count: stats.itemCount })}</AppText>
+        <AppText testID="stats-outfits">{t('stats.outfits', { count: outfits.length })}</AppText>
         {stats.value.map((entry) => (
           <AppText key={entry.currency} testID={`stats-value-${entry.currency || 'none'}`}>
             {t('stats.value', {
@@ -141,7 +144,8 @@ export default function StatsScreen() {
           onPress={(key) => {
             if (!isCategory(key)) return;
             useClosetTab.getState().showCategory(key);
-            router.push('/closet');
+            // Back to the tabs that are already open, not a second copy of them on top.
+            router.dismissTo('/closet');
           }}
         />
       </Section>

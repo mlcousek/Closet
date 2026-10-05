@@ -4,7 +4,7 @@ import { SLOTS, isOccasion, type Occasion, type Slot } from '@/closet/taxonomy';
 import { getDb, type Db } from '@/db/client';
 import { newId } from '@/db/id';
 import { createRepository } from '@/db/repository';
-import { tripDays, tripPacking, trips } from '@/db/schema';
+import { outfitItems, tripDays, tripPacking, trips } from '@/db/schema';
 import type { OutfitPiece } from '@/outfits/draft';
 import { addDays, daysBetween, today as todayOf, type Day } from '@/planning/dates';
 import type { Place } from '@/planning/weather';
@@ -22,7 +22,8 @@ export type TripDay = {
 
 export type PackingEntry = {
   key: string;
-  kind: 'item' | 'text';
+  /** 'item' is the tick of an outfit piece, 'extra' a closet item added by hand, 'text' free text. */
+  kind: 'item' | 'extra' | 'text';
   label: string | null;
   packed: boolean;
 };
@@ -78,7 +79,7 @@ export function createTripRepository(db: () => Db = getDb, now: () => number = D
       .all()
       .map((entry) => ({
         key: entry.key,
-        kind: entry.kind === 'text' ? 'text' : 'item',
+        kind: entry.kind === 'text' ? 'text' : entry.kind === 'extra' ? 'extra' : 'item',
         label: entry.label,
         packed: entry.packed,
       })),
@@ -145,14 +146,26 @@ export function createTripRepository(db: () => Db = getDb, now: () => number = D
       patch: { pieces?: OutfitPiece[]; activity?: Occasion | null; outfitId?: string | null },
     ): Promise<void> {
       const { pieces, ...rest } = patch;
+      const where = and(eq(tripDays.tripId, tripId), eq(tripDays.day, day));
+      const linked = db().select({ outfitId: tripDays.outfitId }).from(tripDays).where(where).get();
+      if (pieces && pieces.length > 0 && linked?.outfitId) {
+        // The day is already in the calendar: its saved outfit follows the change, so the
+        // calendar never shows an outfit the trip no longer has, and none is created twice.
+        const outfitId = linked.outfitId;
+        db().transaction((tx) => {
+          tx.delete(outfitItems).where(eq(outfitItems.outfitId, outfitId)).run();
+          tx.insert(outfitItems)
+            .values(pieces.map((piece) => ({ outfitId, ...piece })))
+            .run();
+        });
+      }
       db()
         .update(tripDays)
         .set({
           ...rest,
-          // New pieces are a new outfit, so the link to the one already saved is dropped.
-          ...(pieces ? { pieces: JSON.stringify(pieces), outfitId: patch.outfitId ?? null } : {}),
+          ...(pieces ? { pieces: JSON.stringify(pieces) } : {}),
         })
-        .where(and(eq(tripDays.tripId, tripId), eq(tripDays.day, day)))
+        .where(where)
         .run();
     },
     /** Ticks or unticks a closet item on the checklist. */
@@ -163,8 +176,12 @@ export function createTripRepository(db: () => Db = getDb, now: () => number = D
     async addItem(tripId: string, itemId: string): Promise<void> {
       db()
         .insert(tripPacking)
-        .values({ tripId, key: itemId, kind: 'item', label: null, packed: false })
-        .onConflictDoNothing()
+        .values({ tripId, key: itemId, kind: 'extra', label: null, packed: false })
+        // An item that was only ticked so far becomes an extra and keeps its tick.
+        .onConflictDoUpdate({
+          target: [tripPacking.tripId, tripPacking.key],
+          set: { kind: 'extra' },
+        })
         .run();
     },
     /** Adds a free-text entry such as "passport". */

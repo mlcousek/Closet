@@ -24,6 +24,7 @@ export async function generateTrip(
   owned: Item[],
   weather?: TripWeather[],
   repository: Pick<TripRepository, 'setDay'> = tripRepository,
+  salt = 0,
 ): Promise<void> {
   const conditions =
     weather ??
@@ -31,7 +32,7 @@ export async function generateTrip(
       trip.place,
       trip.days.map((day) => day.day),
     ));
-  const plan = planTrip({ tripSeed: trip.id, days: dayInputs(trip, conditions), owned });
+  const plan = planTrip({ tripSeed: trip.id, days: dayInputs(trip, conditions), owned, salt });
   for (const day of plan) await repository.setDay(trip.id, day.day, { pieces: day.pieces });
 }
 
@@ -43,7 +44,7 @@ export async function generateTrip(
 export async function styleTrip(
   trip: Trip,
   weather: TripWeather[],
-  context: Pick<StylistRequest, 'items' | 'language' | 'hints' | 'wearCounts'>,
+  context: Pick<StylistRequest, 'items' | 'language' | 'hints' | 'wearCounts' | 'onAnswered'>,
   repository: Pick<TripRepository, 'setDay'> = tripRepository,
   client?: Anthropic,
 ): Promise<number> {
@@ -59,6 +60,8 @@ export async function styleTrip(
     {
       ...context,
       count: days.length,
+      // Packing light means days may share an outfit.
+      keepDuplicates: true,
       request: `Outfits for a ${days.length}-day trip to ${trip.place.name}, one per day and in day order. Pack light: reuse pieces across days and use at most ${shoeLimitFor(days.length)} pairs of shoes in total.\n${lines.join('\n')}`,
     },
     client,

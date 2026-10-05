@@ -37,7 +37,7 @@ export type ClosetStats = {
   usageShare: number;
   /** Best value first: priced items by price per wear over their whole history. */
   costPerWear: { item: Item; wears: number; cost: number }[];
-  /** Wears per month, oldest first, for the months the period covers (at most twelve). */
+  /** Days with something worn per month, oldest first, for the months the period covers. */
   trend: { month: string; count: number }[];
 };
 
@@ -89,7 +89,7 @@ export function computeStats(input: {
 
   const months: string[] = [];
   const firstMonth = (start ?? wears.map((wear) => wear.day).sort()[0] ?? input.today).slice(0, 7);
-  for (let month = input.today.slice(0, 7); month >= firstMonth && months.length < 12;) {
+  for (let month = input.today.slice(0, 7); month >= firstMonth && months.length < 13;) {
     months.unshift(month);
     const [year, number] = month.split('-').map(Number);
     month = number === 1 ? `${year - 1}-12` : `${year}-${String(number - 1).padStart(2, '0')}`;
@@ -125,7 +125,8 @@ export function computeStats(input: {
       .sort((a, b) => a.cost - b.cost),
     trend: months.map((month) => ({
       month,
-      count: inPeriod.filter((wear) => wear.day.startsWith(month)).length,
+      count: new Set(inPeriod.filter((wear) => wear.day.startsWith(month)).map((wear) => wear.day))
+        .size,
     })),
   };
 }

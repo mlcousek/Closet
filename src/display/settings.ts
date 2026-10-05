@@ -26,6 +26,9 @@ export const setDisplayTheme = (theme: DisplayTheme) => setSetting(THEME, theme)
 export const getStartWhileCharging = () => getSetting(CHARGING) === '1';
 export const setStartWhileCharging = (on: boolean) => setSetting(CHARGING, on ? '1' : null);
 
+/** Whether the display is on screen right now, so it is never opened on top of itself. */
+export const displayState = { open: false };
+
 /** The numbers behind the display's behaviour, in one place for tuning on a real wall. */
 export const DISPLAY_RULES = {
   /** Without a touch for this long, the screen dims. */

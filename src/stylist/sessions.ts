@@ -97,6 +97,21 @@ export function createSessionRepository(db: () => Db = getDb, now: () => number 
       });
       return updated ? toSession(updated) : null;
     },
+    /** Remembers that a proposal was saved or planned, so reopening the session cannot repeat it. */
+    async markProposal(
+      id: string,
+      turn: number,
+      index: number,
+      patch: Pick<Proposal, 'outfitId' | 'planned'>,
+    ): Promise<void> {
+      const row = await base.getById(id);
+      if (!row) return;
+      const turns = parseTurns(row.turns);
+      const proposal = turns[turn]?.proposals[index];
+      if (!proposal) return;
+      turns[turn].proposals[index] = { ...proposal, ...patch };
+      await base.update(id, { turns: JSON.stringify(turns) });
+    },
     async remove(id: string): Promise<void> {
       await base.softDelete(id);
     },

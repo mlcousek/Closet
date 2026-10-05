@@ -2,11 +2,18 @@ import { Image } from 'expo-image';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { DISPLAY_COLOURS, DISPLAY_RULES, getDisplayTheme, shiftAt } from '@/display/settings';
+import {
+  DISPLAY_COLOURS,
+  DISPLAY_RULES,
+  displayState,
+  getDisplayTheme,
+  shiftAt,
+} from '@/display/settings';
 import { formatTemperature } from '@/i18n/format';
 import { OutfitCollage } from '@/outfits/OutfitImage';
 import { useOutfits, useRenderSummary } from '@/outfits/useOutfits';
@@ -37,6 +44,20 @@ export default function DisplayScreen() {
     const timer = setInterval(() => setNow(new Date()), 10_000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    displayState.open = true;
+    return () => {
+      displayState.open = false;
+    };
+  }, []);
+
+  // A display left on a stand for days would otherwise show the weather of when it was opened.
+  const client = useQueryClient();
+  const hour = now.getHours();
+  useEffect(() => {
+    void client.invalidateQueries({ queryKey: ['weather'] });
+  }, [client, hour]);
 
   useEffect(() => {
     if (!controls) return;

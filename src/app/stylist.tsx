@@ -42,11 +42,14 @@ function ProposalCard({
   proposal,
   items,
   day,
+  onMark,
 }: {
   id: string;
   proposal: Proposal;
   items: Map<string, Item>;
   day: Day | null;
+  /** Stores that the proposal was saved or planned, so it stays so when the session is reopened. */
+  onMark: (patch: Pick<Proposal, 'outfitId' | 'planned'>) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -54,8 +57,10 @@ function ProposalCard({
   const invalidateOutfits = useInvalidateOutfits();
   const invalidatePlanning = useInvalidatePlanning();
   const showToast = useToast((state) => state.show);
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [planned, setPlanned] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(proposal.outfitId ?? null);
+  const [planned, setPlanned] = useState(proposal.planned ?? false);
+  // One action at a time: a second tap while saving would create the outfit twice.
+  const [working, setWorking] = useState(false);
 
   const pieces = proposal.pieces.filter((piece) => items.has(piece.itemId));
   const shown = pieces.map((piece) => items.get(piece.itemId)!);
@@ -67,8 +72,21 @@ function ProposalCard({
     if (savedId) return savedId;
     const outfit = await outfitRepository.create(pieces);
     setSavedId(outfit.id);
+    await onMark({ outfitId: outfit.id });
     await invalidateOutfits();
     return outfit.id;
+  };
+
+  const run = async (action: () => Promise<void>) => {
+    if (working) return;
+    setWorking(true);
+    try {
+      await action();
+    } catch {
+      showToast({ message: t('common.somethingWentWrong') });
+    } finally {
+      setWorking(false);
+    }
   };
 
   return (
@@ -85,6 +103,11 @@ function ProposalCard({
         <OutfitCollage items={shown} testID={`proposal-collage-${id}`} />
       </View>
       <AppText>{proposal.rationale}</AppText>
+      {!wearable ? (
+        <AppText testID={`proposal-wishlist-${id}`} variant="caption" muted>
+          {t('stylist.wishlistPiece')}
+        </AppText>
+      ) : null}
       {complete ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           <Button
@@ -92,8 +115,13 @@ function ProposalCard({
             kind="secondary"
             icon={savedId ? 'checkmark' : 'bookmark-outline'}
             label={t(savedId ? 'stylist.saved' : 'common.save')}
-            disabled={!!savedId}
-            onPress={() => void save().then(() => showToast({ message: t('stylist.savedToast') }))}
+            disabled={!!savedId || working}
+            onPress={() =>
+              void run(async () => {
+                await save();
+                showToast({ message: t('stylist.savedToast') });
+              })
+            }
           />
           <Button
             testID={`proposal-edit-${id}`}
@@ -113,11 +141,13 @@ function ProposalCard({
               kind="secondary"
               icon="calendar-outline"
               label={t(planned ? 'planning.planned' : 'stylist.plan')}
-              disabled={planned}
+              disabled={planned || working}
               onPress={() =>
-                void save().then(async (outfitId) => {
+                void run(async () => {
+                  const outfitId = await save();
                   await calendarRepository.plan(day ?? today(), outfitId);
                   setPlanned(true);
+                  await onMark({ planned: true });
                   await invalidatePlanning();
                   showToast({ message: t('stylist.plannedToast') });
                 })
@@ -190,9 +220,9 @@ export default function StylistScreen() {
         profile: targetDay ? dayProfile(targetDay, forecast, southern) : null,
         mustInclude: required?.id ?? null,
         wearCounts: await calendarRepository.wearCounts(closet.map((item) => item.id)),
+        // The provider answered, so the request was paid for even when nothing usable came back.
+        onAnswered: () => usageLog.record('stylist'),
       });
-      // The provider answered, so the request was paid for even when nothing usable came back.
-      await usageLog.record('stylist');
       if (proposals.length === 0) {
         setProblem('noneValid');
         return;
@@ -293,6 +323,10 @@ export default function StylistScreen() {
                   proposal={proposal}
                   items={items}
                   day={active.day}
+                  onMark={async (patch) => {
+                    await sessionRepository.markProposal(active.id, turnIndex, index, patch);
+                    await refresh();
+                  }}
                 />
               ))}
             </View>

@@ -35,7 +35,7 @@ jest.mock('@/storage/imageStore', () => ({
   imageStore: { uri: (path: string) => `file:///documents/${path}` },
 }));
 
-const mockRouter = { push: jest.fn(), back: jest.fn() };
+const mockRouter = { push: jest.fn(), back: jest.fn(), dismissTo: jest.fn() };
 let mockParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -192,7 +192,12 @@ jest.mock('@/planning/weather', () => ({
 const mockPropose = jest.fn(async (_request: StylistRequest): Promise<Proposal[]> => []);
 jest.mock('../stylist', () => ({
   ...jest.requireActual('../stylist'),
-  proposeOutfits: (request: StylistRequest) => mockPropose(request),
+  proposeOutfits: async (request: StylistRequest) => {
+    const proposals = await mockPropose(request);
+    // As the real function does once the provider has answered.
+    await request.onAnswered?.();
+    return proposals;
+  },
 }));
 let mockSessions: StylistSession[] = [];
 jest.mock('../sessions', () => ({
@@ -220,6 +225,25 @@ jest.mock('../sessions', () => ({
     addTurn: async (id: string, turn: { request: string; proposals: Proposal[] }) => {
       mockSessions = mockSessions.map((session) =>
         session.id === id ? { ...session, turns: [...session.turns, turn] } : session,
+      );
+    },
+    markProposal: async (id: string, turn: number, index: number, patch: Partial<Proposal>) => {
+      mockSessions = mockSessions.map((session) =>
+        session.id !== id
+          ? session
+          : {
+              ...session,
+              turns: session.turns.map((entry, turnIndex) =>
+                turnIndex !== turn
+                  ? entry
+                  : {
+                      ...entry,
+                      proposals: entry.proposals.map((proposal, proposalIndex) =>
+                        proposalIndex === index ? { ...proposal, ...patch } : proposal,
+                      ),
+                    },
+              ),
+            },
       );
     },
     remove: async (id: string) => {
@@ -411,6 +435,16 @@ describe('stylist', () => {
     // Planning reuses the outfit that was already saved.
     expect(mockOutfitRepo.create).toHaveBeenCalledTimes(1);
 
+    // Both are remembered with the session, so reopening it cannot save or plan a second time.
+    expect(mockSessions[0].turns[0].proposals[0]).toMatchObject({
+      outfitId: 'saved-outfit',
+      planned: true,
+    });
+    fireEvent.press(screen.getByTestId('stylist-new'));
+    fireEvent.press(await screen.findByTestId('stylist-session-s1'));
+    expect(screen.getByTestId('proposal-save-0-0')).toBeDisabled();
+    expect(screen.getByTestId('proposal-plan-0-0')).toBeDisabled();
+
     fireEvent.press(screen.getByTestId('proposal-edit-0-0'));
     expect(mockRouter.push).toHaveBeenCalledWith({
       pathname: '/outfit/edit',
@@ -433,6 +467,7 @@ describe('stylist', () => {
     expect(mockSessions[0].itemId).toBe('wish');
     expect(screen.getByTestId('proposal-save-0-0')).toBeTruthy();
     expect(screen.queryByTestId('proposal-plan-0-0')).toBeNull();
+    expect(screen.getByTestId('proposal-wishlist-0-0')).toBeTruthy();
   });
 
   it('says so when nothing usable came back, and explains failures', async () => {
@@ -511,6 +546,7 @@ describe('statistics', () => {
     ]);
     renderWithQuery(<StatsScreen />);
     expect(await screen.findByTestId('stats-count')).toHaveTextContent('5 items');
+    expect(screen.getByTestId('stats-outfits')).toHaveTextContent('Saved outfits: 0');
     expect(screen.getByTestId('stats-value-CZK')).toHaveTextContent(/2,000/);
     expect(screen.getByTestId('stats-price-coverage')).toHaveTextContent(/2 of 5/);
     expect(screen.getByTestId('stats-category-tops')).toHaveTextContent(/Tops.*2/);
@@ -530,7 +566,7 @@ describe('statistics', () => {
     renderWithQuery(<StatsScreen />);
     fireEvent.press(await screen.findByTestId('stats-category-bottoms'));
     expect(useClosetTab.getState()).toMatchObject({ tab: 'closet', category: 'bottoms' });
-    expect(mockRouter.push).toHaveBeenCalledWith('/closet');
+    expect(mockRouter.dismissTo).toHaveBeenCalledWith('/closet');
     fireEvent.press(screen.getByTestId('stats-most-tee'));
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/item/[id]', params: { id: 'tee' } });
   });
