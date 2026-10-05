@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import type { IconName } from '@/components/ui';
+import { EmptyState, Screen, type IconName } from '@/components/ui';
 import { useProfile } from '@/profile/useProfile';
 import { AddButton } from '@/shell/AddMenu';
 import { useTheme } from '@/theme/useTheme';
@@ -18,10 +18,24 @@ const TABS: { name: string; labelKey: string; icon: IconName; iconActive: IconNa
 export default function TabsLayout() {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const { data: profile, isPending } = useProfile();
+  const { data: profile, isPending, isError, refetch } = useProfile();
 
   // Nothing is shown until we know whether onboarding is needed, so the tabs never flash first.
   if (isPending) return null;
+  // A failed read is not the same as "no profile": never send an existing user through onboarding.
+  if (isError) {
+    return (
+      <Screen>
+        <EmptyState
+          icon="alert-circle-outline"
+          title={t('profile.loadFailedTitle')}
+          message={t('profile.loadFailedMessage')}
+          actionLabel={t('common.retry')}
+          onAction={() => void refetch()}
+        />
+      </Screen>
+    );
+  }
   if (!profile) return <Redirect href="/onboarding" />;
 
   return (

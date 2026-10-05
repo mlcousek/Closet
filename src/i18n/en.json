@@ -14,7 +14,8 @@
     "back": "Back",
     "edit": "Edit",
     "done": "Done",
-    "notSet": "Not set"
+    "notSet": "Not set",
+    "retry": "Try again"
   },
   "tabs": {
     "home": "Home",
@@ -66,7 +67,9 @@
     "sizeBottom": "Bottoms",
     "sizeShoes": "Shoes",
     "noPhoto": "No photo yet",
-    "saved": "Profile saved"
+    "saved": "Profile saved",
+    "loadFailedTitle": "Your profile could not be loaded",
+    "loadFailedMessage": "Nothing has been changed. Try again, and restart the app if this keeps happening."
   },
   "settings": {
     "title": "Settings",
@@ -171,6 +174,7 @@
       "severalPeople": "There is more than one person in this photo. Renders work best with only you in it.",
       "cutOff": "Part of your body seems to be outside the frame. Renders work best when you are visible from head to feet.",
       "tooSmall": "You are quite small in this photo. Standing closer to the camera gives better renders."
-    }
+    },
+    "discard": "Use a different photo"
   }
 }

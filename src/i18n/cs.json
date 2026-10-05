@@ -14,7 +14,8 @@
     "back": "Zpět",
     "edit": "Upravit",
     "done": "Hotovo",
-    "notSet": "Nenastaveno"
+    "notSet": "Nenastaveno",
+    "retry": "Zkusit znovu"
   },
   "tabs": {
     "home": "Domů",
@@ -66,7 +67,9 @@
     "sizeBottom": "Spodní díly",
     "sizeShoes": "Boty",
     "noPhoto": "Zatím bez fotky",
-    "saved": "Profil uložen"
+    "saved": "Profil uložen",
+    "loadFailedTitle": "Profil se nepodařilo načíst",
+    "loadFailedMessage": "Nic se nezměnilo. Zkuste to znovu, a pokud potíže trvají, restartujte aplikaci."
   },
   "settings": {
     "title": "Nastavení",
@@ -171,6 +174,7 @@
       "severalPeople": "Na fotce je víc než jedna osoba. Vykreslení funguje nejlépe, když jste na ní jen vy.",
       "cutOff": "Část postavy je zřejmě mimo záběr. Vykreslení funguje nejlépe, když jste vidět od hlavy po chodidla.",
       "tooSmall": "Na fotce jste dost malí. Když se postavíte blíž k foťáku, bude vykreslení lepší."
-    }
+    },
+    "discard": "Použít jinou fotku"
   }
 }

@@ -11,13 +11,16 @@ export type PickedPhoto = { uri: string; width: number; height: number };
 export type PickResult =
   { status: 'picked'; photo: PickedPhoto } | { status: 'cancelled' } | { status: 'denied' };
 
-/** Asks for permission if needed, then lets the user take or choose one photo. */
+/**
+ * Lets the user take or choose one photo. Only the camera needs permission:
+ * the system photo picker runs outside the app and hands back just the chosen
+ * photo, so asking for library access would only add a prompt that can block it.
+ */
 export async function pickPhoto(source: 'camera' | 'library'): Promise<PickResult> {
-  const permission =
-    source === 'camera'
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) return { status: 'denied' };
+  if (source === 'camera') {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) return { status: 'denied' };
+  }
 
   const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1 };
   const result =

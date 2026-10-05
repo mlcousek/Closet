@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AppText, Button, Field, Screen } from '@/components/ui';
 import { AvatarPicker } from '@/profile/AvatarPicker';
-import { storeAvatar } from '@/profile/avatar';
+import { storeAvatarAnd } from '@/profile/avatar';
 import { avatarDeps, type PickedPhoto } from '@/profile/photo';
 import { BodyTypePicker, GenderPicker } from '@/profile/pickers';
 import type { BodyType, Gender } from '@/profile/types';
@@ -27,18 +27,25 @@ export default function OnboardingScreen() {
   const [gender, setGender] = useState<Gender | null>(null);
   const [bodyType, setBodyType] = useState<BodyType | null>(null);
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
+  const [photoPending, setPhotoPending] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const index = STEPS.indexOf(step);
   const go = (offset: number) => setStep(STEPS[index + offset]);
 
-  const finish = async () => {
+  const finish = async (withPhoto: PickedPhoto | null) => {
     setSaving(true);
     setError(null);
+    const values = { name: name.trim(), gender, bodyType };
     try {
-      const avatar = photo ? await storeAvatar(photo, avatarDeps) : null;
-      await saveProfile.mutateAsync({ name: name.trim(), gender, bodyType, ...avatar });
+      if (withPhoto) {
+        await storeAvatarAnd(withPhoto, avatarDeps, (stored) =>
+          saveProfile.mutateAsync({ ...values, ...stored }),
+        );
+      } else {
+        await saveProfile.mutateAsync(values);
+      }
       router.replace('/');
     } catch {
       setError(t('onboarding.saveFailed'));
@@ -55,20 +62,8 @@ export default function OnboardingScreen() {
     if (step === 'gender') setGender(null);
     if (step === 'bodyType') setBodyType(null);
     if (step === 'avatar') setPhoto(null);
-    if (isLast) void finishWithout();
+    if (isLast) void finish(null);
     else go(1);
-  };
-
-  const finishWithout = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      await saveProfile.mutateAsync({ name: name.trim(), gender, bodyType });
-      router.replace('/');
-    } catch {
-      setError(t('onboarding.saveFailed'));
-      setSaving(false);
-    }
   };
 
   return (
@@ -112,7 +107,11 @@ export default function OnboardingScreen() {
       {step === 'avatar' ? (
         <>
           <AppText variant="title">{t('onboarding.avatarTitle')}</AppText>
-          <AvatarPicker currentUri={photo?.uri ?? null} onAccept={setPhoto} />
+          <AvatarPicker
+            currentUri={photo?.uri ?? null}
+            onAccept={setPhoto}
+            onPendingChange={setPhotoPending}
+          />
         </>
       ) : null}
 
@@ -128,9 +127,9 @@ export default function OnboardingScreen() {
           label={t(
             step === 'welcome' ? 'onboarding.start' : isLast ? 'onboarding.finish' : 'common.next',
           )}
-          disabled={!canContinue || (isLast && !photo)}
+          disabled={!canContinue || (isLast && (!photo || photoPending))}
           loading={saving}
-          onPress={() => (isLast ? void finish() : go(1))}
+          onPress={() => (isLast ? void finish(photo) : go(1))}
         />
         {skippable ? (
           <Button

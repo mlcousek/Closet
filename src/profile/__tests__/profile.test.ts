@@ -6,7 +6,6 @@ import { createProfileRepository } from '../repository';
 import { cmToFeetInches, feetInchesToCm, formatHeight, lengthSystem, parseHeight } from '../units';
 
 jest.mock('expo-crypto', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   randomUUID: () => require('node:crypto').randomUUID(),
 }));
 jest.mock('expo-sqlite', () => ({}));

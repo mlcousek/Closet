@@ -6,7 +6,6 @@ import { baseColumns } from '../schema';
 import { createTestDb } from '../testing';
 
 jest.mock('expo-crypto', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   randomUUID: () => require('node:crypto').randomUUID(),
 }));
 

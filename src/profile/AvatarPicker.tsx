@@ -15,6 +15,8 @@ type Props = {
   /** URI of the photo to show as the current choice, if any. */
   currentUri: string | null;
   onAccept: (photo: PickedPhoto) => void;
+  /** Told when a photo is waiting for the user to keep or discard it, so the parent can hold off saving. */
+  onPendingChange?: (pending: boolean) => void;
   showGuidance?: boolean;
 };
 
@@ -54,12 +56,23 @@ function Example({ good }: { good: boolean }) {
 }
 
 /** Lets the user take or choose a full-body photo, checks it and warns without blocking. */
-export function AvatarPicker({ currentUri, onAccept, showGuidance = true }: Props) {
+export function AvatarPicker({
+  currentUri,
+  onAccept,
+  onPendingChange,
+  showGuidance = true,
+}: Props) {
   const { t } = useTranslation();
   const { colors, spacing, radius } = useTheme();
   const [busy, setBusy] = useState(false);
   const [denied, setDenied] = useState(false);
-  const [pending, setPending] = useState<{ photo: PickedPhoto; issue: AvatarIssue } | null>(null);
+  const [pending, setPendingState] = useState<{ photo: PickedPhoto; issue: AvatarIssue } | null>(
+    null,
+  );
+  const setPending = (value: { photo: PickedPhoto; issue: AvatarIssue } | null) => {
+    setPendingState(value);
+    onPendingChange?.(value !== null);
+  };
 
   const choose = async (source: 'camera' | 'library') => {
     setBusy(true);
@@ -127,6 +140,12 @@ export function AvatarPicker({ currentUri, onAccept, showGuidance = true }: Prop
               onAccept(pending.photo);
               setPending(null);
             }}
+          />
+          <Button
+            testID="avatar-discard"
+            label={t('avatar.discard')}
+            kind="secondary"
+            onPress={() => setPending(null)}
           />
         </View>
       ) : null}

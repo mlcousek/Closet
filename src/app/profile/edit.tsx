@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AppText, Button, Field, Screen } from '@/components/ui';
 import { AvatarPicker } from '@/profile/AvatarPicker';
-import { discardAvatar, storeAvatar } from '@/profile/avatar';
+import { discardAvatar, storeAvatarAnd } from '@/profile/avatar';
 import { avatarDeps, type PickedPhoto } from '@/profile/photo';
 import { BodyTypePicker, GenderPicker } from '@/profile/pickers';
 import type { Profile } from '@/profile/types';
@@ -44,8 +44,7 @@ function EditForm({ profile }: { profile: Profile }) {
   const replaceAvatar = async (photo: PickedPhoto) => {
     setBusy(true);
     try {
-      const stored = await storeAvatar(photo, avatarDeps);
-      await saveProfile.mutateAsync(stored);
+      await storeAvatarAnd(photo, avatarDeps, (stored) => saveProfile.mutateAsync(stored));
       // The old files are only deleted once the profile points at the new ones.
       await discardAvatar(profile, avatarDeps);
     } catch {

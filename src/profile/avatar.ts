@@ -60,6 +60,24 @@ export async function storeAvatar(
   }
 }
 
+/**
+ * Stores a photo as the avatar and records it with `persist`. If recording
+ * fails the new files are deleted again, so a failed save leaves nothing behind.
+ */
+export async function storeAvatarAnd<T>(
+  photo: { uri: string; width: number; height: number },
+  deps: AvatarDeps,
+  persist: (stored: StoredAvatar) => Promise<T>,
+): Promise<T> {
+  const stored = await storeAvatar(photo, deps);
+  try {
+    return await persist(stored);
+  } catch (error) {
+    await discardAvatar(stored, deps).catch(() => {});
+    throw error;
+  }
+}
+
 /** Deletes the files of an avatar that is being replaced or removed. */
 export async function discardAvatar(
   avatar: { avatarPath: string | null; avatarSmallPath: string | null },

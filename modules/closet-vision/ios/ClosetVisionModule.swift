@@ -45,7 +45,14 @@ private struct LoadedImage {
 }
 
 private func loadImage(_ uri: String) throws -> LoadedImage {
-  let path = URL(string: uri)?.path ?? uri
+  let path: String
+  if let url = URL(string: uri), url.isFileURL {
+    path = url.path
+  } else {
+    // Not a parseable file URL (for example an unencoded space): treat it as a plain path.
+    let stripped = uri.hasPrefix("file://") ? String(uri.dropFirst("file://".count)) : uri
+    path = stripped.removingPercentEncoding ?? stripped
+  }
   guard let image = UIImage(contentsOfFile: path), let cgImage = image.cgImage else {
     throw ImageLoadException()
   }
