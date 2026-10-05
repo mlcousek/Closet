@@ -147,11 +147,12 @@ export function createItemRepository(db: () => Db = getDb, now: () => number = D
     async create(
       details: ItemDetails,
       images: ItemImages,
-      options: { needsReview?: boolean } = {},
+      options: { needsReview?: boolean; id?: string } = {},
     ): Promise<Item> {
       const row = await base.create({
         ...toColumns(details),
         ...images,
+        ...(options.id ? { id: options.id } : {}),
         category: details.category,
         ownership: 'owned',
         needsReview: options.needsReview ?? false,

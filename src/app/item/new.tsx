@@ -10,6 +10,7 @@ import { Chips } from '@/closet/Chips';
 import { itemImageDeps, toTagImage } from '@/closet/deviceImages';
 import { ItemForm } from '@/closet/ItemForm';
 import { storeItemImages } from '@/closet/itemImages';
+import { usePendingLink, type PendingLinkItem } from '@/closet/pendingLink';
 import { itemRepository } from '@/closet/repository';
 import type { ItemDetails } from '@/closet/types';
 import { useInvalidateItems } from '@/closet/useItems';
@@ -17,15 +18,7 @@ import { AppText, Button, Screen } from '@/components/ui';
 import { pickPhoto } from '@/profile/photo';
 import { useTheme } from '@/theme/useTheme';
 
-type Params = {
-  source?: 'camera' | 'library';
-  uri?: string;
-  name?: string;
-  brand?: string;
-  price?: string;
-  currency?: string;
-  sourceUrl?: string;
-};
+type Params = { source?: 'camera' | 'library' | 'link' };
 
 type Photo = { originalUri: string; cutoutUri: string | null };
 
@@ -33,7 +26,7 @@ type Photo = { originalUri: string; cutoutUri: string | null };
 export default function NewItemScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const params = useLocalSearchParams<Params>();
+  const { source } = useLocalSearchParams<Params>();
   const { colors, spacing, radius } = useTheme();
   const invalidateItems = useInvalidateItems();
 
@@ -41,13 +34,14 @@ export default function NewItemScreen() {
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [useCutout, setUseCutout] = useState(true);
   const [tags, setTags] = useState<ItemTags | null>(null);
+  const [fromLink, setFromLink] = useState<PendingLinkItem | null>(null);
   const [unavailable, setUnavailable] = useState<AiUnavailableReason | null>(null);
   const [denied, setDenied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   const started = useRef(false);
 
-  const prepare = async (uri: string) => {
+  const prepare = async (uri: string, size?: { width: number; height: number }) => {
     setStage('working');
     setTags(null);
     setUnavailable(null);
@@ -56,7 +50,7 @@ export default function NewItemScreen() {
     setUseCutout(cutout !== null);
     setStage('tagging');
     try {
-      const image = await toTagImage(cutout?.uri ?? uri, cutout !== null);
+      const image = await toTagImage(cutout?.uri ?? uri, cutout !== null, cutout ?? size);
       setTags(await tagItem(image, i18n.language === 'cs' ? 'cs' : 'en'));
     } catch (error) {
       setUnavailable(error instanceof AiUnavailableError ? error.reason : 'error');
@@ -64,9 +58,9 @@ export default function NewItemScreen() {
     setStage('form');
   };
 
-  const pick = async (source: 'camera' | 'library', leaveOnCancel: boolean) => {
+  const pick = async (from: 'camera' | 'library', leaveOnCancel: boolean) => {
     setDenied(false);
-    const result = await pickPhoto(source);
+    const result = await pickPhoto(from);
     if (result.status === 'denied') {
       setDenied(true);
       return;
@@ -75,16 +69,26 @@ export default function NewItemScreen() {
       if (leaveOnCancel) router.back();
       return;
     }
-    await prepare(result.photo.uri);
+    // A photo chosen here replaces anything that came from a shop link.
+    setFromLink(null);
+    await prepare(result.photo.uri, result.photo);
   };
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    // Starting the one-off photo flow is the purpose of this effect.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (params.uri) void prepare(params.uri);
-    else if (params.source) void pick(params.source, true);
+    if (source === 'link') {
+      const pending = usePendingLink.getState().take();
+      if (pending) {
+        // Starting the one-off photo flow is the purpose of this effect.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFromLink(pending);
+        void prepare(pending.uri);
+      }
+    } else if (source === 'library') {
+      void pick('library', true);
+    }
+    // The camera is not opened automatically: the capture tip is shown first.
     // Runs once for the parameters the screen was opened with.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -107,17 +111,14 @@ export default function NewItemScreen() {
     }
   };
 
-  const prefilledPrice = params.price ? Number(params.price) : null;
   const initial: Partial<ItemDetails> = {
     ...(tags ?? {}),
     // Details read from a shop page are more reliable than a guess from the photo.
-    ...(params.name ? { name: params.name } : {}),
-    ...(params.brand ? { brand: params.brand } : {}),
-    ...(prefilledPrice !== null && Number.isFinite(prefilledPrice)
-      ? { price: prefilledPrice }
-      : {}),
-    ...(params.currency ? { currency: params.currency } : {}),
-    sourceUrl: params.sourceUrl ?? null,
+    ...(fromLink?.name ? { name: fromLink.name } : {}),
+    ...(fromLink?.brand ? { brand: fromLink.brand } : {}),
+    ...(fromLink && fromLink.price !== null ? { price: fromLink.price } : {}),
+    ...(fromLink?.currency ? { currency: fromLink.currency } : {}),
+    sourceUrl: fromLink?.sourceUrl ?? null,
   };
   const suggested = tags
     ? (
@@ -132,7 +133,7 @@ export default function NewItemScreen() {
           'brand',
         ] as const
       ).filter(
-        (field) => !(field === 'name' && params.name) && !(field === 'brand' && params.brand),
+        (field) => !(field === 'name' && fromLink?.name) && !(field === 'brand' && fromLink?.brand),
       )
     : [];
 

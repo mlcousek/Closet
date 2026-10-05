@@ -107,6 +107,39 @@ describe('product page reader', () => {
     });
   });
 
+  it('reads machine-formatted prices and the lower end of a range', () => {
+    const priced = (price: string) =>
+      parseProductPage(
+        page(
+          ld({
+            '@type': 'Product',
+            name: 'X',
+            image: 'https://x.example/a.jpg',
+            offers: { price },
+          }),
+        ),
+        'https://x.example',
+      )!.price;
+    expect(priced('89.9900')).toBe(89.99);
+    expect(priced('1299')).toBe(1299);
+    expect(priced('1,299.00 - 1,499.00')).toBe(1299);
+    expect(priced('1.299')).toBe(1.299);
+    expect(priced('12,5')).toBe(12.5);
+    expect(priced('Kč 1 299,00')).toBe(1299);
+    expect(priced('free')).toBeNull();
+  });
+
+  it('keeps apostrophes inside quoted Open Graph values', () => {
+    const html = page(
+      `<meta property="og:title" content="Women's Linen Shirt">
+       <meta data-content="ignored" property='og:image' content='https://x.example/a.jpg'>`,
+    );
+    expect(parseProductPage(html, 'https://x.example')).toMatchObject({
+      name: "Women's Linen Shirt",
+      images: ['https://x.example/a.jpg'],
+    });
+  });
+
   it('returns nothing for a page without product data or without an image', () => {
     expect(parseProductPage(page('<title>About us</title>'), 'https://x.example')).toBeNull();
     expect(

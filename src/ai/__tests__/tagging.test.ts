@@ -17,11 +17,11 @@ const image = { base64: 'aGVsbG8=', mediaType: 'image/png' as const };
 
 const goodOutput = {
   name: ' Pink pleated skirt ',
-  category: 'bottoms' as const,
-  subcategory: 'skirt' as const,
-  colours: ['pink' as const, 'pink' as const, 'white' as const],
-  seasons: ['summer' as const],
-  occasions: ['party' as const, 'casual' as const],
+  category: 'bottoms',
+  subcategory: 'skirt',
+  colours: ['pink', 'pink', 'white'],
+  seasons: ['summer'],
+  occasions: ['party', 'casual'],
   warmth: 2,
   brand: null,
 };
@@ -89,6 +89,45 @@ describe('item tagging', () => {
     expect(request.model).toBe('claude-haiku-4-5');
     expect(request.fallbacks).toBeUndefined();
     expect(request.output_config.effort).toBeUndefined();
+  });
+
+  it('keeps the rest of the answer when single values are outside the vocabulary', () => {
+    expect(
+      normaliseTags({
+        ...goodOutput,
+        colours: ['burgundy', ' pink ', 'white'],
+        seasons: ['summer', 'monsoon'],
+        occasions: ['brunch'],
+        warmth: 2.4,
+      }),
+    ).toMatchObject({
+      category: 'bottoms',
+      colours: ['pink', 'white'],
+      seasons: ['summer'],
+      occasions: [],
+      warmth: 2,
+    });
+  });
+
+  it('gives up only when the category itself is unusable', async () => {
+    expect(normaliseTags({ ...goodOutput, category: 'swimwear' })).toBeNull();
+    const { client } = clientReturning({
+      stop_reason: 'end_turn',
+      parsed_output: { ...goodOutput, category: 'swimwear' },
+    });
+    await expect(tagItem(image, 'en', client)).rejects.toMatchObject({ reason: 'error' });
+  });
+
+  it('lists the allowed values in the instructions', async () => {
+    const { client, parse } = clientReturning({
+      stop_reason: 'end_turn',
+      parsed_output: goodOutput,
+    });
+    await tagItem(image, 'en', client);
+    const system = ((parse.mock.calls[0] as unknown[])[0] as { system: string }).system;
+    for (const value of ['multicolour', 'autumn', 'outdoor', 'jewellery', 'crossbody']) {
+      expect(system).toContain(value);
+    }
   });
 
   it('drops values that do not fit together', () => {

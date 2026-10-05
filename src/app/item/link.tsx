@@ -7,6 +7,7 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { extensionOf } from '@/closet/itemImages';
+import { usePendingLink } from '@/closet/pendingLink';
 import {
   LinkImportError,
   fetchProductPage,
@@ -77,17 +78,15 @@ export default function LinkImportScreen() {
     setError(null);
     try {
       const uri = await download(chosen);
-      router.replace({
-        pathname: '/item/new',
-        params: {
-          uri,
-          sourceUrl: product.url,
-          ...(product.name ? { name: product.name } : {}),
-          ...(product.brand ? { brand: product.brand } : {}),
-          ...(product.price !== null ? { price: String(product.price) } : {}),
-          ...(product.currency ? { currency: product.currency } : {}),
-        },
+      usePendingLink.getState().set({
+        uri,
+        sourceUrl: product.url,
+        name: product.name,
+        brand: product.brand,
+        price: product.price,
+        currency: product.currency,
       });
+      router.replace({ pathname: '/item/new', params: { source: 'link' } });
     } catch {
       setError('download');
       setBusy(false);

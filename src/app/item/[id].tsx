@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { itemImageDeps } from '@/closet/deviceImages';
 import { ItemForm } from '@/closet/ItemForm';
 import { removeItemImages, storeItemImages } from '@/closet/itemImages';
+import { parseWebUrl } from '@/closet/productPage';
 import { itemRepository } from '@/closet/repository';
 import { displayPath, type Item, type ItemDetails } from '@/closet/types';
 import { useInvalidateItems, useItem } from '@/closet/useItems';
@@ -28,6 +29,8 @@ function ItemView({ item }: { item: Item }) {
   const [busy, setBusy] = useState(false);
 
   const locale = formatLocale(i18n.language === 'cs' ? 'cs' : 'en', getLocales()[0]?.regionCode);
+  // Only web links are ever opened, whatever ended up stored.
+  const sourceUrl = item.sourceUrl ? parseWebUrl(item.sourceUrl) : null;
   const list = (values: string[]) => (values.length > 0 ? values.join(', ') : t('common.notSet'));
 
   const save = async (details: ItemDetails) => {
@@ -195,13 +198,13 @@ function ItemView({ item }: { item: Item }) {
               loading={busy}
               onPress={() => void replaceImage()}
             />
-            {item.sourceUrl ? (
+            {sourceUrl ? (
               <Button
                 testID="item-open-source"
                 kind="secondary"
                 icon="open-outline"
                 label={t('item.openSource')}
-                onPress={() => void Linking.openURL(item.sourceUrl!)}
+                onPress={() => void Linking.openURL(sourceUrl)}
               />
             ) : null}
             <Button

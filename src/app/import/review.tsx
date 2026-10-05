@@ -20,9 +20,8 @@ export default function ReviewScreen() {
   const invalidateItems = useInvalidateItems();
   const { data: pending = [], isPending } = useItems({ needsReview: true, sort: 'newest' });
   const [busy, setBusy] = useState(false);
-  // The total is fixed when the review starts, so "3 of 12" keeps counting up as items are confirmed.
-  const [startTotal, setStartTotal] = useState<number | null>(null);
-  if (startTotal === null && !isPending && pending.length > 0) setStartTotal(pending.length);
+  // Counts items handled in this visit, so progress only moves forward even if more arrive meanwhile.
+  const [handled, setHandled] = useState(0);
 
   if (isPending) return null;
 
@@ -42,27 +41,32 @@ export default function ReviewScreen() {
     );
   }
 
-  const total = Math.max(startTotal ?? pending.length, pending.length);
-  const current = total - pending.length + 1;
+  const current = handled + 1;
+  const total = handled + pending.length;
+  // An item imported without suggestions has only a placeholder category, which is not a suggestion.
+  const hasSuggestions = item.name !== null || item.colours.length > 0;
 
   const confirm = async (details: ItemDetails) => {
     setBusy(true);
     try {
       await itemRepository.update(item.id, { ...details, needsReview: false });
+      setHandled((count) => count + 1);
       await invalidateItems();
     } finally {
       setBusy(false);
     }
   };
 
-  const discard = () =>
-    deleteWithUndo({
+  const discard = () => {
+    setHandled((count) => count + 1);
+    return deleteWithUndo({
       remove: () => itemRepository.remove([item.id]),
       restore: () => itemRepository.restore([item.id]),
       message: t('common.deleted'),
       undoLabel: t('common.undo'),
       onChange: () => void invalidateItems(),
     });
+  };
 
   return (
     <Screen scroll edges={[]} style={{ gap: spacing.lg, paddingTop: spacing.lg }}>
@@ -79,7 +83,11 @@ export default function ReviewScreen() {
         // Each item gets a fresh form.
         key={item.id}
         initial={item}
-        suggested={['name', 'category', 'subcategory', 'colours', 'seasons', 'occasions', 'warmth']}
+        suggested={
+          hasSuggestions
+            ? ['name', 'category', 'subcategory', 'colours', 'seasons', 'occasions', 'warmth']
+            : []
+        }
         submitLabel={t('importFlow.confirm')}
         busy={busy}
         onSubmit={(details) => void confirm(details)}

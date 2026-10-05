@@ -2,7 +2,12 @@ import { createTestDb } from '@/db/testing';
 import en from '@/i18n/en.json';
 import cs from '@/i18n/cs.json';
 
-import { detailsFromTags, processImportJob, type ImportJobDeps } from '../importActions';
+import {
+  detailsFromTags,
+  processImportJob,
+  startBulkImport,
+  type ImportJobDeps,
+} from '../importActions';
 import { createImportJobRepository, createImportProcessor } from '../importQueue';
 import { fromFormValues, parseDateInput, parsePriceInput, toFormValues } from '../itemFormLogic';
 import { THUMB_WIDTH, removeItemImages, storeItemImages, type ItemImageDeps } from '../itemImages';
@@ -580,6 +585,7 @@ describe('import job', () => {
         cutout: async () => ({ uri: 'file:///tmp/cut.png', width: 10, height: 10 }),
       },
       sourceUri: (path) => `file:///documents/${path}`,
+      itemExists: async () => false,
       tag: async () => ({
         name: 'Pink skirt',
         category: 'bottoms',
@@ -617,7 +623,7 @@ describe('import job', () => {
           cutoutPath: 'images/items/2.png',
           thumbPath: 'images/items/3.png',
         },
-        options: { needsReview: true },
+        options: { needsReview: true, id: 'j1' },
       },
     ]);
     expect(removed).toEqual(['images/import/a.jpg']);
@@ -630,7 +636,44 @@ describe('import job', () => {
     expect(created[0]).toMatchObject({
       itemDetails: detailsFromTags(null),
       itemImages: { cutoutPath: null },
-      options: { needsReview: true },
+      options: { needsReview: true, id: 'j1' },
     });
+  });
+
+  it('does not create a second item when a finished job is run again', async () => {
+    const { deps, created } = makeDeps({ itemExists: async () => true });
+    expect(await processImportJob(job, deps)).toBe('j1');
+    expect(created).toEqual([]);
+  });
+
+  it('fails the job when tagging fails for a reason that a retry can fix', async () => {
+    const { deps, created } = makeDeps({
+      tag: async () => {
+        throw new Error('rate limited');
+      },
+    });
+    await expect(processImportJob(job, deps)).rejects.toThrow('rate limited');
+    expect(created).toEqual([]);
+  });
+});
+
+describe('starting a bulk import', () => {
+  it('queues each photo as soon as it is copied and counts the ones that fail', async () => {
+    const enqueued: string[] = [];
+    const started = jest.fn();
+    const failed = await startBulkImport(['a.jpg', 'broken.jpg', 'c.jpg'], {
+      save: async (uri) => {
+        if (uri === 'broken.jpg') throw new Error('unreadable');
+        return `images/import/${uri}`;
+      },
+      jobs: {
+        clear: async () => [],
+        enqueue: async (paths) => void enqueued.push(...paths),
+      },
+      started,
+    });
+    expect(failed).toBe(1);
+    expect(enqueued).toEqual(['images/import/a.jpg', 'images/import/c.jpg']);
+    expect(started).toHaveBeenCalledTimes(2);
   });
 });

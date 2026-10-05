@@ -11,6 +11,9 @@ import LinkImportScreen from '@/app/item/link';
 import NewItemScreen from '@/app/item/new';
 import { useAddActions } from '@/shell/addActions';
 
+import { ImportIndicator } from '../ImportIndicator';
+import { usePendingLink } from '../pendingLink';
+
 import type { Item, ItemFilter } from '../types';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
@@ -319,11 +322,16 @@ describe('closet screen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/import/review');
   });
 
-  it('keeps an import progress indicator visible while an import runs', async () => {
-    seed();
+  it('shows an import indicator on every section while an import runs, and none otherwise', () => {
+    const idle = render(<ImportIndicator />);
+    expect(screen.queryByTestId('import-indicator')).toBeNull();
+    idle.unmount();
+
     Object.assign(mockProgress, { queued: 12, processing: 2, done: 6, total: 20 });
-    renderWithQuery(<ClosetScreen />);
-    expect(await screen.findByText('Importing 6 of 20')).toBeTruthy();
+    render(<ImportIndicator />);
+    expect(screen.getByText('Importing 6 of 20')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('import-indicator'));
+    expect(mockRouter.push).toHaveBeenCalledWith('/import');
   });
 });
 
@@ -350,6 +358,11 @@ describe('adding an item from a photo', () => {
     mockPickPhoto.mockResolvedValue({ status: 'picked', photo });
     mockTagItem.mockResolvedValue(tags);
     renderWithQuery(<NewItemScreen />);
+
+    // The camera opens only after the tip has been shown.
+    expect(screen.getByTestId('capture-tip')).toBeTruthy();
+    expect(mockPickPhoto).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByTestId('add-item-camera'));
 
     expect(await screen.findByTestId('item-name')).toHaveProp('value', 'Pink skirt');
     expect(screen.getByTestId('category-bottoms')).toBeChecked();
@@ -393,7 +406,7 @@ describe('adding an item from a photo', () => {
   });
 
   it('uses the original photo and says why when no cutout is possible', async () => {
-    mockParams = { source: 'camera' };
+    mockParams = { source: 'library' };
     mockPickPhoto.mockResolvedValue({ status: 'picked', photo });
     mockCutout.mockResolvedValue(null);
     mockTagItem.mockResolvedValue(tags);
@@ -404,7 +417,7 @@ describe('adding an item from a photo', () => {
 
   it('opens an empty form with a notice when tagging is unavailable, and still saves', async () => {
     const { AiUnavailableError } = jest.requireMock('@/ai/client');
-    mockParams = { source: 'camera' };
+    mockParams = { source: 'library' };
     mockPickPhoto.mockResolvedValue({ status: 'picked', photo });
     mockTagItem.mockRejectedValue(new AiUnavailableError('noKey'));
     renderWithQuery(<NewItemScreen />);
@@ -426,21 +439,22 @@ describe('adding an item from a photo', () => {
   });
 
   it('leaves the screen when the first photo is cancelled', async () => {
-    mockParams = { source: 'camera' };
+    mockParams = { source: 'library' };
     mockPickPhoto.mockResolvedValue({ status: 'cancelled' });
     renderWithQuery(<NewItemScreen />);
     await waitFor(() => expect(mockRouter.back).toHaveBeenCalled());
   });
 
   it('prefers details read from a shop page over guesses from the photo', async () => {
-    mockParams = {
+    mockParams = { source: 'link' };
+    usePendingLink.getState().set({
       uri: 'file:///cache/link.jpg',
       name: 'Linen Shirt',
       brand: 'Arket',
-      price: '1290',
+      price: 1290,
       currency: 'CZK',
-      sourceUrl: 'https://shop.example/p/1',
-    };
+      sourceUrl: 'https://shop.example/p/1?ref=a%26b',
+    });
     mockTagItem.mockResolvedValue({ ...tags, name: 'Some shirt', brand: 'Guess' });
     renderWithQuery(<NewItemScreen />);
 
@@ -454,8 +468,10 @@ describe('adding an item from a photo', () => {
     expect(mockRepo.create.mock.calls[0][0]).toMatchObject({
       price: 1290,
       currency: 'CZK',
-      sourceUrl: 'https://shop.example/p/1',
+      sourceUrl: 'https://shop.example/p/1?ref=a%26b',
     });
+    // The handed-over data is used once.
+    expect(usePendingLink.getState().pending).toBeNull();
   });
 });
 
@@ -482,15 +498,16 @@ describe('importing from a shop link', () => {
     fireEvent.press(screen.getByTestId('link-continue'));
 
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalled());
-    expect(mockRouter.replace.mock.calls[0][0]).toMatchObject({
+    expect(mockRouter.replace).toHaveBeenCalledWith({
       pathname: '/item/new',
-      params: {
-        name: 'Linen Shirt',
-        brand: 'Arket',
-        price: '1290',
-        currency: 'CZK',
-        sourceUrl: 'https://shop.example/p/1',
-      },
+      params: { source: 'link' },
+    });
+    expect(usePendingLink.getState().pending).toMatchObject({
+      name: 'Linen Shirt',
+      brand: 'Arket',
+      price: 1290,
+      currency: 'CZK',
+      sourceUrl: 'https://shop.example/p/1',
     });
     const { downloadAsync } = jest.requireMock('expo-file-system/legacy');
     expect(downloadAsync.mock.calls[0][0]).toBe('https://cdn.example/b.jpg');

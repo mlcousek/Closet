@@ -3,12 +3,15 @@ import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 
 import {
-  ALL_SUBCATEGORIES,
   CATEGORIES,
   COLOUR_NAMES,
   OCCASIONS,
   SEASONS,
   SUBCATEGORIES,
+  isCategory,
+  isColour,
+  isOccasion,
+  isSeason,
   isSubcategoryOf,
   isWarmth,
   type Category,
@@ -27,16 +30,23 @@ import {
   toUnavailable,
 } from './client';
 
+/**
+ * Deliberately loose: plain strings instead of enums. The allowed values are
+ * given in the instructions and enforced by normaliseTags, so one word outside
+ * the vocabulary costs that one value and not the whole answer.
+ */
 const TagSchema = z.object({
   name: z.string(),
-  category: z.enum(CATEGORIES),
-  subcategory: z.enum(ALL_SUBCATEGORIES as [Subcategory, ...Subcategory[]]).nullable(),
-  colours: z.array(z.enum(COLOUR_NAMES as [Colour, ...Colour[]])),
-  seasons: z.array(z.enum(SEASONS)),
-  occasions: z.array(z.enum(OCCASIONS)),
-  warmth: z.number().int(),
+  category: z.string(),
+  subcategory: z.string().nullable(),
+  colours: z.array(z.string()),
+  seasons: z.array(z.string()),
+  occasions: z.array(z.string()),
+  warmth: z.number(),
   brand: z.string().nullable(),
 });
+
+type RawTags = z.infer<typeof TagSchema>;
 
 export type ItemTags = {
   name: string | null;
@@ -58,29 +68,42 @@ function instructions(language: 'en' | 'cs'): string {
 
 Describe only the item itself, ignoring any background, hanger, mannequin or person.
 
+Use only the exact values listed below, spelled as shown. They are identifiers, not words to translate.
+
 - name: a short everyday name a person would use for it, two to five words, written in ${
     language === 'cs' ? 'Czech' : 'English'
   }, for example "${language === 'cs' ? 'Bílé lněné tričko' : 'White linen T-shirt'}". No brand in the name.
-- category and subcategory: the subcategory must belong to the category. Subcategories by category:
+- category: one of ${CATEGORIES.join(', ')}.
+- subcategory: must belong to the category. Subcategories by category:
 ${subcategoryGuide}
-  Use null for the subcategory when none fits.
-- colours: the one to three most visible colours, most dominant first. Use "multicolour" only for busy prints with no dominant colour.
-- seasons: every season in which a person in a temperate climate would normally wear it.
-- occasions: the occasions it suits; most items suit one to three.
-- warmth: 1 for very light pieces such as a tank top or sandals, 3 for mid-weight pieces such as jeans or a shirt, 5 for the warmest pieces such as a winter coat. Use 3 for bags and jewellery.
+  Use null when none fits.
+- colours: the one to three most visible colours, most dominant first, from: ${COLOUR_NAMES.join(', ')}. Pick the nearest listed colour for shades that are not listed, for example navy for dark blue or red for burgundy. Use "multicolour" only for busy prints with no dominant colour.
+- seasons: every season in which a person in a temperate climate would normally wear it, from: ${SEASONS.join(', ')}.
+- occasions: the occasions it suits, from: ${OCCASIONS.join(', ')}. Most items suit one to three.
+- warmth: a whole number from 1 to 5. 1 for very light pieces such as a tank top or sandals, 3 for mid-weight pieces such as jeans or a shirt, 5 for the warmest pieces such as a winter coat. Use 3 for bags and jewellery.
 - brand: only when a logo or label is clearly readable in the image, otherwise null. Do not guess.`;
 }
 
-/** Keeps only values that are valid together, so a slightly off answer still pre-fills the form. */
-export function normaliseTags(raw: z.infer<typeof TagSchema>): ItemTags {
+const unique = <T>(values: T[]): T[] => [...new Set(values)];
+
+/**
+ * Keeps every value that is in the vocabulary and drops the rest, so a
+ * slightly off answer still pre-fills the form. Returns null only when the
+ * category itself is unusable, because nothing else can be trusted then.
+ */
+export function normaliseTags(raw: RawTags): ItemTags | null {
+  const category = raw.category.trim();
+  if (!isCategory(category)) return null;
+  const subcategory = raw.subcategory?.trim();
+  const warmth = Math.round(raw.warmth);
   return {
     name: raw.name.trim() || null,
-    category: raw.category,
-    subcategory: isSubcategoryOf(raw.category, raw.subcategory) ? raw.subcategory : null,
-    colours: [...new Set(raw.colours)].slice(0, 3),
-    seasons: [...new Set(raw.seasons)],
-    occasions: [...new Set(raw.occasions)],
-    warmth: isWarmth(raw.warmth) ? raw.warmth : null,
+    category,
+    subcategory: isSubcategoryOf(category, subcategory) ? subcategory : null,
+    colours: unique(raw.colours.map((value) => value.trim()).filter(isColour)).slice(0, 3),
+    seasons: unique(raw.seasons.map((value) => value.trim()).filter(isSeason)),
+    occasions: unique(raw.occasions.map((value) => value.trim()).filter(isOccasion)),
+    warmth: isWarmth(warmth) ? warmth : null,
     brand: raw.brand?.trim() || null,
   };
 }
@@ -124,10 +147,12 @@ export async function tagItem(
         ...(effort ? { effort } : {}),
       },
     });
-    if (response.stop_reason === 'refusal' || !response.parsed_output) {
-      throw new AiUnavailableError('error');
-    }
-    return normaliseTags(response.parsed_output);
+    const tags =
+      response.stop_reason !== 'refusal' && response.parsed_output
+        ? normaliseTags(response.parsed_output)
+        : null;
+    if (!tags) throw new AiUnavailableError('error');
+    return tags;
   } catch (error) {
     throw toUnavailable(error);
   }

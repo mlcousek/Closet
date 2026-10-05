@@ -6,6 +6,7 @@ import { keyManager } from './keys';
 
 export const DEFAULT_TEXT_MODEL = 'claude-opus-5-5';
 const TEXT_MODEL_SETTING = 'ai.model.text';
+const REQUEST_TIMEOUT_MS = 60_000;
 
 /** Why an AI feature could not produce a result. Features show one message per reason. */
 export type AiUnavailableReason = 'noKey' | 'offline' | 'rejectedKey' | 'rateLimited' | 'error';
@@ -32,7 +33,13 @@ export function setTextModel(model: string | null): void {
  * a public release this module is pointed at a proxy instead.
  */
 export function createAnthropic(apiKey: string): Anthropic {
-  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true, maxRetries: 1 });
+  // The SDK default is ten minutes per request, far too long to leave a person or an import waiting.
+  return new Anthropic({
+    apiKey,
+    dangerouslyAllowBrowser: true,
+    maxRetries: 1,
+    timeout: REQUEST_TIMEOUT_MS,
+  });
 }
 
 export async function getAnthropic(): Promise<Anthropic> {

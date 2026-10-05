@@ -42,8 +42,12 @@ const clean = (value: unknown): string | null => {
 function toNumber(value: unknown): number | null {
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
   if (typeof value !== 'string') return null;
+  const text = value.trim();
+  // Machine-formatted prices such as "89.9900" are plain numbers and need no guessing.
+  if (/^\d+(\.\d+)?$/.test(text)) return Number(text);
+  // Otherwise take the first number in the text, so a range reads as its lower end.
   // "1 299,00" and "1,299.00" both occur; the last separator is the decimal one.
-  const compact = value.replace(/[^\d.,]/g, '');
+  const compact = (/\d[\d.,\s\u00a0]*/.exec(text)?.[0] ?? '').replace(/[^\d.,]/g, '');
   if (!compact) return null;
   const lastSeparator = Math.max(compact.lastIndexOf('.'), compact.lastIndexOf(','));
   const decimals = lastSeparator === -1 ? 0 : compact.length - lastSeparator - 1;
@@ -145,8 +149,9 @@ function fromJsonLd(html: string, baseUrl: string): ProductInfo | null {
 function metaTags(html: string): Map<string, string[]> {
   const tags = new Map<string, string[]>();
   for (const [tag] of html.matchAll(/<meta\b[^>]*>/gi)) {
-    const key = /\b(?:property|name)=["']([^"']+)["']/i.exec(tag)?.[1]?.toLowerCase();
-    const content = /\bcontent=["']([^"']*)["']/i.exec(tag)?.[1];
+    // The closing quote must match the opening one, so an apostrophe inside the value is kept.
+    const key = /\s(?:property|name)=(["'])(.+?)\1/i.exec(tag)?.[2]?.toLowerCase();
+    const content = /\scontent=(["'])(.*?)\1/i.exec(tag)?.[2];
     if (!key || content === undefined) continue;
     tags.set(key, [...(tags.get(key) ?? []), content]);
   }

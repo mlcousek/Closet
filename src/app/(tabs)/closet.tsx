@@ -12,7 +12,6 @@ import {
   activeFilterCount,
   type SheetFilter,
 } from '@/closet/FilterSheet';
-import { useImportProgress } from '@/closet/importActions';
 import { itemRepository } from '@/closet/repository';
 import { matchesSearch } from '@/closet/search';
 import {
@@ -97,7 +96,6 @@ export default function ClosetScreen() {
   const openMenu = useAddActions((state) => state.openMenu);
   const showToast = useToast((state) => state.show);
   const invalidateItems = useInvalidateItems();
-  const importProgress = useImportProgress((state) => state.progress);
 
   const [category, setCategory] = useState<Category | null>(null);
   const [search, setSearch] = useState('');
@@ -136,7 +134,6 @@ export default function ClosetScreen() {
   const selecting = selected.length > 0;
   const filterCount = activeFilterCount(sheet);
   const narrowed = category !== null || search.trim() !== '' || filterCount > 0;
-  const importing = importProgress.queued + importProgress.processing > 0;
 
   const clearAll = () => {
     setCategory(null);
@@ -198,23 +195,6 @@ export default function ClosetScreen() {
             : t('closet.count', { count: total })}
         </AppText>
       </View>
-
-      {importing ? (
-        <Pressable
-          testID="import-banner"
-          accessibilityRole="button"
-          onPress={() => router.push('/import')}
-          style={[styles.banner, { backgroundColor: colors.surfaceAlt, borderRadius: radius.md }]}
-        >
-          <AppText style={styles.fill}>
-            {t('closet.importRunning', {
-              done: importProgress.done,
-              total: importProgress.total,
-            })}
-          </AppText>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </Pressable>
-      ) : null}
 
       {reviewCount > 0 ? (
         <Pressable

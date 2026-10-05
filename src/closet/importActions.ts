@@ -54,37 +54,61 @@ export function detailsFromTags(tags: ItemTags | null): ItemDetails {
 export type ImportJobDeps = {
   images: ItemImageDeps;
   sourceUri: (path: string) => string;
-  /** Suggested details, or null when tagging is unavailable. */
-  tag: (uri: string, isCutout: boolean) => Promise<ItemTags | null>;
+  /**
+   * Suggested details, or null when tagging cannot work at all (no key, key
+   * rejected, offline). Temporary failures throw, so the photo can be retried.
+   */
+  tag: (
+    uri: string,
+    isCutout: boolean,
+    size?: { width: number; height: number },
+  ) => Promise<ItemTags | null>;
+  /** True when an item with this id already exists. */
+  itemExists: (id: string) => Promise<boolean>;
   createItem: typeof itemRepository.create;
 };
 
-/** Turns one imported photo into an item that waits for review. */
+/**
+ * Turns one imported photo into an item that waits for review. The item takes
+ * the job's id, so a job that is run again after the app was closed mid-way
+ * cannot create the same item twice.
+ */
 export async function processImportJob(job: ImportJob, deps: ImportJobDeps): Promise<string> {
+  if (await deps.itemExists(job.id)) return job.id;
   const originalUri = deps.sourceUri(job.sourcePath);
   const cutout = await deps.images.cutout(originalUri);
-  const tags = await deps.tag(cutout?.uri ?? originalUri, cutout !== null);
+  const tags = await deps.tag(cutout?.uri ?? originalUri, cutout !== null, cutout ?? undefined);
   const images = await storeItemImages(
     { originalUri, cutoutUri: cutout?.uri ?? null },
     deps.images,
   );
-  const item = await deps.createItem(detailsFromTags(tags), images, { needsReview: true });
+  const item = await deps.createItem(detailsFromTags(tags), images, {
+    needsReview: true,
+    id: job.id,
+  });
   await deps.images.remove(job.sourcePath).catch(() => {});
   return item.id;
 }
 
+/** Failures for which retrying the same photo later cannot help, so it is imported without tags. */
+const NO_TAGS_REASONS = ['noKey', 'rejectedKey', 'offline'];
+
 const deviceDeps: ImportJobDeps = {
   images: itemImageDeps,
   sourceUri: (path) => imageStore.uri(path),
-  tag: async (uri, isCutout) => {
+  tag: async (uri, isCutout, size) => {
     try {
-      return await tagItem(await toTagImage(uri, isCutout), i18n.language === 'cs' ? 'cs' : 'en');
+      const image = await toTagImage(uri, isCutout, size);
+      return await tagItem(image, i18n.language === 'cs' ? 'cs' : 'en');
     } catch (error) {
-      // Without a key or a connection the item is still imported, just without suggestions.
-      if (error instanceof AiUnavailableError) return null;
+      if (error instanceof AiUnavailableError && NO_TAGS_REASONS.includes(error.reason)) {
+        return null;
+      }
+      // Rate limits and provider errors pass: the job fails and the user can retry it.
       throw error;
     }
   },
+  itemExists: async (id) => (await itemRepository.get(id)) !== null,
   createItem: itemRepository.create,
 };
 
@@ -104,15 +128,39 @@ const processor = createImportProcessor({
   },
 });
 
-/** Copies the chosen photos into the app and starts turning them into items. */
-export async function startBulkImport(photoUris: string[]): Promise<void> {
+/**
+ * Copies the chosen photos into the app and starts turning them into items.
+ * Each photo is queued as soon as it is copied, so an interruption or one
+ * unreadable photo loses nothing that was already copied. Returns how many
+ * photos could not be copied.
+ */
+export async function startBulkImport(
+  photoUris: string[],
+  deps: {
+    save: (uri: string) => Promise<string>;
+    jobs: Pick<typeof importJobs, 'clear' | 'enqueue'>;
+    started: () => void;
+  } = {
+    save: (uri) => imageStore.save(uri, 'import', extensionOf(uri)),
+    jobs: importJobs,
+    started: () => {
+      void refreshProgress();
+      void processor.start();
+    },
+  },
+): Promise<number> {
   // A finished earlier import no longer counts towards the progress shown.
-  await importJobs.clear(['done']);
-  const paths: string[] = [];
-  for (const uri of photoUris) paths.push(await imageStore.save(uri, 'import', extensionOf(uri)));
-  await importJobs.enqueue(paths);
-  await refreshProgress();
-  void processor.start();
+  await deps.jobs.clear(['done']);
+  let failed = 0;
+  for (const uri of photoUris) {
+    try {
+      await deps.jobs.enqueue([await deps.save(uri)]);
+      deps.started();
+    } catch {
+      failed++;
+    }
+  }
+  return failed;
 }
 
 /** Continues an import that was interrupted by the app closing. Called on app start. */

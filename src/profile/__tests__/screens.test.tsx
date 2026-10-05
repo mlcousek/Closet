@@ -25,6 +25,7 @@ jest.mock('expo-router', () => {
   };
 });
 
+jest.mock('@/closet/ImportIndicator', () => ({ ImportIndicator: () => null }));
 jest.mock('@/closet/useClosetSetup', () => ({ useClosetSetup: () => {} }));
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
