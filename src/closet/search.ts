@@ -1,8 +1,14 @@
 import type { Item } from './types';
 
-/** Lower-cases and strips diacritics, so "Šaty" matches "saty". */
+// The combining diacritical marks block, built from code points so the source stays plain ASCII.
+const COMBINING_MARKS = new RegExp(
+  `[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`,
+  'g',
+);
+
+/** Lower-cases and strips diacritics, so a search without accents still matches accented text. */
 export function normalise(text: string): string {
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return text.normalize('NFD').replace(COMBINING_MARKS, '').toLowerCase();
 }
 
 /**

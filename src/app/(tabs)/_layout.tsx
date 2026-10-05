@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { useClosetSetup } from '@/closet/useClosetSetup';
 import { EmptyState, Screen, type IconName } from '@/components/ui';
 import { useProfile } from '@/profile/useProfile';
 import { AddButton } from '@/shell/AddMenu';
@@ -19,6 +20,7 @@ export default function TabsLayout() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { data: profile, isPending, isError, refetch } = useProfile();
+  useClosetSetup();
 
   // Nothing is shown until we know whether onboarding is needed, so the tabs never flash first.
   if (isPending) return null;

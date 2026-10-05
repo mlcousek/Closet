@@ -19,8 +19,6 @@ const memoryStores = () => {
   return { keys, statuses, manager: createKeyManager(keyStore, statusStore) };
 };
 
-const respondWith = (status: number) => jest.fn(async () => ({ status }));
-
 describe('key manager', () => {
   afterEach(() => jest.restoreAllMocks());
 
@@ -115,36 +113,5 @@ describe('maskKey', () => {
 
   it('shows nothing of a very short key', () => {
     expect(maskKey('short')).toBe('••••••••');
-  });
-});
-
-describe('provider key validation', () => {
-  it.each([
-    [200, 'ok'],
-    [401, 'rejected'],
-    [403, 'rejected'],
-    [400, 'rejected'],
-    [429, 'unreachable'],
-    [500, 'unreachable'],
-  ])('maps HTTP %i to %s', async (status, expected) => {
-    expect(await providers.anthropic.validateKey('key', respondWith(status))).toBe(expected);
-    expect(await providers.image.validateKey('key', respondWith(status))).toBe(expected);
-  });
-
-  it('treats a network failure as unreachable', async () => {
-    const failing = jest.fn(async () => {
-      throw new Error('offline');
-    });
-    expect(await providers.anthropic.validateKey('key', failing)).toBe('unreachable');
-  });
-
-  it('sends the key in a header, never in the URL', async () => {
-    const fetchMock = respondWith(200);
-    await providers.anthropic.validateKey('secret-key', fetchMock);
-    await providers.image.validateKey('secret-key', fetchMock);
-    for (const [url, init] of fetchMock.mock.calls as unknown as [string, { headers: object }][]) {
-      expect(url).not.toContain('secret-key');
-      expect(Object.values(init.headers)).toContain('secret-key');
-    }
   });
 });

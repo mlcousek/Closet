@@ -1,4 +1,9 @@
-import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 
 import { itemRepository } from './repository';
 import type { ItemFilter } from './types';
@@ -18,6 +23,8 @@ export function useItems(filter: ItemFilter) {
   return useQuery({
     queryKey: [ITEMS, 'list', filter],
     queryFn: () => itemRepository.list(filter),
+    // Keeps the current grid on screen while a changed filter loads, instead of flashing empty.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -33,6 +40,7 @@ export function useItemCount(filter: ItemFilter) {
   return useQuery({
     queryKey: [ITEMS, 'count', filter],
     queryFn: () => itemRepository.count(filter),
+    placeholderData: keepPreviousData,
   });
 }
 

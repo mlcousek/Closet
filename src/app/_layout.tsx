@@ -45,6 +45,11 @@ export default function RootLayout() {
               options={{ headerShown: false, gestureEnabled: false }}
             />
             <Stack.Screen name="profile/edit" options={{ title: t('profile.editTitle') }} />
+            <Stack.Screen name="item/new" options={{ title: t('addItem.title') }} />
+            <Stack.Screen name="item/[id]" options={{ title: t('item.title') }} />
+            <Stack.Screen name="item/link" options={{ title: t('linkImport.title') }} />
+            <Stack.Screen name="import/index" options={{ title: t('importFlow.title') }} />
+            <Stack.Screen name="import/review" options={{ title: t('importFlow.reviewTitle') }} />
             <Stack.Screen name="settings/index" options={{ title: t('settings.title') }} />
             <Stack.Screen name="settings/ai-keys" options={{ title: t('ai.title') }} />
           </Stack>
