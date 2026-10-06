@@ -1,15 +1,16 @@
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { openDb } from '@/db/client';
-import { initI18n } from '@/i18n';
+import { getLanguageOverride, initI18n, setLanguageOverride } from '@/i18n';
 import { AddMenu } from '@/shell/AddMenu';
 import { ToastHost } from '@/shell/ToastHost';
+import { recoverInterruptedRestore } from '@/storage/backupActions';
 import { useTheme } from '@/theme/useTheme';
 
 // The database must be open before anything renders: translations read the
@@ -31,6 +32,19 @@ export default function RootLayout() {
   const theme = useTheme();
   const { t } = useTranslation();
   const base = theme.dark ? DarkTheme : DefaultTheme;
+  // Nothing is shown until it is known that the data on disk is the user's own: after a
+  // restore that was cut off, the database opened above is an empty stand-in.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    recoverInterruptedRestore()
+      .then(async (recovered) => {
+        // The language was read from the stand-in; take it from the real data.
+        if (recovered) await setLanguageOverride(getLanguageOverride());
+      })
+      .catch(() => {})
+      .finally(() => setReady(true));
+  }, []);
+  if (!ready) return null;
 
   return (
     <SafeAreaProvider>

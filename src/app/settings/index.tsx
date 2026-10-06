@@ -8,7 +8,9 @@ import { useTranslation } from 'react-i18next';
 import { AppText, Row, Screen } from '@/components/ui';
 import { getLanguageOverride, setLanguageOverride } from '@/i18n';
 import type { Language } from '@/i18n/language';
+import { resumeImports } from '@/closet/importActions';
 import { DisplaySettings } from '@/display/DisplaySettings';
+import { renderQueue } from '@/outfits/renderActions';
 import { PlanningSettings } from '@/planning/PlanningSettings';
 import { restoreReminder } from '@/planning/reminder';
 import { StylistUsage } from '@/stylist/StylistUsage';
@@ -56,6 +58,10 @@ export default function SettingsScreen() {
     try {
       await importBackup(archive);
       // Everything on screen may be stale now, including the language override.
+      // Imports and renders in the restored data start over from what it says, and the
+      // counters on screen follow.
+      await resumeImports();
+      await renderQueue.resume();
       await queryClient.resetQueries();
       const restoredOverride = getLanguageOverride();
       setOverride(restoredOverride);

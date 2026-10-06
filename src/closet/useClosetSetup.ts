@@ -13,6 +13,7 @@ import { profileRepository } from '@/profile/repository';
 import { useAddActions } from '@/shell/addActions';
 import { useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
+import { cleanTemporaryFiles } from '@/storage/tempFiles';
 
 import { useClosetTab } from './closetTab';
 import { itemImageDeps } from './deviceImages';
@@ -135,6 +136,7 @@ export function useClosetSetup(): void {
         for (const item of purged) await removeItemImages(item, itemImageDeps);
       })
       .catch(() => {});
+    void cleanTemporaryFiles().catch(() => {});
     // Outfits deleted a while ago go for good, and with them the try-on pictures nobody sees
     // any more; those are the largest files the app stores.
     void outfitRepository

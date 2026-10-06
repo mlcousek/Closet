@@ -200,3 +200,32 @@ export function createGeminiProvider(
 }
 
 export const geminiProvider = createGeminiProvider();
+
+/**
+ * How much image data the pieces of one request may carry, in base64
+ * characters. The provider limits a request to about 20 MB; this leaves room
+ * for the avatar and the prompt.
+ */
+export const PIECES_BUDGET = 12_000_000;
+/** Sizes to try for the pieces, largest first. */
+export const PIECE_SIZES = [1024, 768, 512];
+
+/**
+ * Encodes the pieces at the largest size at which all of them fit in one
+ * request. A few pieces go at full size; an outfit with many is sent smaller,
+ * since a rejected request would produce no picture at all.
+ */
+export async function encodeWithinBudget<T>(
+  entries: T[],
+  encodeAt: (entry: T, max: number) => Promise<EncodedImage>,
+  budget: number = PIECES_BUDGET,
+  sizes: number[] = PIECE_SIZES,
+): Promise<EncodedImage[]> {
+  let images: EncodedImage[] = [];
+  for (const max of sizes) {
+    images = [];
+    for (const entry of entries) images.push(await encodeAt(entry, max));
+    if (images.reduce((sum, image) => sum + image.base64.length, 0) <= budget) break;
+  }
+  return images;
+}

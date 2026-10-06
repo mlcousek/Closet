@@ -1,6 +1,8 @@
 import {
   TryOnError,
+  PIECES_BUDGET,
   createGeminiProvider,
+  encodeWithinBudget,
   isInvalidKey,
   readGeminiImage,
   tryOnPrompt,
@@ -762,6 +764,29 @@ describe('try-on provider', () => {
       'connectionLost',
     );
     clock.mockRestore();
+  });
+
+  it('sends the pieces smaller when an outfit has too many for one request', async () => {
+    // Each piece weighs its size in characters, so the total depends on the size tried.
+    const encodeAt = jest.fn(async (_entry: string, max: number) => ({
+      base64: 'x'.repeat(max),
+      mimeType: 'image/png',
+    }));
+    const few = await encodeWithinBudget(['a', 'b'], encodeAt, 3000);
+    expect(few.map((image) => image.base64.length)).toEqual([1024, 1024]);
+
+    encodeAt.mockClear();
+    const many = await encodeWithinBudget(['a', 'b', 'c', 'd'], encodeAt, 3200);
+    expect(many.map((image) => image.base64.length)).toEqual([768, 768, 768, 768]);
+    // All pieces are tried at one size before the next, so they stay the same size.
+    expect(encodeAt.mock.calls.map((call) => call[1])).toEqual([
+      1024, 1024, 1024, 1024, 768, 768, 768, 768,
+    ]);
+
+    // Nothing fits: the smallest size is sent, since there is nothing smaller to try.
+    const huge = await encodeWithinBudget(['a', 'b'], encodeAt, 10);
+    expect(huge.map((image) => image.base64.length)).toEqual([512, 512]);
+    expect(PIECES_BUDGET).toBeLessThan(20_000_000);
   });
 
   it('reports no connection and a timeout separately', async () => {

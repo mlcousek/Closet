@@ -56,12 +56,12 @@ The spec lets the user filter the items offered in a row. The editor has one sea
 - **Reuse limits are fixed.** Tops and dresses twice, bottoms three times, two pairs of shoes (three beyond a week), in `TRIP_RULES`. There is no setting for them yet. When the closet is too small, the limits give way before a day is left without an outfit.
 - **Statistics are about items.** The overview counts saved outfits, but there are no most and least worn outfits, no worst-value list and no "not worn for a long time" list; "not worn in this period" shows the first eight.
 
-## Known limits found in the whole-app review
+## Limits from the whole-app review, and what was done about them
 
-**Recorded:** 6 October 2026. These were found by reading the code and are not fixed, because a sound fix needs a device, a native module, or a decision.
+**Recorded:** 6 October 2026. **Addressed:** 6 October 2026. All of this is covered by unit tests and none of it has run on a phone.
 
-- **Backup holds the whole library in memory.** Export and restore read every image as base64 and build the zip in the JavaScript heap, roughly three to four times the size of the photos. Originals are stored at full camera resolution, so a closet of a few dozen items may already be too much. Until this is rebuilt file by file with a native zip module, treat the backup as unproven for a real closet, and try an export early, with few items.
-- **An interrupted restore is not recovered.** If the app is killed in the moment between setting the current data aside and moving the restored data into place, the next start creates an empty database; the previous data is still in `restore-previous/` in the app's documents, but nothing puts it back.
-- **Try-on requests grow with the outfit.** Each piece is sent as its own PNG. An outfit of seven or eight pieces may exceed what the image provider accepts in one request, and that would show as a general failure.
-- **Temporary files are not cleaned up.** Cutouts, resized copies, downloaded product photos and the backup zip stay in the cache folder until iOS clears it.
-- **After a restore, background work is not reset.** Queries are cleared, but an import or render that was running keeps its in-memory state until the app is restarted.
+- **Backup no longer holds the library in memory.** The archive is written and read one file at a time by a small zip writer and reader of the app's own (`src/storage/zip.ts`), through file handles from the current `expo-file-system` API. The largest thing in memory is the largest single photo. The archive is an ordinary uncompressed zip that other tools can open, limited to 4 GB and 65 535 files by the classic zip format. `jszip` is now only used by tests, to check that compatibility. Originals are still stored at full camera resolution; if backups turn out too large, downscaling on import is the next step.
+- **An interrupted restore is recovered at the next start.** Before any screen reads data, the app checks for data that a restore had set aside and puts it back (`recoverInterruptedRestore`), and removes what an abandoned restore had unpacked.
+- **Try-on requests stay within the provider's limit.** Pieces are sent at 1024 px when they fit in one request and at 768 or 512 px when an outfit has too many (`encodeWithinBudget`). The 12 MB budget is an estimate of what the provider accepts, to be checked with a real key.
+- **Temporary files are cleaned up.** At start, the app's own working files older than an hour are deleted from the cache folder. Cutouts are now written to the cache folder and not the system temporary folder, which changed one line of the Swift module.
+- **After a restore, background work starts over** from the restored data: queued imports and renders are read again and every screen reloads.

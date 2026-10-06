@@ -41,6 +41,8 @@ jest.mock('@/planning/reminder', () => ({
   installReminderHandling: () => () => {},
 }));
 jest.mock('@/profile/repository', () => ({ profileRepository: { get: async () => null } }));
+const mockClean = jest.fn(async () => 0);
+jest.mock('@/storage/tempFiles', () => ({ cleanTemporaryFiles: () => mockClean() }));
 jest.mock('../deviceImages', () => ({ itemImageDeps: {} }));
 const mockImports = { resume: jest.fn(async () => {}) };
 jest.mock('../importActions', () => ({
@@ -138,6 +140,7 @@ describe('closet setup', () => {
     expect(mockQueue.resume).toHaveBeenCalled();
     await waitFor(() => expect(mockRemoveImages).toHaveBeenCalledWith({ id: 'gone' }, {}));
     expect(mockForget).toHaveBeenCalledWith(['gone']);
+    expect(mockClean).toHaveBeenCalledTimes(1);
     // Outfits deleted long ago take their try-on pictures with them.
     await waitFor(() => expect(mockRemoveFile).toHaveBeenCalledWith('images/renders/old.png'));
     // The pictures that outfits show as current are named, so they are kept.

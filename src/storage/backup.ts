@@ -1,7 +1,16 @@
-import JSZip from 'jszip';
-
 import type { FsAdapter } from './fs';
 import { IMAGES_DIR } from './imageStore';
+import {
+  base64ToBytes,
+  bytesToBase64,
+  bytesToText,
+  createZipWriter,
+  memoryArchive,
+  readZip,
+  textToBytes,
+  type ArchiveReader,
+  type ArchiveWriter,
+} from './zip';
 
 export const DB_FILE = 'SQLite/closet.db';
 const DB_SIDE_FILES = [`${DB_FILE}-wal`, `${DB_FILE}-shm`];
@@ -34,28 +43,42 @@ export class BackupError extends Error {
 }
 
 /**
- * Packs the database file and every stored image into one zip, returned as base64.
- * Provider keys live in the device keychain and are never part of the archive.
- * The caller must checkpoint the database first so the file on disk is complete.
+ * Writes the database file and every stored image into one zip, one file at a
+ * time, so a large closet never has to fit in memory. Provider keys live in
+ * the device keychain and are never part of the archive. The caller must
+ * checkpoint the database first so the file on disk is complete.
  */
-export async function createBackupArchive(
+export async function writeBackupArchive(
   fs: FsAdapter,
   info: { schemaVersion: number; appVersion: string; now?: Date },
-): Promise<string> {
-  const zip = new JSZip();
+  out: ArchiveWriter,
+): Promise<void> {
+  const now = info.now ?? new Date();
   const manifest: BackupManifest = {
     app: APP_ID,
     formatVersion: 1,
     schemaVersion: info.schemaVersion,
     appVersion: info.appVersion,
-    createdAt: (info.now ?? new Date()).toISOString(),
+    createdAt: now.toISOString(),
   };
-  zip.file(MANIFEST, JSON.stringify(manifest));
-  zip.file(DB_ENTRY, await fs.readBase64(DB_FILE), { base64: true });
+  const zip = createZipWriter(out, now);
+  // The manifest comes first, so a restore knows what it is reading before anything else.
+  await zip.add(MANIFEST, textToBytes(JSON.stringify(manifest)));
+  await zip.add(DB_ENTRY, await fs.readBytes(DB_FILE));
   for (const path of await fs.listFiles(IMAGES_DIR)) {
-    zip.file(path, await fs.readBase64(path), { base64: true });
+    await zip.add(path, await fs.readBytes(path));
   }
-  return zip.generateAsync({ type: 'base64', compression: 'STORE' });
+  await zip.finish();
+}
+
+/** The same archive as base64, held in memory. For tests and small data only. */
+export async function createBackupArchive(
+  fs: FsAdapter,
+  info: { schemaVersion: number; appVersion: string; now?: Date },
+): Promise<string> {
+  const archive = memoryArchive();
+  await writeBackupArchive(fs, info, archive.writer);
+  return bytesToBase64(archive.bytes());
 }
 
 function isSafeImagePath(path: string): boolean {
@@ -72,57 +95,77 @@ function looksLikeSqlite(bytes: Uint8Array): boolean {
 
 /**
  * Step 1 of a restore: validates the archive and unpacks all of it into a
- * staging folder. Live data is not touched, so any failure here (not a backup,
- * damaged entry, disk full) leaves the app exactly as it was.
+ * staging folder, one file at a time. Live data is not touched, so any failure
+ * here (not a backup, damaged entry, disk full) leaves the app exactly as it was.
  */
-export async function stageBackup(
+export async function stageBackupFrom(
   fs: FsAdapter,
-  archiveBase64: string,
+  source: ArchiveReader,
   currentSchemaVersion: number,
 ): Promise<BackupManifest> {
   await fs.remove(STAGING_DIR);
   try {
-    let zip: JSZip;
-    let manifest: BackupManifest;
+    let manifest: BackupManifest | null = null;
+    let hasDb = false;
     try {
-      zip = await JSZip.loadAsync(archiveBase64, { base64: true, checkCRC32: true });
-      const manifestFile = zip.file(MANIFEST);
-      if (!manifestFile || !zip.file(DB_ENTRY)) throw new Error('missing entries');
-      manifest = JSON.parse(await manifestFile.async('string'));
-    } catch {
-      throw new BackupError('invalid');
+      await readZip(source, async (path, data) => {
+        if (path === MANIFEST) {
+          manifest = JSON.parse(bytesToText(data)) as BackupManifest;
+          if (
+            manifest?.app !== APP_ID ||
+            manifest.formatVersion !== 1 ||
+            !Number.isInteger(manifest.schemaVersion)
+          ) {
+            throw new BackupError('invalid');
+          }
+          // Known before any photo is unpacked, so a backup from a newer app stops at once.
+          if (manifest.schemaVersion > currentSchemaVersion) throw new BackupError('newer');
+          return;
+        }
+        if (path === DB_ENTRY) {
+          if (!looksLikeSqlite(data)) throw new BackupError('invalid');
+          hasDb = true;
+        } else if (!isSafeImagePath(path)) {
+          throw new BackupError('invalid');
+        }
+        await fs.writeBytes(`${STAGING_DIR}/${path}`, data);
+      });
+    } catch (error) {
+      // Whatever went wrong while reading (not a zip, damaged, disk full), it is not a
+      // backup this app can restore; only "newer" has its own message.
+      throw error instanceof BackupError ? error : new BackupError('invalid');
     }
-    if (
-      manifest?.app !== APP_ID ||
-      manifest.formatVersion !== 1 ||
-      !Number.isInteger(manifest.schemaVersion)
-    ) {
-      throw new BackupError('invalid');
-    }
-    if (manifest.schemaVersion > currentSchemaVersion) throw new BackupError('newer');
-
-    const imageEntries = Object.values(zip.files).filter(
-      (entry) => !entry.dir && entry.name !== MANIFEST && entry.name !== DB_ENTRY,
-    );
-    if (!imageEntries.every((entry) => isSafeImagePath(entry.name))) {
-      throw new BackupError('invalid');
-    }
-
-    const dbEntry = zip.file(DB_ENTRY)!;
-    try {
-      if (!looksLikeSqlite(await dbEntry.async('uint8array'))) throw new Error('not sqlite');
-      await fs.writeBase64(`${STAGING_DIR}/${DB_ENTRY}`, await dbEntry.async('base64'));
-      for (const entry of imageEntries) {
-        await fs.writeBase64(`${STAGING_DIR}/${entry.name}`, await entry.async('base64'));
-      }
-    } catch {
-      throw new BackupError('invalid');
-    }
+    if (!manifest || !hasDb) throw new BackupError('invalid');
     return manifest;
   } catch (error) {
     await fs.remove(STAGING_DIR);
     throw error;
   }
+}
+
+/** The same step for an archive given as base64. For tests and small data only. */
+export async function stageBackup(
+  fs: FsAdapter,
+  archiveBase64: string,
+  currentSchemaVersion: number,
+): Promise<BackupManifest> {
+  let bytes: Uint8Array;
+  try {
+    bytes = base64ToBytes(archiveBase64);
+  } catch {
+    throw new BackupError('invalid');
+  }
+  return stageBackupFrom(fs, memoryArchive(bytes).reader(), currentSchemaVersion);
+}
+
+/** True when a restore was cut off after the current data had been set aside. */
+export async function hasInterruptedRestore(fs: FsAdapter): Promise<boolean> {
+  return fs.exists(`${PREVIOUS_DIR}/${DB_ENTRY}`);
+}
+
+/** Removes what an abandoned restore left behind before it touched live data. */
+export async function clearStagedBackup(fs: FsAdapter): Promise<void> {
+  await fs.remove(STAGING_DIR);
 }
 
 /**

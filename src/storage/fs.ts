@@ -1,3 +1,4 @@
+import { File } from 'expo-file-system';
 import * as FileSystem from 'expo-file-system/legacy';
 
 /**
@@ -18,6 +19,9 @@ export type FsAdapter = {
   listFiles(dir: string): Promise<string[]>;
   readBase64(path: string): Promise<string>;
   writeBase64(path: string, data: string): Promise<void>;
+  /** The raw contents of a file, for copying it without a detour through text. */
+  readBytes(path: string): Promise<Uint8Array>;
+  writeBytes(path: string, data: Uint8Array): Promise<void>;
 };
 
 const root = () => FileSystem.documentDirectory ?? '';
@@ -65,5 +69,11 @@ export const expoFs: FsAdapter = {
     await FileSystem.writeAsStringAsync(root() + path, data, {
       encoding: FileSystem.EncodingType.Base64,
     });
+  },
+  readBytes: (path) => new File(root() + path).bytes(),
+  writeBytes: async (path, data) => {
+    const file = new File(root() + path);
+    file.create({ intermediates: true, overwrite: true });
+    file.write(data);
   },
 };

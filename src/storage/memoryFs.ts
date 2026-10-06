@@ -1,4 +1,5 @@
 import type { FsAdapter } from './fs';
+import { base64ToBytes, bytesToBase64 } from './zip';
 
 /** In-memory file system for unit tests. File contents are base64 strings. */
 export function createMemoryFs(initial: Record<string, string> = {}) {
@@ -41,6 +42,14 @@ export function createMemoryFs(initial: Record<string, string> = {}) {
     },
     writeBase64: async (path, data) => {
       files.set(path, data);
+    },
+    readBytes: async (path) => {
+      const data = files.get(path);
+      if (data === undefined) throw new Error(`No such file: ${path}`);
+      return base64ToBytes(data);
+    },
+    writeBytes: async (path, data) => {
+      files.set(path, bytesToBase64(data));
     },
   };
 

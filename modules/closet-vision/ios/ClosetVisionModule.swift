@@ -69,8 +69,10 @@ public class ClosetVisionModule: Module {
       else {
         throw ImageWriteException()
       }
-      let target = FileManager.default.temporaryDirectory
-        .appendingPathComponent("cutout-\(UUID().uuidString).png")
+      // The cache folder, not the temporary one: the app's file access covers it, and its
+      // start-up clean-up removes cutouts that were not kept.
+      let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+      let target = caches.appendingPathComponent("cutout-\(UUID().uuidString).png")
       try data.write(to: target)
       return [
         "uri": target.absoluteString,

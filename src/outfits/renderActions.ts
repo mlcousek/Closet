@@ -6,6 +6,7 @@ import { create } from 'zustand';
 import { keyManager } from '@/ai/keys';
 import {
   TryOnError,
+  encodeWithinBudget,
   geminiProvider,
   type EncodedImage,
   type TryOnHints,
@@ -87,7 +88,7 @@ export function describeItem(item: Outfit['entries'][number]['item']): string {
   return item.name ? `${item.name}; ${words.join(' ')}` : words.join(' ');
 }
 
-async function encode(path: string, format: 'png' | 'jpeg'): Promise<EncodedImage> {
+async function encode(path: string, format: 'png' | 'jpeg', max: number): Promise<EncodedImage> {
   const uri = imageStore.uri(path);
   const size = await new Promise<{ width: number; height: number } | undefined>((resolve) =>
     Image.getSize(
@@ -96,7 +97,7 @@ async function encode(path: string, format: 'png' | 'jpeg'): Promise<EncodedImag
       () => resolve(undefined),
     ),
   );
-  const resize = fitWithin(size, INPUT_MAX);
+  const resize = fitWithin(size, max);
   const resized = await ImageManipulator.manipulateAsync(uri, resize ? [{ resize }] : [], {
     compress: 0.9,
     format: format === 'png' ? ImageManipulator.SaveFormat.PNG : ImageManipulator.SaveFormat.JPEG,
@@ -104,6 +105,10 @@ async function encode(path: string, format: 'png' | 'jpeg'): Promise<EncodedImag
   const base64 = await FileSystem.readAsStringAsync(resized.uri, {
     encoding: FileSystem.EncodingType.Base64,
   });
+  // The resized copy was only needed to be read.
+  if (resized.uri !== uri) {
+    await FileSystem.deleteAsync(resized.uri, { idempotent: true }).catch(() => {});
+  }
   return { base64, mimeType: format === 'png' ? 'image/png' : 'image/jpeg' };
 }
 
@@ -153,15 +158,15 @@ export async function runRender(
   if (currentFingerprint(outfit, basePath) !== render.fingerprint)
     throw new RenderSupersededError();
   try {
-    const pieces: TryOnPiece[] = [];
-    for (const entry of outfit.entries) {
-      pieces.push({
-        slotLabel: SLOT_LABEL[entry.slot],
-        description: describeItem(entry.item),
-        image: await encode(displayPath(entry.item), entry.item.cutoutPath ? 'png' : 'jpeg'),
-      });
-    }
-    const avatar = await encode(basePath, 'jpeg');
+    const images = await encodeWithinBudget(outfit.entries, (entry, max) =>
+      encode(displayPath(entry.item), entry.item.cutoutPath ? 'png' : 'jpeg', max),
+    );
+    const pieces: TryOnPiece[] = outfit.entries.map((entry, index) => ({
+      slotLabel: SLOT_LABEL[entry.slot],
+      description: describeItem(entry.item),
+      image: images[index],
+    }));
+    const avatar = await encode(basePath, 'jpeg', INPUT_MAX);
     const image = await provider.render({ avatar, pieces, hints: hintsOf(profile) }, key);
     // Counted once the provider has answered with an image, which is when it is charged.
     await usageLog.record('render');
@@ -203,7 +208,7 @@ export async function createStudioAvatar(
   const [profile, key] = await Promise.all([profileRepository.get(), keyManager.getKey('image')]);
   if (!profile?.avatarSmallPath) throw new TryOnError('error');
   if (!key) throw new TryOnError('noKey');
-  const avatar = await encode(profile.avatarSmallPath, 'jpeg');
+  const avatar = await encode(profile.avatarSmallPath, 'jpeg', INPUT_MAX);
   const image = await provider.studioAvatar(avatar, hintsOf(profile), key);
   await usageLog.record('studio');
   return (await store(image, 'avatar')).imagePath;
