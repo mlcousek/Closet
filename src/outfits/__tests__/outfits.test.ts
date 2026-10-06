@@ -300,6 +300,53 @@ describe('renders', () => {
     expect(fingerprint('a.jpg', ['1', '2'])).not.toBe(fingerprint('a.jpg', ['1']));
   });
 
+  it('forgets long-deleted outfits and the pictures nobody sees any more', async () => {
+    const { db, outfits, renders, pieces } = await setupDb();
+    const file = (name: string) => ({
+      imagePath: `${name}.png`,
+      thumbPath: `${name}-t.jpg`,
+      provider: 'gemini',
+    });
+    const kept = await outfits.create(pieces, { name: 'Kept' });
+    const old = await outfits.create(pieces, { name: 'Old' });
+    const recent = await outfits.create(pieces, { name: 'Recent' });
+    // Three pictures of the kept outfit: only the current one and the one before stay.
+    for (const name of ['k1', 'k2', 'k3']) await renders.createDone(kept.id, 'fp', file(name));
+    await renders.createDone(old.id, 'fp', file('o1'));
+    // A duplicate shares the files of the picture it was copied with.
+    await renders.createDone(old.id, 'fp', file('k3'));
+    await renders.createDone(recent.id, 'fp', file('r1'));
+    const dropped = await renders.enqueue(kept.id, 'other');
+    await renders.remove(dropped.id);
+
+    await outfits.remove(old.id);
+    const cutoff = Date.now();
+    // Deleted with the test clock, which is far before the cutoff; this one is deleted "now".
+    await createOutfitRepository(
+      () => db,
+      () => cutoff + 1000,
+    ).remove(recent.id);
+
+    const gone = await outfits.purgeDeleted(cutoff);
+    expect(gone).toEqual([old.id]);
+    expect(await outfits.get(kept.id)).not.toBeNull();
+    // Still restorable: its undo period is not over.
+    await outfits.restore(recent.id);
+    expect((await outfits.get(recent.id))?.entries).toHaveLength(3);
+    await outfits.restore(old.id);
+    expect(await outfits.get(old.id)).toBeNull();
+
+    const files = await renders.purge(gone);
+    expect(files.sort()).toEqual(['k1-t.jpg', 'k1.png', 'o1-t.jpg', 'o1.png']);
+    expect((await renders.forOutfit(kept.id)).map((render) => render.imagePath)).toEqual([
+      'k3.png',
+      'k2.png',
+    ]);
+    expect(await renders.forOutfit(old.id)).toEqual([]);
+    expect(await renders.forOutfit(recent.id)).toHaveLength(1);
+    expect(await renders.purge([])).toEqual([]);
+  });
+
   it('summarises what to show for an outfit', async () => {
     const { renders } = await setupDb();
     const done = { imagePath: 'r1.png', thumbPath: 'r1-t.jpg', provider: 'gemini' };

@@ -19,7 +19,7 @@
 
 ## 4. Add from a photo
 
-- [ ] 4.1 Register "Add item" in the global add menu with camera and library options; verify a component test
+- [x] 4.1 Register "Add item" in the global add menu with camera and library options; verify a component test
 - [ ] 4.2 Build the capture screen with tips and the cutout preview with keep-original and retake; verify on device
 - [x] 4.3 Build the item form with suggested values marked and required-field validation; verify component tests for suggestions shown and for missing category
 - [ ] 4.4 Save the item with original, cutout and thumbnail; verify the item appears in the grid on device

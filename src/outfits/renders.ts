@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 
 import { getDb, type Db } from '@/db/client';
 import { newId } from '@/db/id';
@@ -175,6 +175,51 @@ export function createRenderRepository(db: () => Db = getDb, now: () => number =
     },
     async remove(id: string): Promise<void> {
       await base.softDelete(id);
+    },
+    /**
+     * Forgets renders nobody can see any more: those of outfits that are gone
+     * for good, those that were dropped, and finished ones older than the
+     * newest `keep` of their outfit (the current picture and the one before).
+     * Returns the image files no remaining render uses, for deletion.
+     */
+    async purge(goneOutfitIds: string[], keep = 2): Promise<string[]> {
+      const rows = db()
+        .select()
+        .from(renders)
+        .orderBy(desc(renders.createdAt), desc(renders.id))
+        .all();
+      const gone = new Set(goneOutfitIds);
+      const kept = new Map<string, number>();
+      const remove: Row[] = [];
+      const stay: Row[] = [];
+      for (const row of rows) {
+        let drop = gone.has(row.outfitId) || row.deletedAt !== null;
+        if (!drop && row.status === 'done') {
+          const count = kept.get(row.outfitId) ?? 0;
+          if (count >= keep) drop = true;
+          else kept.set(row.outfitId, count + 1);
+        }
+        (drop ? remove : stay).push(row);
+      }
+      if (remove.length === 0) return [];
+      db()
+        .delete(renders)
+        .where(
+          inArray(
+            renders.id,
+            remove.map((row) => row.id),
+          ),
+        )
+        .run();
+      // A duplicated outfit shares the files of the render it was copied with.
+      const used = new Set(stay.flatMap((row) => [row.imagePath, row.thumbPath]));
+      return [
+        ...new Set(
+          remove
+            .flatMap((row) => [row.imagePath, row.thumbPath])
+            .filter((path): path is string => !!path && !used.has(path)),
+        ),
+      ];
     },
   };
 }

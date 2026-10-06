@@ -31,7 +31,7 @@
 - [x] 3.7 Build the packing checklist with extra items, free-text entries and progress; verify component tests
 - [x] 3.8 Add "add to calendar" and trip delete; verify repository unit tests
 - [x] 3.9 Add the option to have the AI stylist propose the trip outfits through the same validation; verify a unit test
-- [ ] 3.10 Include trips in backup export and import; verify a round-trip unit test
+- [x] 3.10 Include trips in backup export and import; verify a round-trip unit test
 
 ## 4. Display mode
 

@@ -32,7 +32,7 @@
 
 - [x] 5.1 Build the month grid with outfit thumbnails, month navigation and the streak counter; verify component tests
 - [x] 5.2 Build the day detail with plan, replace, move, clear, mark worn, add second outfit and the not-confirmed state; verify component tests
-- [ ] 5.3 Add "plan" on outfit detail with a date picker; verify a component test
+- [x] 5.3 Add "plan" on outfit detail with a date picker; verify a component test
 - [x] 5.4 Show wear count and last worn on outfit and item details; verify component tests
 
 ## 6. Daily reminder

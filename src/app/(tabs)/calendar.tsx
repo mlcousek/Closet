@@ -10,12 +10,15 @@ import { useOutfits, useRenderSummary } from '@/outfits/useOutfits';
 import { DayPanel } from '@/planning/DayPanel';
 import { addMonths, fromDay, monthGrid, today, weekOf, type Day } from '@/planning/dates';
 import { useCalendar, useStreak, useWeather, weatherFor } from '@/planning/usePlanning';
+import { useToday } from '@/planning/useToday';
 import { useTheme } from '@/theme/useTheme';
 
 export default function CalendarScreen() {
   const { t, i18n } = useTranslation();
   const { colors, spacing, radius } = useTheme();
   const [month, setMonth] = useState<Day>(() => addMonths(today(), 0));
+  // Re-renders the grid when the date changes, so "today" moves on while the tab stays open.
+  useToday();
   const [selected, setSelected] = useState<Day>(today);
   const grid = monthGrid(month);
   const days = grid.flat().filter((day): day is Day => day !== null);

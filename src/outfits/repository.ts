@@ -12,7 +12,7 @@ import {
 import type { Item } from '@/closet/types';
 import { getDb, type Db } from '@/db/client';
 import { createRepository } from '@/db/repository';
-import { items, outfitItems, outfits } from '@/db/schema';
+import { items, lookbookOutfits, outfitItems, outfits, tripDays } from '@/db/schema';
 
 import type { OutfitPiece } from './draft';
 
@@ -204,6 +204,28 @@ export function createOutfitRepository(db: () => Db = getDb, now: () => number =
         .where(and(inArray(outfitItems.itemId, itemIds), isNull(outfits.deletedAt)))
         .get();
       return row?.value ?? 0;
+    },
+    /**
+     * Forgets outfits deleted before the cutoff, with their pieces and their
+     * place in lookbooks, and returns their ids. Calendar entries stay: the
+     * day still shows that something was worn, as a deleted outfit.
+     */
+    async purgeDeleted(before: number): Promise<string[]> {
+      const ids = db()
+        .select({ id: outfits.id })
+        .from(outfits)
+        .where(sql`${outfits.deletedAt} IS NOT NULL AND ${outfits.deletedAt} < ${before}`)
+        .all()
+        .map((row) => row.id);
+      if (ids.length === 0) return [];
+      db().transaction((tx) => {
+        tx.delete(outfitItems).where(inArray(outfitItems.outfitId, ids)).run();
+        tx.delete(lookbookOutfits).where(inArray(lookbookOutfits.outfitId, ids)).run();
+        // A trip day that was saved as one of these can be added to the calendar again.
+        tx.update(tripDays).set({ outfitId: null }).where(inArray(tripDays.outfitId, ids)).run();
+        tx.delete(outfits).where(inArray(outfits.id, ids)).run();
+      });
+      return ids;
     },
     /** Forgets links to items that have been purged for good. */
     async forgetItems(itemIds: string[]): Promise<void> {

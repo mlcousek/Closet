@@ -90,7 +90,10 @@ export default function OutfitsScreen() {
           </AppText>
         </Pressable>
         {lookbooks.map((lookbook) => {
-          const cover = lookbook.coverOutfitId ? byId.get(lookbook.coverOutfitId) : undefined;
+          // Without a chosen cover, or when that outfit is gone, the first outfit stands in.
+          const cover =
+            (lookbook.coverOutfitId ? byId.get(lookbook.coverOutfitId) : undefined) ??
+            lookbook.outfitIds.map((id) => byId.get(id)).find((outfit) => !!outfit);
           return (
             <Pressable
               key={lookbook.id}

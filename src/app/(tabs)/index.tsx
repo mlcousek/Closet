@@ -11,7 +11,8 @@ import { OutfitImage } from '@/outfits/OutfitImage';
 import type { Outfit } from '@/outfits/repository';
 import { useOutfits, useRenderSummary } from '@/outfits/useOutfits';
 import { DayPanel } from '@/planning/DayPanel';
-import { fromDay, today, weekOf, type Day } from '@/planning/dates';
+import { fromDay, weekOf, type Day } from '@/planning/dates';
+import { useToday } from '@/planning/useToday';
 import { getTemperatureUnit } from '@/planning/settings';
 import { useCalendar, useWeather, weatherFor } from '@/planning/usePlanning';
 import { conditionOf, type Condition } from '@/planning/weather';
@@ -35,10 +36,13 @@ export default function HomeScreen() {
   const { colors, spacing, radius } = useTheme();
   const { data: profile } = useProfile();
   const openMenu = useAddActions((state) => state.openMenu);
-  const [selected, setSelected] = useState<Day>(today);
+  const now = useToday();
+  // A day picked in the strip holds until midnight; the next morning Home shows today again.
+  const [picked, setPicked] = useState<{ on: Day; day: Day } | null>(null);
+  const selected = picked?.on === now ? picked.day : now;
   // Read once when the screen opens; the age shown only needs to be roughly right.
   const [openedAt] = useState(() => Date.now());
-  const week = weekOf(today());
+  const week = weekOf(now);
   const { data: byDay } = useCalendar(week[0], week[6]);
   const { data: outfits = [] } = useOutfits({});
   const { data: itemCount = 0, isPending: countPending } = useItemCount({});
@@ -113,7 +117,7 @@ export default function HomeScreen() {
               testID={`week-day-${day}`}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
-              onPress={() => setSelected(day)}
+              onPress={() => setPicked({ on: now, day })}
               style={{
                 flex: 1,
                 gap: spacing.xs,
@@ -123,7 +127,7 @@ export default function HomeScreen() {
                 borderBottomColor: isSelected ? colors.primary : 'transparent',
               }}
             >
-              <AppText variant="caption" muted={day !== today()}>
+              <AppText variant="caption" muted={day !== now}>
                 {new Intl.DateTimeFormat(i18n.language, { weekday: 'narrow' }).format(fromDay(day))}
               </AppText>
               <View style={{ width: '100%', aspectRatio: 3 / 4 }}>

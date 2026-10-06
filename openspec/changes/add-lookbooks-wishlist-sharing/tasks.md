@@ -1,7 +1,7 @@
 ## 1. Lookbooks
 
 - [x] 1.1 Add lookbooks and lookbook-outfits tables with migrations and a repository (create, rename, delete, add, remove, reorder, cover); verify repository unit tests including that deleting a lookbook keeps its outfits
-- [ ] 1.2 Add the lookbooks row with an "Add lookbook" control at the top of the Outfits section; verify a component test for empty and filled states
+- [x] 1.2 Add the lookbooks row with an "Add lookbook" control at the top of the Outfits section; verify a component test for empty and filled states
 - [ ] 1.3 Build the lookbook screen with grid, drag to reorder, set cover, rename and delete; verify component tests
 - [x] 1.4 Add "add to lookbook" on outfit detail and as a multi-select action in the outfits grid; verify component tests for one and several outfits
 - [x] 1.5 Include lookbooks in backup export and import; verify a round-trip unit test

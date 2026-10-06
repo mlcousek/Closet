@@ -6,9 +6,11 @@ import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { renderQueue } from '@/outfits/renderActions';
+import { renderRepository } from '@/outfits/renders';
 import { outfitRepository } from '@/outfits/repository';
 import { installReminderHandling, restoreReminder } from '@/planning/reminder';
 import { useAddActions } from '@/shell/addActions';
+import { imageStore } from '@/storage/imageStore';
 
 import { useClosetTab } from './closetTab';
 import { itemImageDeps } from './deviceImages';
@@ -123,6 +125,15 @@ export function useClosetSetup(): void {
         // Items that are gone for good no longer belong to any outfit.
         await outfitRepository.forgetItems(purged.map((item) => item.id));
         for (const item of purged) await removeItemImages(item, itemImageDeps);
+      })
+      .catch(() => {});
+    // Outfits deleted a while ago go for good, and with them the try-on pictures nobody sees
+    // any more; those are the largest files the app stores.
+    void outfitRepository
+      .purgeDeleted(Date.now() - PURGE_AFTER_MS)
+      .then((gone) => renderRepository.purge(gone))
+      .then(async (paths) => {
+        for (const path of paths) await imageStore.remove(path).catch(() => {});
       })
       .catch(() => {});
     return () => {

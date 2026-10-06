@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 import { Alert } from 'react-native';
 
@@ -152,8 +152,17 @@ jest.mock('../repository', () => ({
     return mockOutfitRepo;
   },
 }));
+let mockLookbooks: object[] = [];
+const mockPlan = jest.fn(async (..._args: unknown[]) => ({}));
+jest.mock('@/planning/calendar', () => ({
+  calendarRepository: {
+    plan: (...args: unknown[]) => mockPlan(...args),
+    outfitStats: async () => ({ count: 0, lastWorn: null }),
+    itemStats: async () => ({ count: 0, lastWorn: null }),
+  },
+}));
 jest.mock('@/lookbooks/useLookbooks', () => ({
-  useLookbooks: () => ({ data: [] }),
+  useLookbooks: () => ({ data: mockLookbooks }),
   useLookbooksContaining: () => ({ data: [] }),
 }));
 jest.mock('@/lookbooks/LookbookPicker', () => {
@@ -292,6 +301,8 @@ beforeEach(() => {
   mockOwned = closet;
   mockWished = [];
   mockOutfits = [];
+  mockLookbooks = [];
+  mockPlan.mockClear();
   mockRenders = [];
   mockProfile = profile;
   Object.assign(mockPrevent, { blocked: false, callback: null });
@@ -547,6 +558,34 @@ describe('outfits section', () => {
     await waitFor(() => expect(screen.getAllByTestId('outfit-wishlist')).toHaveLength(1));
   });
 
+  it('shows the lookbooks row with a way to add one, also when there are none', async () => {
+    renderWithQuery(<OutfitsScreen />);
+    expect(await screen.findByTestId('lookbooks-row')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('add-lookbook'));
+    expect(screen.getByTestId('lookbook-picker')).toBeTruthy();
+  });
+
+  it('lists lookbooks with a cover and opens one', async () => {
+    mockOutfits = [outfitOf('o1'), outfitOf('o2')];
+    mockLookbooks = [
+      { id: 'lb1', name: 'Summer', outfitIds: ['o2', 'o1'], coverOutfitId: null },
+      { id: 'lb2', name: 'Empty', outfitIds: [], coverOutfitId: null },
+    ];
+    renderWithQuery(<OutfitsScreen />);
+    const first = await screen.findByTestId('lookbook-lb1');
+    expect(first).toHaveTextContent(/Summer/);
+    // The first outfit is the cover until one is chosen: its pieces show in the row.
+    await waitFor(() =>
+      expect(within(first).getAllByTestId(/^collage-piece-/).length).toBeGreaterThan(0),
+    );
+    expect(within(screen.getByTestId('lookbook-lb2')).queryByTestId('outfit-collage')).toBeNull();
+    fireEvent.press(first);
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/lookbook/[id]',
+      params: { id: 'lb1' },
+    });
+  });
+
   it('adds several selected outfits to a lookbook', async () => {
     mockOutfits = [outfitOf('o1'), outfitOf('o2')];
     renderWithQuery(<OutfitsScreen />);
@@ -638,6 +677,25 @@ describe('outfit detail', () => {
     open(outfitOf('o1'));
     expect(await screen.findByTestId('render-status')).toHaveTextContent(/keep using the app/);
     expect(screen.getByTestId('outfit-render-button')).toBeDisabled();
+  });
+
+  it('plans the outfit for a chosen day', async () => {
+    open(outfitOf('o1'));
+    fireEvent.press(await screen.findByTestId('outfit-plan'));
+    const days = within(screen.getByTestId('plan-days')).getAllByRole('button');
+    expect(days.length).toBeGreaterThanOrEqual(7);
+    fireEvent.press(days[1]);
+    await waitFor(() => expect(mockPlan).toHaveBeenCalledTimes(1));
+    expect(mockPlan.mock.calls[0][1]).toBe('o1');
+    expect(mockPlan.mock.calls[0][0]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(screen.queryByTestId('plan-days')).toBeNull();
+  });
+
+  it('cannot plan an outfit with a wishlist piece', async () => {
+    const wished = item('dream-coat', 'outerwear', { ownership: 'wishlist' });
+    open(outfitOf('o1', { entries: [entry(wished, 'outer')] }));
+    await screen.findByTestId('outfit-share');
+    expect(screen.queryByTestId('outfit-plan')).toBeNull();
   });
 
   it('renames and marks as favourite', async () => {

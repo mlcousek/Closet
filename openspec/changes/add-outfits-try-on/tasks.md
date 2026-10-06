@@ -42,7 +42,7 @@
 
 - [x] 7.1 Build the outfits grid with render or collage, progress and failed states, and filters; verify component tests for each state
 - [x] 7.2 Build outfit detail with large image, item list, Regenerate, previous render, rename, favourite, edit and delete with undo; verify component tests
-- [ ] 7.3 Register "Create outfit" in the global add menu; verify a component test
+- [x] 7.3 Register "Create outfit" in the global add menu; verify a component test
 - [x] 7.4 Show render usage in the AI section of Settings; verify a component test
 
 ## 8. Item removal rules
