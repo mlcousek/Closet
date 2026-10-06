@@ -42,12 +42,12 @@ export default function NewItemScreen() {
   const [saveFailed, setSaveFailed] = useState(false);
   const started = useRef(false);
   const mounted = useRef(true);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
   // Decided by where the add was started: the Wishlist tab passes it along, also through link import.
   // A link import brings its own target, which has to outlive the link's photo being replaced.
   const [linkTarget, setLinkTarget] = useState<'owned' | 'wishlist' | null>(null);

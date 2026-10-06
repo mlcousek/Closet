@@ -66,7 +66,7 @@ export default function SettingsScreen() {
       const restoredOverride = getLanguageOverride();
       setOverride(restoredOverride);
       await setLanguageOverride(restoredOverride);
-      showToast({ message: t('backup.importDone') });
+      showToast({ message: i18n.t('backup.importDone') });
     } catch (error) {
       const reason = error instanceof BackupError ? error.reason : null;
       showToast({

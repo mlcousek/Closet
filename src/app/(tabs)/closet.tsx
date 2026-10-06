@@ -191,10 +191,14 @@ export default function ClosetScreen() {
   };
 
   const applyRetag = async (patch: { seasons?: Season[]; occasions?: Occasion[] }) => {
-    await itemRepository.updateMany(selected, patch);
-    setRetagging(false);
-    setSelected([]);
-    await invalidateItems();
+    try {
+      await itemRepository.updateMany(selected, patch);
+      setSelected([]);
+      await invalidateItems();
+    } finally {
+      // Also on failure: the message about it appears under the sheet.
+      setRetagging(false);
+    }
   };
 
   const totalText = wishlistTotals

@@ -25,9 +25,11 @@ const MAX_HEIGHT_CM = 260;
  * imperial input is feet and inches such as "5 7", "5'7" or "5ft 7in".
  */
 export function parseHeight(text: string, system: LengthSystem): number | null {
-  const numbers = (text.match(/\d+(?:[.,]\d+)?/g) ?? []).map((part) =>
-    Number(part.replace(',', '.')),
-  );
+  // In feet and inches every separator, a dot or comma included, sits between the two.
+  const numbers =
+    system === 'metric'
+      ? (text.match(/\d+(?:[.,]\d+)?/g) ?? []).map((part) => Number(part.replace(',', '.')))
+      : (text.match(/\d+/g) ?? []).map(Number);
   if (numbers.length === 0) return null;
   const cm =
     system === 'metric' ? Math.round(numbers[0]) : feetInchesToCm(numbers[0], numbers[1] ?? 0);

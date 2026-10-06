@@ -5,6 +5,7 @@ import * as Sharing from 'expo-sharing';
 
 import { checkpointDb, closeDb, openDb, setDbLocked } from '@/db/client';
 import { LATEST_SCHEMA_VERSION } from '@/db/migrations';
+import { setSetting } from '@/db/settings';
 
 import {
   BackupError,
@@ -25,7 +26,10 @@ import { expoFs } from './fs';
  */
 export async function exportBackup(): Promise<void> {
   checkpointDb();
-  const date = new Date().toISOString().slice(0, 10);
+  // The local date, which is the one the user would look for.
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   const target = new File(Paths.cache, `closet-backup-${date}.zip`);
   target.create({ overwrite: true });
   const handle = target.open();
@@ -73,15 +77,19 @@ export async function importBackup(archiveUri: string): Promise<void> {
       {
         // Never asks for more than the file holds, so the end is seen as a short read.
         read: (length) => {
-          const take = Math.min(length, size - position);
-          position += take;
-          return take > 0 ? handle.readBytes(take) : new Uint8Array(0);
+          // An entry that claims more than is left is not read at all: loading the rest of
+          // a large file just to reject it could use more memory than the phone has.
+          if (length <= 0 || length > size - position) return new Uint8Array(0);
+          position += length;
+          return handle.readBytes(length);
         },
       },
       LATEST_SCHEMA_VERSION,
     );
   } finally {
     handle.close();
+    // The picker made its own copy of the archive, which can be as large as the closet.
+    if (archive.exists) archive.delete();
   }
 
   // From here until the database is open again nothing else may open it.
@@ -103,7 +111,11 @@ export async function importBackup(archiveUri: string): Promise<void> {
     setDbLocked(false);
     openDb();
   }
-  await finishRestore(expoFs);
+  // The restore has worked by now; a failure to tidy up must not be reported as a failure.
+  await finishRestore(expoFs).catch(() => {});
+  // Whether a key works was tested on the phone the backup came from; the keys themselves
+  // never travel with a backup.
+  for (const provider of ['anthropic', 'image']) setSetting(`ai.status.${provider}`, null);
 }
 
 /**

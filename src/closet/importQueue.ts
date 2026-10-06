@@ -154,16 +154,36 @@ export function createImportProcessor(options: {
     }
   };
 
+  let active = 0;
+  const pool: Promise<void>[] = [];
+  /** Starts workers until as many run as are allowed. */
+  const topUp = () => {
+    while (active < concurrency) {
+      active++;
+      pool.push(
+        worker().finally(() => {
+          active--;
+        }),
+      );
+    }
+  };
+
   return {
     /** Resolves when the queue is empty. */
     start(): Promise<void> {
       if (!running) {
         running = (async () => {
           await jobs.requeueInterrupted();
-          await Promise.all(Array.from({ length: concurrency }, worker));
+          topUp();
+          // Workers added while these run are waited for as well.
+          while (pool.length > 0) await Promise.all(pool.splice(0));
         })().finally(() => {
           running = null;
         });
+      } else {
+        // Photos are queued one by one; a worker that found the queue empty has left, and
+        // without this a bulk import would crawl along with a single worker.
+        topUp();
       }
       return running;
     },

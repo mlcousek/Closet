@@ -55,7 +55,8 @@ export async function storeAvatar(
     const avatarSmallPath = await deps.save(smallUri, 'avatar');
     return { avatarPath, avatarSmallPath };
   } catch (error) {
-    await deps.remove(avatarPath);
+    // The reason the photo could not be stored is what matters, not a failed clean-up.
+    await deps.remove(avatarPath).catch(() => {});
     throw error;
   }
 }

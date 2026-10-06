@@ -12,7 +12,7 @@ import {
   type ImportJob,
   type ImportProgress,
 } from './importQueue';
-import { extensionOf, storeItemImages, type ItemImageDeps } from './itemImages';
+import { extensionOf, removeItemImages, storeItemImages, type ItemImageDeps } from './itemImages';
 import { itemRepository } from './repository';
 import type { ItemDetails } from './types';
 
@@ -74,7 +74,11 @@ export type ImportJobDeps = {
  * cannot create the same item twice.
  */
 export async function processImportJob(job: ImportJob, deps: ImportJobDeps): Promise<string> {
-  if (await deps.itemExists(job.id)) return job.id;
+  if (await deps.itemExists(job.id)) {
+    // Interrupted after the item was made: only the copied photo is left to remove.
+    await deps.images.remove(job.sourcePath).catch(() => {});
+    return job.id;
+  }
   const originalUri = deps.sourceUri(job.sourcePath);
   const cutout = await deps.images.cutout(originalUri);
   const tags = await deps.tag(cutout?.uri ?? originalUri, cutout !== null, cutout ?? undefined);
@@ -82,10 +86,13 @@ export async function processImportJob(job: ImportJob, deps: ImportJobDeps): Pro
     { originalUri, cutoutUri: cutout?.uri ?? null },
     deps.images,
   );
-  const item = await deps.createItem(detailsFromTags(tags), images, {
-    needsReview: true,
-    id: job.id,
-  });
+  const item = await deps
+    .createItem(detailsFromTags(tags), images, { needsReview: true, id: job.id })
+    .catch(async (error: unknown) => {
+      // Without the item nothing points at these files any more.
+      await removeItemImages(images, deps.images);
+      throw error;
+    });
   await deps.images.remove(job.sourcePath).catch(() => {});
   return item.id;
 }

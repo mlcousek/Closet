@@ -525,7 +525,9 @@
     "deleteTitle": "Delete this lookbook?",
     "deleteMessage": "The lookbook is removed. Its outfits stay in your Outfits.",
     "deletedToast": "Lookbook deleted",
-    "notFound": "This lookbook no longer exists."
+    "notFound": "This lookbook no longer exists.",
+    "sharePages": "This lookbook is shared as {{count}} pictures.",
+    "sharePage": "Page {{page}}"
   },
   "wishlist": {
     "title": "Wishlist",
@@ -729,7 +731,7 @@
     "swap": "Another outfit",
     "inCalendar": "In the calendar",
     "addToCalendar": "Add to calendar",
-    "addedToCalendar": "Added {{count}} days to the calendar",
+    "addedToCalendar": "Days added to the calendar: {{count}}",
     "nothingToAdd": "Nothing new to add to the calendar",
     "packing": "Packing list",
     "progress": "{{packed}} of {{total}} packed",

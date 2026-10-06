@@ -22,6 +22,10 @@ const APP_ID = 'closet';
 const STAGING_DIR = 'restore-staging';
 /** Where the current data waits until the restored data is known to work. */
 const PREVIOUS_DIR = 'restore-previous';
+/** Where the previous data goes once the restore has worked, on its way to being deleted. */
+const DISCARD_DIR = 'restore-discard';
+/** Present from the moment a restore has worked until its leftovers are gone. */
+const DONE_MARKER = 'restore-done';
 
 const SQLITE_HEADER = 'SQLite format 3\u0000';
 
@@ -81,8 +85,20 @@ export async function createBackupArchive(
   return bytesToBase64(archive.bytes());
 }
 
-function isSafeImagePath(path: string): boolean {
-  return path.startsWith(`${IMAGES_DIR}/`) && !path.split('/').includes('..');
+/**
+ * True for a path the app itself could have written: under the image folder,
+ * every part made of plain letters, digits, dot, dash and underscore. Anything
+ * else is refused. A name is later used as part of a file URL, where "%2e%2e"
+ * means "..", and "?" or "#" cut the path short, so a crafted archive could
+ * otherwise write outside the folder it is unpacked into.
+ */
+export function isSafeImagePath(path: string): boolean {
+  const parts = path.split('/');
+  return (
+    parts.length >= 2 &&
+    parts[0] === IMAGES_DIR &&
+    parts.every((part) => /^[A-Za-z0-9._-]+$/.test(part) && part !== '.' && part !== '..')
+  );
 }
 
 function looksLikeSqlite(bytes: Uint8Array): boolean {
@@ -160,12 +176,19 @@ export async function stageBackup(
 
 /** True when a restore was cut off after the current data had been set aside. */
 export async function hasInterruptedRestore(fs: FsAdapter): Promise<boolean> {
-  return fs.exists(`${PREVIOUS_DIR}/${DB_ENTRY}`);
+  // Leftovers of a restore that worked are only waiting to be deleted.
+  if (await fs.exists(DONE_MARKER)) return false;
+  return (
+    (await fs.exists(`${PREVIOUS_DIR}/${DB_ENTRY}`)) ||
+    (await fs.exists(`${PREVIOUS_DIR}/${IMAGES_DIR}`))
+  );
 }
 
 /** Removes what an abandoned restore left behind before it touched live data. */
 export async function clearStagedBackup(fs: FsAdapter): Promise<void> {
   await fs.remove(STAGING_DIR);
+  if (await fs.exists(DONE_MARKER)) await discardPrevious(fs);
+  await fs.remove(DISCARD_DIR);
 }
 
 /**
@@ -174,10 +197,13 @@ export async function clearStagedBackup(fs: FsAdapter): Promise<void> {
  */
 export async function swapInStagedBackup(fs: FsAdapter): Promise<void> {
   await fs.remove(PREVIOUS_DIR);
+  await fs.remove(DONE_MARKER);
   try {
     for (const side of DB_SIDE_FILES) await fs.remove(side);
-    if (await fs.exists(DB_FILE)) await fs.move(DB_FILE, `${PREVIOUS_DIR}/${DB_ENTRY}`);
+    // Either of the two in the set-aside folder marks a restore under way, so a start-up
+    // after a crash at any point between these moves finds everything that was moved.
     if (await fs.exists(IMAGES_DIR)) await fs.move(IMAGES_DIR, `${PREVIOUS_DIR}/${IMAGES_DIR}`);
+    if (await fs.exists(DB_FILE)) await fs.move(DB_FILE, `${PREVIOUS_DIR}/${DB_ENTRY}`);
     await fs.move(`${STAGING_DIR}/${DB_ENTRY}`, DB_FILE);
     if (await fs.exists(`${STAGING_DIR}/${IMAGES_DIR}`)) {
       await fs.move(`${STAGING_DIR}/${IMAGES_DIR}`, IMAGES_DIR);
@@ -199,12 +225,27 @@ export async function rollbackRestore(fs: FsAdapter): Promise<void> {
     await fs.remove(DB_FILE);
     await fs.move(previousDb, DB_FILE);
   }
-  await fs.remove(IMAGES_DIR);
-  if (await fs.exists(previousImages)) await fs.move(previousImages, IMAGES_DIR);
+  // The photos in place are only replaced when the user's own were really set aside;
+  // otherwise they are the user's own and must stay.
+  if (await fs.exists(previousImages)) {
+    await fs.remove(IMAGES_DIR);
+    await fs.move(previousImages, IMAGES_DIR);
+  }
   await fs.remove(PREVIOUS_DIR);
 }
 
 /** Step 3: discards the data that was set aside, once the restored database has opened. */
 export async function finishRestore(fs: FsAdapter): Promise<void> {
+  // Written first: from here on the restore counts as done, whatever happens to the
+  // clean-up below. Deleting a large folder takes time and can fail or be cut off.
+  await fs.writeBase64(DONE_MARKER, '');
+  await discardPrevious(fs);
+}
+
+async function discardPrevious(fs: FsAdapter): Promise<void> {
+  await fs.remove(DISCARD_DIR);
+  if (await fs.exists(PREVIOUS_DIR)) await fs.move(PREVIOUS_DIR, DISCARD_DIR);
+  await fs.remove(DISCARD_DIR);
   await fs.remove(PREVIOUS_DIR);
+  await fs.remove(DONE_MARKER);
 }

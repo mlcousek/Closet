@@ -7,7 +7,7 @@ import * as FileSystem from 'expo-file-system/legacy';
  */
 const PREFIXES = ['cutout-', 'generated-', 'link-import-', 'closet-backup-'];
 /** Folders that hold nothing but working files. */
-const FOLDERS = ['ImageManipulator'];
+const FOLDERS = ['ImageManipulator', 'DocumentPicker'];
 /** Younger files may still be in use by something that is running. */
 const KEEP_MS = 60 * 60 * 1000;
 

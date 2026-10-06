@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Alert, FlatList, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { Chips } from '@/closet/Chips';
 import { AppText, Button, EmptyState, Field, Screen } from '@/components/ui';
 import { lookbookRepository, type Lookbook } from '@/lookbooks/repository';
 import { useInvalidateLookbooks, useLookbook } from '@/lookbooks/useLookbooks';
@@ -92,6 +93,23 @@ function LookbookView({ lookbook }: { lookbook: Lookbook }) {
               onPress={() => setSharePage(0)}
             />
           </View>
+        </View>
+      ) : null}
+      {pages.length > 1 ? (
+        <View style={{ gap: spacing.sm }}>
+          <AppText variant="caption" muted>
+            {t('lookbooks.sharePages', { count: pages.length })}
+          </AppText>
+          <Chips
+            testIDPrefix="lookbook-share-page"
+            scroll
+            options={pages.map((_, index) => ({
+              value: index,
+              label: t('lookbooks.sharePage', { page: index + 1 }),
+            }))}
+            selected={[]}
+            onToggle={setSharePage}
+          />
         </View>
       ) : null}
     </View>
@@ -220,7 +238,7 @@ function LookbookView({ lookbook }: { lookbook: Lookbook }) {
               items: outfit.entries.map((entry) => entry.item),
               renderPath: summarise(outfit).current?.imagePath ?? null,
             }))}
-            onClose={() => setSharePage(sharePage + 1 < pages.length ? sharePage + 1 : null)}
+            onClose={() => setSharePage(null)}
           />
         </View>
       ) : null}

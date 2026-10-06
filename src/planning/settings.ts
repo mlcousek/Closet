@@ -89,7 +89,15 @@ export type ReminderTime = { hour: number; minute: number };
 
 export function getReminderTime(): ReminderTime | null {
   const time = readJson<ReminderTime>(REMINDER);
-  return time && Number.isInteger(time.hour) && Number.isInteger(time.minute) ? time : null;
+  const valid =
+    time &&
+    Number.isInteger(time.hour) &&
+    Number.isInteger(time.minute) &&
+    time.hour >= 0 &&
+    time.hour <= 23 &&
+    time.minute >= 0 &&
+    time.minute <= 59;
+  return valid ? time : null;
 }
 export const setReminderTime = (time: ReminderTime | null) =>
   setSetting(REMINDER, time ? JSON.stringify(time) : null);

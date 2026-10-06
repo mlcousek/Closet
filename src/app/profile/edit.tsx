@@ -41,12 +41,12 @@ function EditForm({ profile }: { profile: Profile }) {
   const [sizeShoes, setSizeShoes] = useState(profile.sizeShoes ?? '');
   const [busy, setBusy] = useState(false);
   const mounted = useRef(true);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
   const [error, setError] = useState<string | null>(null);
 
   const chooseAvatar = (photo: PickedPhoto) => {

@@ -174,6 +174,7 @@ export function createZipWriter(out: ArchiveWriter, now: Date = new Date()) {
   const { time, day } = dosTime(now);
   const entries: { name: Uint8Array; crc: number; size: number; offset: number }[] = [];
   let offset = 0;
+  let indexSize = 0;
   const write = async (bytes: Uint8Array) => {
     await out.write(bytes);
     offset += bytes.length;
@@ -182,10 +183,14 @@ export function createZipWriter(out: ArchiveWriter, now: Date = new Date()) {
   return {
     async add(path: string, data: Uint8Array): Promise<void> {
       const name = utf8(path);
-      if (data.length > MAX_SIZE || offset + data.length > MAX_SIZE) {
+      // What this entry adds, and the index entry it will need at the end.
+      const added = 30 + name.length + data.length;
+      indexSize += 46 + name.length;
+      if (data.length > MAX_SIZE || offset + added + indexSize + 22 > MAX_SIZE) {
         throw new ZipError('The archive would be larger than the zip format allows');
       }
-      if (entries.length >= MAX_ENTRIES) throw new ZipError('Too many files for one archive');
+      // The largest count means "look elsewhere" to other tools, so it is not used.
+      if (entries.length >= MAX_ENTRIES - 1) throw new ZipError('Too many files for one archive');
       const entry = { name, crc: crc32(data), size: data.length, offset };
       entries.push(entry);
       await write(

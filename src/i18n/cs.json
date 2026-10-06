@@ -525,7 +525,9 @@
     "deleteTitle": "Smazat tento lookbook?",
     "deleteMessage": "Lookbook se odstraní. Jeho outfity zůstanou mezi vašimi outfity.",
     "deletedToast": "Lookbook smazán",
-    "notFound": "Tento lookbook už neexistuje."
+    "notFound": "Tento lookbook už neexistuje.",
+    "sharePages": "Tento lookbook se sdílí jako několik obrázků ({{count}}).",
+    "sharePage": "Strana {{page}}"
   },
   "wishlist": {
     "title": "Wishlist",
@@ -729,7 +731,7 @@
     "swap": "Jiný outfit",
     "inCalendar": "V kalendáři",
     "addToCalendar": "Přidat do kalendáře",
-    "addedToCalendar": "Přidáno do kalendáře, počet dní: {{count}}",
+    "addedToCalendar": "Dny přidané do kalendáře: {{count}}",
     "nothingToAdd": "Do kalendáře není co nového přidat",
     "packing": "Seznam na balení",
     "progress": "Sbaleno {{packed}} z {{total}}",
