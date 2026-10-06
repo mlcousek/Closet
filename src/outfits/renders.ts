@@ -12,6 +12,7 @@ export const RENDER_FAILURES = [
   'noKey',
   'noAvatar',
   'offline',
+  'connectionLost',
   'declined',
   'rateLimited',
   'timeout',

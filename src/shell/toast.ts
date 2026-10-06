@@ -36,6 +36,14 @@ export const useToast = create<ToastState>((set, get) => ({
 }));
 
 /**
+ * Runs something a tap started. If it fails, the user is told, because an
+ * action that silently does nothing looks like a broken button.
+ */
+export function attempt(action: () => Promise<unknown>, message: string): void {
+  action().catch(() => useToast.getState().show({ message }));
+}
+
+/**
  * Deletes right away and offers undo for a short period, as the recoverable
  * deletion requirement asks. `remove` and `restore` are the repository calls.
  */

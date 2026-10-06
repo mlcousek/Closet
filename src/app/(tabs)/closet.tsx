@@ -29,7 +29,7 @@ import { AppText, Button, EmptyState, Field, Screen } from '@/components/ui';
 import { formatCurrency, formatLocale, formatNumber } from '@/i18n/format';
 import { outfitRepository } from '@/outfits/repository';
 import { useAddActions } from '@/shell/addActions';
-import { deleteWithUndo, useToast } from '@/shell/toast';
+import { attempt, deleteWithUndo, useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
 import { useTheme } from '@/theme/useTheme';
 
@@ -395,7 +395,7 @@ export default function ClosetScreen() {
                   testID="selection-archive"
                   kind="secondary"
                   label={sheet.archived ? t('closet.unarchive') : t('closet.archive')}
-                  onPress={() => void archiveSelected()}
+                  onPress={() => attempt(() => archiveSelected(), t('common.somethingWentWrong'))}
                 />
               </View>
             )}
@@ -429,7 +429,7 @@ export default function ClosetScreen() {
       {retagging ? (
         <RetagSheet
           count={selected.length}
-          onApply={(patch) => void applyRetag(patch)}
+          onApply={(patch) => attempt(() => applyRetag(patch), t('common.somethingWentWrong'))}
           onClose={() => setRetagging(false)}
         />
       ) : null}

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Chips } from '@/closet/Chips';
 import { AppText, Button, Field } from '@/components/ui';
 import type { TemperatureUnit } from '@/i18n/format';
+import { attempt } from '@/shell/toast';
 import { useTheme } from '@/theme/useTheme';
 
 import { formatTime, parseTime, setReminder } from './reminder';
@@ -105,7 +106,7 @@ export function PlanningSettings() {
           key={`${place.latitude},${place.longitude}`}
           testID={`city-result-${index}`}
           accessibilityRole="button"
-          onPress={() => void chooseCity(place)}
+          onPress={() => attempt(() => chooseCity(place), t('common.somethingWentWrong'))}
           style={{
             padding: spacing.md,
             borderRadius: radius.sm,
@@ -120,7 +121,7 @@ export function PlanningSettings() {
           testID="city-clear"
           kind="secondary"
           label={t('weather.useLocation')}
-          onPress={() => void chooseCity(null)}
+          onPress={() => attempt(() => chooseCity(null), t('common.somethingWentWrong'))}
         />
       ) : null}
       <Chips
@@ -155,14 +156,16 @@ export function PlanningSettings() {
           testID="reminder-toggle"
           kind={reminderOn ? 'secondary' : 'primary'}
           label={t(reminderOn ? 'reminder.turnOff' : 'reminder.turnOn')}
-          onPress={() => void (reminderOn ? turnOff() : turnOn())}
+          onPress={() =>
+            attempt(() => (reminderOn ? turnOff() : turnOn()), t('common.somethingWentWrong'))
+          }
         />
       </View>
       {reminderOn && time.trim() !== scheduled ? (
         <Button
           testID="reminder-update"
           label={t('reminder.update')}
-          onPress={() => void turnOn()}
+          onPress={() => attempt(() => turnOn(), t('common.somethingWentWrong'))}
         />
       ) : null}
       {reminderOn ? (

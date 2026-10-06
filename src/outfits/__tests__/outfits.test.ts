@@ -751,6 +751,19 @@ describe('try-on provider', () => {
     expect(() => readGeminiImage(null)).toThrow(TryOnError);
   });
 
+  it('says the picture may have been charged when the connection drops mid-request', async () => {
+    // The request was under way for ten seconds before it failed: it had been sent.
+    const clock = jest.spyOn(Date, 'now');
+    clock.mockReturnValueOnce(1_000).mockReturnValueOnce(11_000);
+    const dropped = jest.fn(async () => {
+      throw new Error('network connection lost');
+    });
+    expect(await reasonOf(createGeminiProvider(dropped, () => 'm').render(input, 'k'))).toBe(
+      'connectionLost',
+    );
+    clock.mockRestore();
+  });
+
   it('reports no connection and a timeout separately', async () => {
     const offline = jest.fn(async () => {
       throw new Error('network');

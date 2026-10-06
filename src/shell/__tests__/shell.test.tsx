@@ -5,11 +5,25 @@ import { AddButton, AddMenu } from '../AddMenu';
 import { SectionPlaceholder } from '../SectionPlaceholder';
 import { ToastHost } from '../ToastHost';
 import { useAddActions } from '../addActions';
-import { deleteWithUndo, useToast } from '../toast';
+import { attempt, deleteWithUndo, useToast } from '../toast';
 
 beforeEach(() => {
   useAddActions.setState({ actions: [], menuOpen: false });
   useToast.getState().dismiss();
+});
+
+describe('attempt', () => {
+  it('tells the user when something a tap started fails, and stays quiet when it works', async () => {
+    attempt(async () => 'fine', 'It failed');
+    await act(async () => {});
+    expect(useToast.getState().toast).toBeNull();
+
+    attempt(async () => {
+      throw new Error('disk full');
+    }, 'It failed');
+    await act(async () => {});
+    expect(useToast.getState().toast?.message).toBe('It failed');
+  });
 });
 
 describe('add menu', () => {

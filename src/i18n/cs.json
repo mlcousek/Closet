@@ -485,7 +485,8 @@
       "rateLimited": "Poskytovatel je vytížený nebo máte vyčerpanou kvótu. Zkuste to později.",
       "timeout": "Poskytovatel odpovídal příliš dlouho. Zkuste to znovu.",
       "interrupted": "Aplikace se zavřela dřív, než se vykreslení dokončilo. Zkuste to znovu.",
-      "error": "Vykreslení se tentokrát nepovedlo. Zkuste to znovu."
+      "error": "Vykreslení se tentokrát nepovedlo. Zkuste to znovu.",
+      "connectionLost": "Připojení se přerušilo během vytváření obrázku. Mohl být přesto vytvořen a naúčtován, proto před dalším pokusem zkontrolujte svou spotřebu."
     },
     "settingsTitle": "Vykreslování outfitů",
     "autoRender": "Vykreslit při uložení outfitu",

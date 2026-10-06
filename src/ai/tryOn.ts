@@ -12,7 +12,18 @@ export function setImageModel(model: string | null): void {
   setSetting(IMAGE_MODEL_SETTING, model?.trim() || null);
 }
 
-export type TryOnFailure = 'noKey' | 'offline' | 'declined' | 'rateLimited' | 'timeout' | 'error';
+export type TryOnFailure =
+  | 'noKey'
+  | 'offline'
+  /** The request went out and the connection dropped before the answer; it may have been charged. */
+  | 'connectionLost'
+  | 'declined'
+  | 'rateLimited'
+  | 'timeout'
+  | 'error';
+
+/** A request that fails this quickly never reached the provider. */
+const NEVER_SENT_MS = 4000;
 
 export class TryOnError extends Error {
   constructor(public reason: TryOnFailure) {
@@ -135,6 +146,7 @@ export function createGeminiProvider(
     }, timeoutMs);
     let status: number;
     let payload: unknown;
+    const startedAt = Date.now();
     try {
       const response = await fetchImpl(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(getModel())}:generateContent`,
@@ -162,7 +174,10 @@ export function createGeminiProvider(
       status = response.status;
       payload = await response.json().catch(() => null);
     } catch {
-      throw new TryOnError(timedOut ? 'timeout' : 'offline');
+      if (timedOut) throw new TryOnError('timeout');
+      // Without a connection the request fails at once. A failure after a while means it was
+      // sent, with its images, and the answer was lost: the provider may have made the picture.
+      throw new TryOnError(Date.now() - startedAt < NEVER_SENT_MS ? 'offline' : 'connectionLost');
     } finally {
       clearTimeout(timer);
     }

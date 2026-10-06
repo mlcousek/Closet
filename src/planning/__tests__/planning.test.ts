@@ -398,6 +398,21 @@ describe('weather', () => {
     );
     expect((await loadWeather(null, makeStore())).status).toBe('unavailable');
   });
+
+  it('keeps the last weather when offline a few streets from where it was fetched', async () => {
+    const fail = async () => {
+      throw new Error('offline');
+    };
+    // The device location moved slightly, across a rounding boundary.
+    const nearby = {
+      name: '',
+      latitude: place.latitude + 0.012,
+      longitude: place.longitude - 0.02,
+    };
+    expect((await loadWeather(nearby, makeStore(cached(1000)), fail)).status).toBe('stale');
+    const nextTown = { name: '', latitude: place.latitude + 0.2, longitude: place.longitude };
+    expect((await loadWeather(nextTown, makeStore(cached(1000)), fail)).status).toBe('unavailable');
+  });
 });
 
 describe('suggestions', () => {

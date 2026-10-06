@@ -157,6 +157,8 @@ export async function searchPlaces(
 }
 
 export const WEATHER_FRESH_MS = 60 * 60 * 1000;
+/** About five kilometres: the same weather for the purposes of getting dressed. */
+const NEARBY_DEGREES = 0.05;
 
 export type WeatherStore = {
   read(): Weather | null;
@@ -178,11 +180,13 @@ export async function loadWeather(
   now: () => number = Date.now,
 ): Promise<WeatherResult> {
   const cached = store.read();
+  // The device location moves a little between readings; a strict comparison would throw
+  // away good weather while offline because the phone crossed a rounding boundary.
   const samePlace =
     cached !== null &&
     place !== null &&
-    roundCoordinate(cached.place.latitude) === roundCoordinate(place.latitude) &&
-    roundCoordinate(cached.place.longitude) === roundCoordinate(place.longitude);
+    Math.abs(cached.place.latitude - place.latitude) <= NEARBY_DEGREES &&
+    Math.abs(cached.place.longitude - place.longitude) <= NEARBY_DEGREES;
   if (!place) {
     return cached ? { status: 'stale', weather: cached } : { status: 'unavailable', weather: null };
   }

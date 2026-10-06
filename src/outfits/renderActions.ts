@@ -165,7 +165,9 @@ export async function runRender(
     const image = await provider.render({ avatar, pieces, hints: hintsOf(profile) }, key);
     // Counted once the provider has answered with an image, which is when it is charged.
     await usageLog.record('render');
-    return { ...(await store(image, 'renders')), provider: provider.id };
+    // The picture is paid for by now, so one failed write must not throw it away.
+    const stored = await store(image, 'renders').catch(() => store(image, 'renders'));
+    return { ...stored, provider: provider.id };
   } catch (error) {
     if (error instanceof RenderSupersededError) throw error;
     throw toFailure(error);

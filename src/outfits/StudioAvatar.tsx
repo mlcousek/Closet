@@ -9,6 +9,7 @@ import { AppText, Button } from '@/components/ui';
 import type { Profile } from '@/profile/types';
 import { useSaveProfile } from '@/profile/useProfile';
 import { imageStore } from '@/storage/imageStore';
+import { attempt } from '@/shell/toast';
 import { useTheme } from '@/theme/useTheme';
 
 import { createStudioAvatar, getStudioCandidate, setStudioCandidate } from './renderActions';
@@ -93,12 +94,16 @@ export function StudioAvatar({ profile }: { profile: Profile }) {
       {candidate ? (
         <>
           <AppText>{t('studio.review')}</AppText>
-          <Button testID="studio-accept" label={t('studio.accept')} onPress={() => void accept()} />
+          <Button
+            testID="studio-accept"
+            label={t('studio.accept')}
+            onPress={() => attempt(() => accept(), t('common.somethingWentWrong'))}
+          />
           <Button
             testID="studio-reject"
             kind="secondary"
             label={t('studio.reject')}
-            onPress={() => void reject()}
+            onPress={() => attempt(() => reject(), t('common.somethingWentWrong'))}
           />
         </>
       ) : (
@@ -121,7 +126,7 @@ export function StudioAvatar({ profile }: { profile: Profile }) {
               testID="studio-remove"
               kind="secondary"
               label={t('studio.remove')}
-              onPress={() => void backToOriginal()}
+              onPress={() => attempt(() => backToOriginal(), t('common.somethingWentWrong'))}
             />
           ) : null}
         </>

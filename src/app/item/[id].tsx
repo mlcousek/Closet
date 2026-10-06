@@ -20,7 +20,7 @@ import { useInvalidateOutfits } from '@/outfits/useOutfits';
 import { WearStats } from '@/planning/WearStats';
 import { CostPerWear } from '@/stats/CostPerWear';
 import { pickPhoto } from '@/profile/photo';
-import { deleteWithUndo, useToast } from '@/shell/toast';
+import { attempt, deleteWithUndo, useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
 import { useTheme } from '@/theme/useTheme';
 
@@ -280,7 +280,7 @@ function ItemView({ item }: { item: Item }) {
                   testID="item-bought"
                   icon="bag-check-outline"
                   label={t('wishlist.bought')}
-                  onPress={() => void markBought()}
+                  onPress={() => attempt(() => markBought(), t('common.somethingWentWrong'))}
                 />
               </View>
             ) : null}
@@ -290,7 +290,7 @@ function ItemView({ item }: { item: Item }) {
                 kind="secondary"
                 icon="archive-outline"
                 label={t(item.ownership === 'archived' ? 'item.unarchive' : 'item.archive')}
-                onPress={() => void toggleArchive()}
+                onPress={() => attempt(() => toggleArchive(), t('common.somethingWentWrong'))}
               />
             )}
             <Button

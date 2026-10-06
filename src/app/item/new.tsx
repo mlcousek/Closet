@@ -16,6 +16,7 @@ import type { ItemDetails } from '@/closet/types';
 import { useInvalidateItems } from '@/closet/useItems';
 import { AppText, Button, Screen } from '@/components/ui';
 import { pickPhoto } from '@/profile/photo';
+import { attempt } from '@/shell/toast';
 import { useTheme } from '@/theme/useTheme';
 
 type Params = { source?: 'camera' | 'library' | 'link'; target?: string };
@@ -40,6 +41,13 @@ export default function NewItemScreen() {
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   const started = useRef(false);
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
   // Decided by where the add was started: the Wishlist tab passes it along, also through link import.
   // A link import brings its own target, which has to outlive the link's photo being replaced.
   const [linkTarget, setLinkTarget] = useState<'owned' | 'wishlist' | null>(null);
@@ -94,7 +102,7 @@ export default function NewItemScreen() {
         void prepare(pending.uri);
       }
     } else if (source === 'library') {
-      void pick('library', true);
+      attempt(() => pick('library', true), t('common.somethingWentWrong'));
     }
     // The camera is not opened automatically: the capture tip is shown first.
     // Runs once for the parameters the screen was opened with.
@@ -112,7 +120,8 @@ export default function NewItemScreen() {
       );
       await itemRepository.create(details, images, { ownership: target });
       await invalidateItems();
-      router.back();
+      // Left while saving: going back now would close whichever screen is open instead.
+      if (mounted.current) router.back();
     } catch {
       setSaveFailed(true);
       setSaving(false);
@@ -173,14 +182,14 @@ export default function NewItemScreen() {
           testID="add-item-camera"
           icon="camera-outline"
           label={t('addItem.takePhoto')}
-          onPress={() => void pick('camera', false)}
+          onPress={() => attempt(() => pick('camera', false), t('common.somethingWentWrong'))}
         />
         <Button
           testID="add-item-library"
           icon="images-outline"
           kind="secondary"
           label={t('addItem.choosePhoto')}
-          onPress={() => void pick('library', false)}
+          onPress={() => attempt(() => pick('library', false), t('common.somethingWentWrong'))}
         />
         {photo ? (
           <Button

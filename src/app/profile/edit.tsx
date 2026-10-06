@@ -1,6 +1,6 @@
 import { getLocales } from 'expo-localization';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -40,6 +40,13 @@ function EditForm({ profile }: { profile: Profile }) {
   const [sizeBottom, setSizeBottom] = useState(profile.sizeBottom ?? '');
   const [sizeShoes, setSizeShoes] = useState(profile.sizeShoes ?? '');
   const [busy, setBusy] = useState(false);
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
   const [error, setError] = useState<string | null>(null);
 
   const chooseAvatar = (photo: PickedPhoto) => {
@@ -114,7 +121,8 @@ function EditForm({ profile }: { profile: Profile }) {
         sizeShoes: sizeShoes.trim() || null,
       });
       showToast({ message: t('profile.saved') });
-      router.back();
+      // Left while saving: going back now would close whichever screen is open instead.
+      if (mounted.current) router.back();
     } catch {
       setError(t('common.somethingWentWrong'));
       setBusy(false);

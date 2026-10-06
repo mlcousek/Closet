@@ -485,7 +485,8 @@
       "rateLimited": "The provider is busy or your quota is used up. Try again later.",
       "timeout": "The provider took too long to answer. Try again.",
       "interrupted": "The app was closed before this render finished. Try again.",
-      "error": "The render did not work this time. Try again."
+      "error": "The render did not work this time. Try again.",
+      "connectionLost": "The connection was lost while the picture was being made. It may have been made and charged anyway, so check your usage before trying again."
     },
     "settingsTitle": "Outfit renders",
     "autoRender": "Render when I save an outfit",

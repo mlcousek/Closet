@@ -23,11 +23,13 @@ export default function ReviewScreen() {
   const [busy, setBusy] = useState(false);
   // Counts items handled in this visit, so progress only moves forward even if more arrive meanwhile.
   const [handled, setHandled] = useState(0);
+  // The item on screen stays there until it is dealt with, also when an earlier one comes back.
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
 
   if (isPending) return null;
 
   // Oldest first, in the order the photos were chosen.
-  const item = pending[pending.length - 1];
+  const item = pending.find((entry) => entry.id === pinnedId) ?? pending[pending.length - 1];
   if (!item) {
     return (
       <Screen edges={[]}>
@@ -47,11 +49,18 @@ export default function ReviewScreen() {
   // An item imported without suggestions has only a placeholder category, which is not a suggestion.
   const hasSuggestions = item.name !== null || item.colours.length > 0;
 
+  /** The item that follows the current one, which keeps the screen once this one is done. */
+  const pinNext = () => {
+    const rest = pending.filter((entry) => entry.id !== item.id);
+    setPinnedId(rest[rest.length - 1]?.id ?? null);
+  };
+
   const confirm = async (details: ItemDetails) => {
     setBusy(true);
     try {
       await itemRepository.update(item.id, { ...details, needsReview: false });
       setHandled((count) => count + 1);
+      pinNext();
       await invalidateItems();
     } catch {
       showToast({ message: t('common.somethingWentWrong') });
@@ -62,6 +71,7 @@ export default function ReviewScreen() {
 
   const discard = () => {
     setHandled((count) => count + 1);
+    pinNext();
     return deleteWithUndo({
       remove: () => itemRepository.remove([item.id]),
       restore: async () => {

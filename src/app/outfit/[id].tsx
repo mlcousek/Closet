@@ -19,7 +19,7 @@ import { calendarRepository } from '@/planning/calendar';
 import { addDays, fromDay, today } from '@/planning/dates';
 import { useInvalidatePlanning } from '@/planning/usePlanning';
 import { WearStats } from '@/planning/WearStats';
-import { deleteWithUndo, useToast } from '@/shell/toast';
+import { attempt, deleteWithUndo, useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
 import { useTheme } from '@/theme/useTheme';
 
@@ -144,7 +144,9 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
             testID="outfit-rename"
             kind="secondary"
             label={t('common.save')}
-            onPress={() => void update({ name: name.trim() || null })}
+            onPress={() =>
+              attempt(() => update({ name: name.trim() || null }), t('common.somethingWentWrong'))
+            }
           />
         ) : null}
         <Pressable
@@ -152,7 +154,9 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
           accessibilityRole="button"
           accessibilityLabel={t('outfits.favourite')}
           accessibilityState={{ selected: outfit.favourite }}
-          onPress={() => void update({ favourite: !outfit.favourite })}
+          onPress={() =>
+            attempt(() => update({ favourite: !outfit.favourite }), t('common.somethingWentWrong'))
+          }
           style={{ padding: spacing.md }}
         >
           <Ionicons
@@ -171,7 +175,12 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
           testIDPrefix="outfit-season"
           options={SEASONS.map((value) => ({ value, label: t(`taxonomy.season.${value}`) }))}
           selected={outfit.seasons}
-          onToggle={(value) => void update({ seasons: toggled(outfit.seasons, value) })}
+          onToggle={(value) =>
+            attempt(
+              () => update({ seasons: toggled(outfit.seasons, value) }),
+              t('common.somethingWentWrong'),
+            )
+          }
         />
         <AppText variant="label" muted>
           {t('itemForm.occasions')}
@@ -180,7 +189,12 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
           testIDPrefix="outfit-occasion"
           options={OCCASIONS.map((value) => ({ value, label: t(`taxonomy.occasion.${value}`) }))}
           selected={outfit.occasions}
-          onToggle={(value) => void update({ occasions: toggled(outfit.occasions, value) })}
+          onToggle={(value) =>
+            attempt(
+              () => update({ occasions: toggled(outfit.occasions, value) }),
+              t('common.somethingWentWrong'),
+            )
+          }
         />
       </View>
 
@@ -255,7 +269,7 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
           kind="secondary"
           icon="copy-outline"
           label={t('outfits.duplicate')}
-          onPress={() => void duplicate()}
+          onPress={() => attempt(() => duplicate(), t('common.somethingWentWrong'))}
         />
         <Button
           testID="outfit-delete"
@@ -278,10 +292,11 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
               accessibilityRole="button"
               onPress={() => {
                 setPlanning(false);
-                void calendarRepository
-                  .plan(day, outfit.id)
-                  .then(() => invalidatePlanning())
-                  .then(() => showToast({ message: t('planning.plannedToast') }));
+                attempt(async () => {
+                  await calendarRepository.plan(day, outfit.id);
+                  await invalidatePlanning();
+                  showToast({ message: t('planning.plannedToast') });
+                }, t('common.somethingWentWrong'));
               }}
               style={{
                 paddingHorizontal: spacing.md,

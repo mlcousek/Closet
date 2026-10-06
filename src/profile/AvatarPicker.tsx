@@ -5,6 +5,7 @@ import { Linking, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppText, Button } from '@/components/ui';
+import { attempt } from '@/shell/toast';
 import { useTheme } from '@/theme/useTheme';
 
 import type { AvatarIssue } from './avatar';
@@ -175,7 +176,7 @@ export function AvatarPicker({
           icon="camera-outline"
           label={t(shownUri ? 'avatar.retake' : 'avatar.takePhoto')}
           loading={busy}
-          onPress={() => void choose('camera')}
+          onPress={() => attempt(() => choose('camera'), t('common.somethingWentWrong'))}
         />
         <Button
           testID="avatar-library"
@@ -183,7 +184,7 @@ export function AvatarPicker({
           kind="secondary"
           label={t('avatar.chooseFromLibrary')}
           disabled={busy}
-          onPress={() => void choose('library')}
+          onPress={() => attempt(() => choose('library'), t('common.somethingWentWrong'))}
         />
       </View>
       <AppText variant="caption" muted>
