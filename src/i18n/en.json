@@ -395,7 +395,8 @@
     "reviewProgress": "{{current}} of {{total}}",
     "confirm": "Confirm",
     "discard": "Discard",
-    "reviewDone": "Everything is reviewed."
+    "reviewDone": "Everything is reviewed.",
+    "retryAll": "Retry all"
   },
   "linkImport": {
     "title": "Add from a link",

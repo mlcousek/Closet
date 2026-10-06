@@ -69,7 +69,8 @@ function ProposalCard({
   const wearable = shown.every((item) => item.ownership === 'owned');
 
   const save = async (): Promise<string> => {
-    if (savedId) return savedId;
+    // The outfit saved earlier may have been deleted since; then it is saved afresh.
+    if (savedId && (await outfitRepository.get(savedId))) return savedId;
     const outfit = await outfitRepository.create(pieces);
     setSavedId(outfit.id);
     await onMark({ outfitId: outfit.id });

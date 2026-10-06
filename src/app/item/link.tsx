@@ -103,6 +103,8 @@ export default function LinkImportScreen() {
         onChangeText={setLink}
         placeholder={t('linkImport.placeholder')}
         keyboardType="url"
+        autoCapitalize="none"
+        autoCorrect={false}
       />
       {clipboardLink && clipboardLink !== link ? (
         <Button

@@ -1,3 +1,5 @@
+import { isCurrencyCode } from '@/i18n/format';
+
 import type { Category, Colour, Occasion, Season, Subcategory, Warmth } from './taxonomy';
 import { isSubcategoryOf } from './taxonomy';
 import type { ItemDetails } from './types';
@@ -38,6 +40,12 @@ export function parseDateInput(text: string): number | null {
   const valid =
     date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
   return valid ? date.getTime() : null;
+}
+
+/** The currency as an upper-case ISO code, or null for anything else, such as a symbol. */
+export function currencyOf(input: string | null | undefined): string | null {
+  const code = input?.trim().toUpperCase();
+  return isCurrencyCode(code) ? code : null;
 }
 
 export function parsePriceInput(text: string): number | null {
@@ -94,7 +102,7 @@ export function fromFormValues(
       brand: text(values.brand),
       size: text(values.size),
       price,
-      currency: price !== null ? (text(values.currency)?.toUpperCase() ?? null) : null,
+      currency: price !== null ? currencyOf(values.currency) : null,
       purchasedAt,
       notes: text(values.notes),
       sourceUrl: values.sourceUrl,

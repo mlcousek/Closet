@@ -1,7 +1,19 @@
 import type { ExpoConfig } from 'expo/config';
+import { withEntitlementsPlist } from 'expo/config-plugins';
 
 // Two variants so the development client and the release build can be installed side by side.
 const IS_DEV = process.env.APP_VARIANT === 'development';
+
+/**
+ * The notifications module adds the push entitlement by itself. The app only
+ * schedules local reminders, and a build re-signed with a free Apple ID cannot
+ * be provisioned for push, so the entitlement is taken out again.
+ */
+const withoutPushEntitlement = (expo: ExpoConfig): ExpoConfig =>
+  withEntitlementsPlist(expo, (entitlements) => {
+    delete entitlements.modResults['aps-environment'];
+    return entitlements;
+  });
 
 const config: ExpoConfig = {
   name: IS_DEV ? 'Closet Dev' : 'Closet',
@@ -69,4 +81,4 @@ const config: ExpoConfig = {
   },
 };
 
-export default config;
+export default withoutPushEntitlement(config);

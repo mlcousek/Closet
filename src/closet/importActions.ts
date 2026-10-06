@@ -91,7 +91,7 @@ export async function processImportJob(job: ImportJob, deps: ImportJobDeps): Pro
 }
 
 /** Failures for which retrying the same photo later cannot help, so it is imported without tags. */
-const NO_TAGS_REASONS = ['noKey', 'rejectedKey', 'offline'];
+const NO_TAGS_REASONS = ['noKey', 'rejectedKey'];
 
 const deviceDeps: ImportJobDeps = {
   images: itemImageDeps,
@@ -104,7 +104,7 @@ const deviceDeps: ImportJobDeps = {
       if (error instanceof AiUnavailableError && NO_TAGS_REASONS.includes(error.reason)) {
         return null;
       }
-      // Rate limits and provider errors pass: the job fails and the user can retry it.
+      // No connection, rate limits and provider errors pass: the job fails and can be retried.
       throw error;
     }
   },

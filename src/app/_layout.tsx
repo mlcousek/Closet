@@ -1,8 +1,9 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { openDb } from '@/db/client';
@@ -15,6 +16,15 @@ import { useTheme } from '@/theme/useTheme';
 // language override from it. Opening is synchronous and applies migrations.
 openDb();
 initI18n();
+
+// A phone has no window focus; the app coming to the foreground is what counts. Without this
+// a morning's weather would still be on Home in the evening.
+focusManager.setEventListener((setFocused) => {
+  const subscription = AppState.addEventListener('change', (state) =>
+    setFocused(state === 'active'),
+  );
+  return () => subscription.remove();
+});
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());

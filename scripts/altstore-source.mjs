@@ -34,6 +34,15 @@ const source = {
         'A personal digital wardrobe: photograph your clothes, build outfits, see them on your own photo and plan what to wear.',
       iconURL: `${base}/raw/${args.tag}/assets/images/icon.png`,
       tintColor: '8B5CF6',
+      appPermissions: {
+        entitlements: [],
+        privacy: {
+          NSCameraUsageDescription: 'Photograph yourself and your clothes.',
+          NSPhotoLibraryUsageDescription: 'Add photos of yourself and your clothes.',
+          NSPhotoLibraryAddUsageDescription: 'Save outfit pictures you share.',
+          NSLocationWhenInUseUsageDescription: 'Show the weather where you are.',
+        },
+      },
       versions: [
         {
           version: args.version,

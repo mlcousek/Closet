@@ -118,7 +118,7 @@ export function useClosetSetup(): void {
     void resumeImports();
     void renderQueue.resume();
     void restoreReminder({ title: t('reminder.title'), body: t('reminder.body') });
-    const removeReminderHandling = installReminderHandling(() => router.replace('/'));
+    const removeReminderHandling = installReminderHandling(() => router.dismissTo('/'));
     void itemRepository
       .purgeDeleted(Date.now() - PURGE_AFTER_MS)
       .then(async (purged) => {

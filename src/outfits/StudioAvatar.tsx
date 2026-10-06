@@ -12,6 +12,7 @@ import { imageStore } from '@/storage/imageStore';
 import { useTheme } from '@/theme/useTheme';
 
 import { createStudioAvatar } from './renderActions';
+import { confirmDisclosure } from './useRenderRequest';
 
 /**
  * Lets the user create a studio version of their photo, look at the result,
@@ -28,6 +29,7 @@ export function StudioAvatar({ profile }: { profile: Profile }) {
   if (!profile.avatarSmallPath) return null;
 
   const create = async () => {
+    if (!(await confirmDisclosure(t))) return;
     setBusy(true);
     setProblem(null);
     try {

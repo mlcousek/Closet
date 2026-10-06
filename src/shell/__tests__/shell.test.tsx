@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import i18n from 'i18next';
 
 import { AddButton, AddMenu } from '../AddMenu';
@@ -31,7 +31,7 @@ describe('add menu', () => {
     expect(screen.getByText(/Nothing can be added yet/)).toBeTruthy();
   });
 
-  it('lists registered actions in order and runs the chosen one', () => {
+  it('lists registered actions in order and runs the chosen one', async () => {
     const second = jest.fn();
     const first = jest.fn();
     act(() => {
@@ -59,7 +59,10 @@ describe('add menu', () => {
     ]);
     fireEvent.press(screen.getByTestId('add-action-first'));
 
-    expect(first).toHaveBeenCalledTimes(1);
+    // The menu closes at once; the action waits until the sheet is gone, as iOS needs.
+    expect(useAddActions.getState().menuOpen).toBe(false);
+    expect(first).not.toHaveBeenCalled();
+    await waitFor(() => expect(first).toHaveBeenCalledTimes(1));
     expect(second).not.toHaveBeenCalled();
     expect(useAddActions.getState().menuOpen).toBe(false);
   });

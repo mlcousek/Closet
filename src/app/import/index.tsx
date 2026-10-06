@@ -63,6 +63,16 @@ export default function ImportScreen() {
               onPress={() => void retryImportJob(job.id)}
             />
           ))}
+          {failed.length > 1 ? (
+            <Button
+              testID="import-retry-all"
+              icon="refresh-outline"
+              label={t('importFlow.retryAll')}
+              onPress={() => {
+                for (const job of failed) void retryImportJob(job.id);
+              }}
+            />
+          ) : null}
           <Button
             testID="import-dismiss-failed"
             kind="secondary"

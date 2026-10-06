@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -71,66 +71,71 @@ export function LookbookPicker({
         style={[styles.fill, { backgroundColor: colors.overlay }]}
         onPress={onClose}
       />
-      <View
-        testID="lookbook-picker"
-        style={{
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: radius.lg,
-          borderTopRightRadius: radius.lg,
-          padding: spacing.lg,
-          paddingBottom: insets.bottom + spacing.lg,
-          gap: spacing.md,
-        }}
-      >
-        <AppText variant="heading">{t(creatingOnly ? 'lookbooks.add' : 'lookbooks.addTo')}</AppText>
-        {creatingOnly
-          ? null
-          : lookbooks.map((lookbook) => {
-              const selected = single && members.includes(lookbook.id);
-              return (
-                <Pressable
-                  key={lookbook.id}
-                  testID={`pick-lookbook-${lookbook.id}`}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selected }}
-                  onPress={() => void toggle(lookbook.id)}
-                  style={[styles.row, { gap: spacing.md, paddingVertical: spacing.sm }]}
-                >
-                  <Ionicons
-                    name={selected ? 'checkbox' : 'square-outline'}
-                    size={22}
-                    color={colors.text}
-                  />
-                  <AppText style={styles.fill}>{lookbook.name}</AppText>
-                  <AppText muted>{lookbook.outfitIds.length}</AppText>
-                </Pressable>
-              );
-            })}
-        <View style={[styles.row, { gap: spacing.sm, alignItems: 'flex-end' }]}>
-          <View style={styles.fill}>
-            <Field
-              testID="new-lookbook-name"
-              label={t('lookbooks.newPlaceholder')}
-              value={name}
-              onChangeText={setName}
+      {/* The name field sits at the bottom edge, exactly where the keyboard opens. */}
+      <KeyboardAvoidingView behavior="padding">
+        <View
+          testID="lookbook-picker"
+          style={{
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: radius.lg,
+            borderTopRightRadius: radius.lg,
+            padding: spacing.lg,
+            paddingBottom: insets.bottom + spacing.lg,
+            gap: spacing.md,
+          }}
+        >
+          <AppText variant="heading">
+            {t(creatingOnly ? 'lookbooks.add' : 'lookbooks.addTo')}
+          </AppText>
+          {creatingOnly
+            ? null
+            : lookbooks.map((lookbook) => {
+                const selected = single && members.includes(lookbook.id);
+                return (
+                  <Pressable
+                    key={lookbook.id}
+                    testID={`pick-lookbook-${lookbook.id}`}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    onPress={() => void toggle(lookbook.id)}
+                    style={[styles.row, { gap: spacing.md, paddingVertical: spacing.sm }]}
+                  >
+                    <Ionicons
+                      name={selected ? 'checkbox' : 'square-outline'}
+                      size={22}
+                      color={colors.text}
+                    />
+                    <AppText style={styles.fill}>{lookbook.name}</AppText>
+                    <AppText muted>{lookbook.outfitIds.length}</AppText>
+                  </Pressable>
+                );
+              })}
+          <View style={[styles.row, { gap: spacing.sm, alignItems: 'flex-end' }]}>
+            <View style={styles.fill}>
+              <Field
+                testID="new-lookbook-name"
+                label={t('lookbooks.newPlaceholder')}
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
+            <Button
+              testID="new-lookbook-create"
+              label={t('lookbooks.create')}
+              disabled={!name.trim() || busy}
+              onPress={() => void create()}
             />
           </View>
-          <Button
-            testID="new-lookbook-create"
-            label={t('lookbooks.create')}
-            disabled={!name.trim() || busy}
-            onPress={() => void create()}
-          />
+          {single ? (
+            <Button
+              testID="lookbook-picker-done"
+              kind="secondary"
+              label={t('common.done')}
+              onPress={onClose}
+            />
+          ) : null}
         </View>
-        {single ? (
-          <Button
-            testID="lookbook-picker-done"
-            kind="secondary"
-            label={t('common.done')}
-            onPress={onClose}
-          />
-        ) : null}
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

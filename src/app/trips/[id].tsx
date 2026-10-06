@@ -131,7 +131,8 @@ function TripView({ trip }: { trip: Trip }) {
   const refresh = () => client.invalidateQueries({ queryKey: [TRIPS] });
   const change = async (action: () => Promise<unknown>) => {
     await action();
-    await refresh();
+    // A day that is in the calendar changes its saved outfit too.
+    await Promise.all([refresh(), invalidateOutfits()]);
   };
   const keyOf = (pieces: { itemId: string }[]) =>
     pieces
@@ -233,6 +234,7 @@ function TripView({ trip }: { trip: Trip }) {
       const format = new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'numeric' });
       const added = await addTripToCalendar(trip, {
         createOutfit: (pieces, name) => outfitRepository.create(pieces, { name }),
+        outfitExists: async (id) => (await outfitRepository.get(id)) !== null,
         plan: (day, outfitId) => calendarRepository.plan(day, outfitId),
         setDay: tripRepository.setDay,
         today: today(),

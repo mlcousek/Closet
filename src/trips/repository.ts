@@ -226,6 +226,7 @@ export async function addTripToCalendar(
   trip: Trip,
   deps: {
     createOutfit(pieces: OutfitPiece[], name: string): Promise<{ id: string }>;
+    outfitExists(id: string): Promise<boolean>;
     plan(day: Day, outfitId: string): Promise<unknown>;
     setDay: TripRepository['setDay'];
     today: Day;
@@ -234,7 +235,9 @@ export async function addTripToCalendar(
 ): Promise<number> {
   let added = 0;
   for (const day of trip.days) {
-    if (day.outfitId || day.pieces.length === 0 || day.day < deps.today) continue;
+    // A link to an outfit that was deleted since counts as no link.
+    const linked = day.outfitId ? await deps.outfitExists(day.outfitId) : false;
+    if (linked || day.pieces.length === 0 || day.day < deps.today) continue;
     const outfit = await deps.createOutfit(day.pieces, deps.nameFor(day.day));
     // Linked before planning, so a failure in between cannot create the outfit twice.
     await deps.setDay(trip.id, day.day, { outfitId: outfit.id });

@@ -74,7 +74,9 @@ export function AddMenu() {
               testID={`add-action-${action.id}`}
               onPress={() => {
                 closeMenu();
-                action.onPress();
+                // iOS cannot present the photo picker, or anything else, from a sheet that is
+                // still sliding away; the action waits until the sheet has gone.
+                setTimeout(action.onPress, MENU_CLOSE_MS);
               }}
               style={({ pressed }) => [
                 styles.action,
@@ -90,6 +92,9 @@ export function AddMenu() {
     </Modal>
   );
 }
+
+/** A little longer than the slide-down animation of the sheet. */
+export const MENU_CLOSE_MS = 350;
 
 const styles = StyleSheet.create({
   fab: {

@@ -218,18 +218,22 @@ export async function proposeOutfits(
           ? `Catalogue:\n${catalogue.text}\n\nRequest: ${input.request}${weather}`
           : `${input.request}${weather}`,
     });
-    const response = await anthropic.beta.messages.parse({
-      model,
-      max_tokens: (input.count ?? 3) > 8 ? 16000 : 8000,
-      betas,
-      ...(fallbacks ? { fallbacks } : {}),
-      system: instructions(input),
-      messages,
-      output_config: {
-        format: betaZodOutputFormat(ResponseSchema),
-        ...(effort ? { effort } : {}),
+    const response = await anthropic.beta.messages.parse(
+      {
+        model,
+        max_tokens: (input.count ?? 3) > 8 ? 16000 : 8000,
+        betas,
+        ...(fallbacks ? { fallbacks } : {}),
+        system: instructions(input),
+        messages,
+        output_config: {
+          format: betaZodOutputFormat(ResponseSchema),
+          ...(effort ? { effort } : {}),
+        },
       },
-    });
+      // One outfit per day of a long trip takes longer to write than the client's default allows.
+      { timeout: 60_000 + Math.max(0, (input.count ?? 3) - 3) * 10_000 },
+    );
     await input.onAnswered?.();
     if (response.stop_reason === 'refusal' || !response.parsed_output) {
       throw new AiUnavailableError('error');

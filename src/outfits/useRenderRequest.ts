@@ -8,7 +8,7 @@ import { isDisclosed, requestRender, setDisclosed } from './renderActions';
 import type { Outfit } from './repository';
 
 /** Asks once, before the first render, whether the photo and item images may go to the provider. */
-function confirmDisclosure(t: (key: string) => string): Promise<boolean> {
+export function confirmDisclosure(t: (key: string) => string): Promise<boolean> {
   if (isDisclosed()) return Promise.resolve(true);
   return new Promise((resolve) => {
     Alert.alert(t('tryOn.disclosureTitle'), t('tryOn.disclosureMessage'), [

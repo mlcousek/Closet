@@ -34,8 +34,22 @@ export function formatNumber(value: number, locale: string, maximumFractionDigit
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
 }
 
+/** True for a currency written as an ISO code, the only form Intl accepts. */
+export function isCurrencyCode(value: unknown): value is string {
+  return typeof value === 'string' && /^[A-Za-z]{3}$/.test(value);
+}
+
+/**
+ * Formats money. A stored currency that is not a valid code (typed by hand in
+ * an older version, or read from a shop page) is shown as it is, after the
+ * number, because Intl throws on it and that would take the whole screen down.
+ */
 export function formatCurrency(value: number, currency: string, locale: string): string {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);
+  } catch {
+    return `${formatNumber(value, locale)} ${currency}`.trim();
+  }
 }
 
 /** Regions that use Fahrenheit for everyday temperatures. */

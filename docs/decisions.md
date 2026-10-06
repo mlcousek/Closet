@@ -55,3 +55,13 @@ The spec lets the user filter the items offered in a row. The editor has one sea
 - **Trip activities are the closet's occasions.** The design named city, beach, hiking and travel day. Items are tagged with occasions (casual, work, formal, party, sport, home, outdoor), so a day's activity is one of those and filters by the same tag; a second vocabulary would have matched nothing in the closet.
 - **Reuse limits are fixed.** Tops and dresses twice, bottoms three times, two pairs of shoes (three beyond a week), in `TRIP_RULES`. There is no setting for them yet. When the closet is too small, the limits give way before a day is left without an outfit.
 - **Statistics are about items.** The overview counts saved outfits, but there are no most and least worn outfits, no worst-value list and no "not worn for a long time" list; "not worn in this period" shows the first eight.
+
+## Known limits found in the whole-app review
+
+**Recorded:** 6 October 2026. These were found by reading the code and are not fixed, because a sound fix needs a device, a native module, or a decision.
+
+- **Backup holds the whole library in memory.** Export and restore read every image as base64 and build the zip in the JavaScript heap, roughly three to four times the size of the photos. Originals are stored at full camera resolution, so a closet of a few dozen items may already be too much. Until this is rebuilt file by file with a native zip module, treat the backup as unproven for a real closet, and try an export early, with few items.
+- **An interrupted restore is not recovered.** If the app is killed in the moment between setting the current data aside and moving the restored data into place, the next start creates an empty database; the previous data is still in `restore-previous/` in the app's documents, but nothing puts it back.
+- **Try-on requests grow with the outfit.** Each piece is sent as its own PNG. An outfit of seven or eight pieces may exceed what the image provider accepts in one request, and that would show as a general failure.
+- **Temporary files are not cleaned up.** Cutouts, resized copies, downloaded product photos and the backup zip stay in the cache folder until iOS clears it.
+- **After a restore, background work is not reset.** Queries are cleared, but an import or render that was running keeps its in-memory state until the app is restarted.

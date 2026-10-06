@@ -61,6 +61,8 @@ export function RenderSettings() {
         label={t('tryOn.imageModel')}
         value={imageModel}
         placeholder={DEFAULT_IMAGE_MODEL}
+        autoCapitalize="none"
+        autoCorrect={false}
         onChangeText={(text) => {
           setImage(text);
           setImageModel(text);
@@ -71,6 +73,8 @@ export function RenderSettings() {
         label={t('tryOn.textModel')}
         value={textModel}
         placeholder={DEFAULT_TEXT_MODEL}
+        autoCapitalize="none"
+        autoCorrect={false}
         onChangeText={(text) => {
           setText(text);
           setTextModel(text);

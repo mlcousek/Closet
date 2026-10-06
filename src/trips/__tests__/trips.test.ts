@@ -468,6 +468,7 @@ describe('trip repository', () => {
     }
     const deps = {
       createOutfit: (list: typeof pieces, name: string) => outfits.create(list, { name }),
+      outfitExists: async (id: string) => (await outfits.get(id)) !== null,
       plan: (day: string, outfitId: string) => calendar.plan(day, outfitId),
       setDay: trips.setDay,
       today: '2026-10-05',

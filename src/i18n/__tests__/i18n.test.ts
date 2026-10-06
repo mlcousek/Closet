@@ -1,6 +1,7 @@
 import {
   defaultTemperatureUnit,
   formatCurrency,
+  isCurrencyCode,
   formatDate,
   formatLocale,
   formatNumber,
@@ -67,6 +68,11 @@ describe('formatters', () => {
   it('formats currency', () => {
     expect(formatCurrency(599, 'CZK', 'cs-CZ').replace(/\s/g, ' ')).toBe('599,00 Kč');
     expect(formatCurrency(59.9, 'EUR', 'en-GB')).toBe('€59.90');
+    // A symbol or a word where a code belongs is shown as it is, and never throws.
+    expect(formatCurrency(599, 'Kč', 'en-GB')).toBe('599 Kč');
+    expect(formatCurrency(5, '', 'en-GB')).toBe('5');
+    expect(isCurrencyCode('czk')).toBe(true);
+    expect(isCurrencyCode('€')).toBe(false);
   });
 
   it('formats temperature in both units', () => {

@@ -123,11 +123,16 @@ const outfit = (id: string, name: string | null, ids: string[]): Outfit => ({
   })),
 });
 let mockOutfits: Outfit[] = [];
+/** Saved outfits that were deleted afterwards. */
+let mockDeletedOutfits: string[] = [];
 const mockOutfitRepo = {
   create: jest.fn(async (..._args: unknown[]) => ({ id: 'saved-outfit' })),
 };
 jest.mock('@/outfits/repository', () => ({
-  outfitRepository: { create: (...args: unknown[]) => mockOutfitRepo.create(...args) },
+  outfitRepository: {
+    create: (...args: unknown[]) => mockOutfitRepo.create(...args),
+    get: async (id: string) => (mockDeletedOutfits.includes(id) ? null : { id }),
+  },
 }));
 jest.mock('@/outfits/useOutfits', () => ({
   useOutfits: () => ({ data: mockOutfits }),
@@ -351,6 +356,7 @@ beforeEach(() => {
   mockHasKey = true;
   mockOwned = closet;
   mockOutfits = [];
+  mockDeletedOutfits = [];
   mockSessions = [];
   mockToday = [];
   mockSuggested = [];
@@ -450,6 +456,30 @@ describe('stylist', () => {
       pathname: '/outfit/edit',
       params: { itemIds: 'tee,jeans,boots' },
     });
+  });
+
+  it('saves again when the outfit saved earlier was deleted since', async () => {
+    mockSessions = [
+      {
+        id: 's1',
+        createdAt: 1,
+        request: 'Work',
+        day: null,
+        itemId: null,
+        turns: [
+          {
+            request: 'Work',
+            proposals: [{ ...proposal(['tee', 'jeans'], 'Fine.'), outfitId: 'old-outfit' }],
+          },
+        ],
+      },
+    ];
+    mockDeletedOutfits = ['old-outfit'];
+    mockParams = { sessionId: 's1' };
+    renderWithQuery(<StylistScreen />);
+    fireEvent.press(await screen.findByTestId('proposal-plan-0-0'));
+    await waitFor(() => expect(mockCalendar.plan).toHaveBeenCalledWith(today(), 'saved-outfit'));
+    expect(mockOutfitRepo.create).toHaveBeenCalledTimes(1);
   });
 
   it('requires the chosen piece when styling an item, and cannot plan a wishlist piece', async () => {

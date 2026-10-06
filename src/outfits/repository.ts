@@ -231,6 +231,15 @@ export function createOutfitRepository(db: () => Db = getDb, now: () => number =
     async forgetItems(itemIds: string[]): Promise<void> {
       if (itemIds.length === 0) return;
       db().delete(outfitItems).where(inArray(outfitItems.itemId, itemIds)).run();
+      // An outfit left without a single piece could not be shown, edited or rendered.
+      const timestamp = now();
+      db()
+        .update(outfits)
+        .set({ deletedAt: timestamp, updatedAt: timestamp })
+        .where(
+          sql`${outfits.deletedAt} IS NULL AND ${outfits.id} NOT IN (SELECT outfit_id FROM outfit_items)`,
+        )
+        .run();
     },
   };
 }

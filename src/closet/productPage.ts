@@ -1,3 +1,5 @@
+import { currencyOf } from './itemFormLogic';
+
 export type ProductInfo = {
   name: string | null;
   brand: string | null;
@@ -138,7 +140,7 @@ function fromJsonLd(html: string, baseUrl: string): ProductInfo | null {
           : brandValue,
       ),
       price: toNumber(offer?.price ?? offer?.lowPrice),
-      currency: clean(offer?.priceCurrency)?.toUpperCase() ?? null,
+      currency: currencyOf(clean(offer?.priceCurrency)),
       images: imageUrls(product.image, baseUrl),
     };
   }
@@ -168,8 +170,7 @@ function fromOpenGraph(html: string, baseUrl: string): ProductInfo | null {
     name,
     brand: clean(first('product:brand') ?? first('og:brand')),
     price: toNumber(first('product:price:amount') ?? first('og:price:amount')),
-    currency:
-      clean(first('product:price:currency') ?? first('og:price:currency'))?.toUpperCase() ?? null,
+    currency: currencyOf(clean(first('product:price:currency') ?? first('og:price:currency'))),
     images,
   };
 }

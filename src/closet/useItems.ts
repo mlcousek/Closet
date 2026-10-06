@@ -10,8 +10,17 @@ import type { ItemFilter } from './types';
 
 const ITEMS = 'items';
 
+/**
+ * Marks everything read from items as out of date. Outfits carry their items
+ * (name, picture, ownership), so they are refreshed with them; otherwise the
+ * Outfits, Home and Calendar tabs, which stay mounted, would keep showing a
+ * deleted piece or a replaced photo.
+ */
 export function invalidateItems(client: QueryClient) {
-  return client.invalidateQueries({ queryKey: [ITEMS] });
+  return Promise.all([
+    client.invalidateQueries({ queryKey: [ITEMS] }),
+    client.invalidateQueries({ queryKey: ['outfits'] }),
+  ]);
 }
 
 export function useInvalidateItems() {

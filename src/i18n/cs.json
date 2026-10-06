@@ -395,7 +395,8 @@
     "reviewProgress": "{{current}} z {{total}}",
     "confirm": "Potvrdit",
     "discard": "Zahodit",
-    "reviewDone": "Vše je zkontrolováno."
+    "reviewDone": "Vše je zkontrolováno.",
+    "retryAll": "Zkusit vše znovu"
   },
   "linkImport": {
     "title": "Přidat z odkazu",

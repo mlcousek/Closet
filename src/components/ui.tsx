@@ -53,7 +53,12 @@ export function Screen({
   return (
     <SafeAreaView edges={edges} style={[styles.fill, { backgroundColor: colors.background }]}>
       {scroll ? (
-        <ScrollView contentContainerStyle={[padding, { paddingBottom: spacing.xxl }, style]}>
+        <ScrollView
+          automaticallyAdjustKeyboardInsets
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          contentContainerStyle={[padding, { paddingBottom: spacing.xxl }, style]}
+        >
           {children}
         </ScrollView>
       ) : (
@@ -187,6 +192,8 @@ export function Field({
   placeholder,
   keyboardType,
   autoFocus,
+  autoCapitalize,
+  autoCorrect,
   testID,
 }: {
   label?: string;
@@ -195,6 +202,9 @@ export function Field({
   placeholder?: string;
   keyboardType?: TextInputProps['keyboardType'];
   autoFocus?: boolean;
+  /** For identifiers, codes and links, which the keyboard must not capitalise or correct. */
+  autoCapitalize?: TextInputProps['autoCapitalize'];
+  autoCorrect?: boolean;
   testID?: string;
 }) {
   const { colors, spacing, radius } = useTheme();
@@ -214,6 +224,8 @@ export function Field({
         placeholderTextColor={colors.textMuted}
         keyboardType={keyboardType}
         autoFocus={autoFocus}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
         style={{
           color: colors.text,
           backgroundColor: colors.surface,

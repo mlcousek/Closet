@@ -247,6 +247,8 @@ export function ItemForm({ initial, suggested = [], submitLabel, busy, onSubmit,
               label={t('itemForm.currency')}
               value={values.currency}
               onChangeText={(text) => set('currency', text)}
+              autoCapitalize="characters"
+              autoCorrect={false}
             />
           </View>
         </View>

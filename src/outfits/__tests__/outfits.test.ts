@@ -347,6 +347,21 @@ describe('renders', () => {
     expect(await renders.purge([])).toEqual([]);
   });
 
+  it('removes an outfit when every one of its pieces is gone for good', async () => {
+    const { outfits, pieces, shirt, skirt, boots } = await setupDb();
+    const full = await outfits.create(pieces, { name: 'Full' });
+    const single = await outfits.create([pieces[0]], { name: 'Only a shirt' });
+
+    await outfits.forgetItems([shirt.id]);
+    expect((await outfits.get(full.id))?.entries.map((entry) => entry.item.id)).toEqual([
+      skirt.id,
+      boots.id,
+    ]);
+    // Nothing is left of this one, so it could not be shown, edited or rendered.
+    expect(await outfits.get(single.id)).toBeNull();
+    expect((await outfits.list()).map((outfit) => outfit.name)).toEqual(['Full']);
+  });
+
   it('summarises what to show for an outfit', async () => {
     const { renders } = await setupDb();
     const done = { imagePath: 'r1.png', thumbPath: 'r1-t.jpg', provider: 'gemini' };
