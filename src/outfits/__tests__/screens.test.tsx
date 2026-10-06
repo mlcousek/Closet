@@ -23,7 +23,7 @@ const mockPrevent: {
   blocked: boolean;
   callback: ((options: { data: { action: object } }) => void) | null;
 } = { blocked: false, callback: null };
-const mockNavigation = { dispatch: jest.fn() };
+const mockNavigation = { dispatch: jest.fn(), setOptions: jest.fn() };
 jest.mock('expo-router/react-navigation', () => ({
   usePreventRemove: (
     blocked: boolean,
@@ -199,6 +199,11 @@ jest.mock('../renders', () => ({
 
 const mockSettings = { auto: true, disclosed: true };
 const mockRequestRender = jest.fn(async (..._args: unknown[]) => ({ kind: 'queued' }) as object);
+const mockImageKey = { has: true };
+jest.mock('@/ai/keys', () => ({
+  keyManager: { getInfo: async () => ({ hasKey: mockImageKey.has }) },
+}));
+const mockStudioCandidate: { path: string | null } = { path: null };
 const mockCreateStudio = jest.fn(async () => 'images/avatar/studio.png');
 jest.mock('../renderActions', () => ({
   avatarBasePath: (profile: Profile | null) =>
@@ -215,6 +220,10 @@ jest.mock('../renderActions', () => ({
   },
   requestRender: (...args: unknown[]) => mockRequestRender(...args),
   createStudioAvatar: () => mockCreateStudio(),
+  getStudioCandidate: () => mockStudioCandidate.path,
+  setStudioCandidate: (path: string | null) => {
+    mockStudioCandidate.path = path;
+  },
 }));
 
 const profile: Profile = {
@@ -301,6 +310,8 @@ beforeEach(() => {
   mockOwned = closet;
   mockWished = [];
   mockOutfits = [];
+  mockImageKey.has = true;
+  mockStudioCandidate.path = null;
   mockLookbooks = [];
   mockPlan.mockClear();
   mockRenders = [];
@@ -475,19 +486,38 @@ describe('outfit editor', () => {
     expect(mockRequestRender).not.toHaveBeenCalled();
   });
 
-  it('shows a one-time notice before the first render and renders only after confirmation', async () => {
+  it('saves without asking or rendering until a render was asked for once', async () => {
     mockSettings.disclosed = false;
-    const alert = answerAlert('cancel');
+    const alert = answerAlert('confirm');
     renderWithQuery(<OutfitEditorScreen />);
     fireEvent.press(screen.getByTestId('carousel-top-0-shirt'));
     fireEvent.press(screen.getByTestId('editor-save'));
-    await waitFor(() => expect(alert).toHaveBeenCalled());
-    expect(alert.mock.calls[0][0]).toBe('Send images to the image provider?');
+    await waitFor(() => expect(mockOutfitRepo.create).toHaveBeenCalled());
     await settle();
-    // The outfit is saved either way; only the render waits for consent.
-    expect(mockOutfitRepo.create).toHaveBeenCalled();
+    // Saving is just saving: no notice about sending photos, and nothing sent.
+    expect(alert).not.toHaveBeenCalled();
     expect(mockRequestRender).not.toHaveBeenCalled();
-    expect(mockSettings.disclosed).toBe(false);
+  });
+
+  it('does not queue a render on save without a key for the image provider', async () => {
+    mockImageKey.has = false;
+    renderWithQuery(<OutfitEditorScreen />);
+    fireEvent.press(screen.getByTestId('carousel-top-0-shirt'));
+    fireEvent.press(screen.getByTestId('editor-save'));
+    await waitFor(() => expect(mockOutfitRepo.create).toHaveBeenCalled());
+    await settle();
+    expect(mockRequestRender).not.toHaveBeenCalled();
+  });
+
+  it('names the screen for a new and for an existing outfit', async () => {
+    renderWithQuery(<OutfitEditorScreen />);
+    expect(mockNavigation.setOptions).toHaveBeenLastCalledWith({ title: 'New outfit' });
+    mockOutfits = [outfitOf('o1')];
+    mockParams = { id: 'o1' };
+    renderWithQuery(<OutfitEditorScreen />);
+    await waitFor(() =>
+      expect(mockNavigation.setOptions).toHaveBeenLastCalledWith({ title: 'Edit outfit' }),
+    );
   });
 });
 
@@ -626,6 +656,18 @@ describe('outfit detail', () => {
       pathname: '/item/[id]',
       params: { id: 'skirt' },
     });
+  });
+
+  it('shows a one-time notice before the first render and renders only after confirmation', async () => {
+    mockSettings.disclosed = false;
+    const alert = answerAlert('cancel');
+    open(outfitOf('o1'));
+    fireEvent.press(await screen.findByText('Try it on me'));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    expect(alert.mock.calls[0][0]).toBe('Send images to the image provider?');
+    await settle();
+    expect(mockRequestRender).not.toHaveBeenCalled();
+    expect(mockSettings.disclosed).toBe(false);
   });
 
   it('regenerates on request and lets the user go back to the previous picture', async () => {

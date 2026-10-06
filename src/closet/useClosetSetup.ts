@@ -10,6 +10,7 @@ import { renderRepository } from '@/outfits/renders';
 import { outfitRepository } from '@/outfits/repository';
 import { installReminderHandling, restoreReminder } from '@/planning/reminder';
 import { useAddActions } from '@/shell/addActions';
+import { useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
 
 import { useClosetTab } from './closetTab';
@@ -61,7 +62,13 @@ export function useClosetSetup(): void {
           {
             text: t('importFlow.start'),
             onPress: () => {
-              void startBulkImport(uris);
+              void startBulkImport(uris).then((unread) => {
+                if (unread > 0) {
+                  useToast
+                    .getState()
+                    .show({ message: t('importFlow.unreadable', { count: unread }) });
+                }
+              });
               router.push('/import');
             },
           },

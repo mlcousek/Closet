@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { keyManager } from '@/ai/keys';
 import { useToast } from '@/shell/toast';
 
 import { isDisclosed, requestRender, setDisclosed } from './renderActions';
@@ -33,10 +34,15 @@ export function useRenderRequest() {
   const router = useRouter();
   const showToast = useToast((state) => state.show);
 
-  return async (outfit: Outfit, force = false): Promise<void> => {
-    if (!(await confirmDisclosure(t))) return;
+  return async (outfit: Outfit, force = false, automatic = false): Promise<void> => {
+    if (automatic) {
+      // Rendering on save is a convenience. Until the user has asked for a render once, and
+      // so seen the notice, and has a key for it, saving an outfit stays just saving.
+      if (!isDisclosed()) return;
+      if (!(await keyManager.getInfo('image')).hasKey) return;
+    } else if (!(await confirmDisclosure(t))) return;
     const outcome = await requestRender(outfit, force);
-    if (outcome.kind === 'skipped' && outcome.reason === 'noAvatar') {
+    if (!automatic && outcome.kind === 'skipped' && outcome.reason === 'noAvatar') {
       showToast({
         message: t('tryOn.noAvatar'),
         actionLabel: t('tryOn.addAvatar'),

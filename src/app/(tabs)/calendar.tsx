@@ -17,8 +17,8 @@ export default function CalendarScreen() {
   const { t, i18n } = useTranslation();
   const { colors, spacing, radius } = useTheme();
   const [month, setMonth] = useState<Day>(() => addMonths(today(), 0));
-  // Re-renders the grid when the date changes, so "today" moves on while the tab stays open.
-  useToday();
+  // "Today" moves on at midnight while the tab stays open.
+  const now = useToday();
   const [selected, setSelected] = useState<Day>(today);
   const grid = monthGrid(month);
   const days = grid.flat().filter((day): day is Day => day !== null);
@@ -114,7 +114,7 @@ export default function CalendarScreen() {
                     variant="caption"
                     style={{
                       textAlign: 'center',
-                      fontWeight: day === today() ? '700' : '400',
+                      fontWeight: day === now ? '700' : '400',
                     }}
                   >
                     {fromDay(day).getDate()}

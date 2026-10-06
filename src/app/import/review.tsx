@@ -8,13 +8,14 @@ import { itemRepository } from '@/closet/repository';
 import { displayPath, type ItemDetails } from '@/closet/types';
 import { useInvalidateItems, useItems } from '@/closet/useItems';
 import { AppText, Button, EmptyState, Screen } from '@/components/ui';
-import { deleteWithUndo } from '@/shell/toast';
+import { deleteWithUndo, useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
 import { useTheme } from '@/theme/useTheme';
 
 /** Steps through imported items one at a time so the user can confirm, edit or discard each. */
 export default function ReviewScreen() {
   const { t } = useTranslation();
+  const showToast = useToast((state) => state.show);
   const router = useRouter();
   const { colors, spacing, radius } = useTheme();
   const invalidateItems = useInvalidateItems();
@@ -52,6 +53,8 @@ export default function ReviewScreen() {
       await itemRepository.update(item.id, { ...details, needsReview: false });
       setHandled((count) => count + 1);
       await invalidateItems();
+    } catch {
+      showToast({ message: t('common.somethingWentWrong') });
     } finally {
       setBusy(false);
     }
@@ -61,7 +64,10 @@ export default function ReviewScreen() {
     setHandled((count) => count + 1);
     return deleteWithUndo({
       remove: () => itemRepository.remove([item.id]),
-      restore: () => itemRepository.restore([item.id]),
+      restore: async () => {
+        await itemRepository.restore([item.id]);
+        setHandled((count) => Math.max(0, count - 1));
+      },
       message: t('common.deleted'),
       undoLabel: t('common.undo'),
       onChange: () => void invalidateItems(),

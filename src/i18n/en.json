@@ -97,7 +97,8 @@
     "importConfirmAction": "Replace",
     "importDone": "Backup restored.",
     "importInvalid": "This file is not a Closet backup. Nothing was changed.",
-    "importNewer": "This backup comes from a newer version of the app. Update the app and try again."
+    "importNewer": "This backup comes from a newer version of the app. Update the app and try again.",
+    "working": "Working on the backup. This can take a while with many photos."
   },
   "ai": {
     "title": "AI provider keys",
@@ -181,7 +182,10 @@
       "cutOff": "Part of your body seems to be outside the frame. Renders work best when you are visible from head to feet.",
       "tooSmall": "You are quite small in this photo. Standing closer to the camera gives better renders."
     },
-    "discard": "Use a different photo"
+    "discard": "Use a different photo",
+    "replaceStudioTitle": "Replace your photo?",
+    "replaceStudioMessage": "Your studio photo was made from the current one and will be removed. Outfit pictures will need to be made again.",
+    "replaceStudioAction": "Replace"
   },
   "taxonomy": {
     "category": {
@@ -316,7 +320,8 @@
     "needsReview": "{{count}} imported items need review",
     "review": "Review",
     "importRunning": "Importing {{done}} of {{total}}",
-    "deleteManyUsedMessage": "Outfits using these items: {{count}}. The items are removed from them too."
+    "deleteManyUsedMessage": "Outfits using these items: {{count}}. The items are removed from them too.",
+    "importFailed": "{{count}} photos failed"
   },
   "addItem": {
     "menuPhoto": "Take a photo of an item",
@@ -341,7 +346,9 @@
       "error": "Automatic suggestions did not work this time. You can fill in the details yourself."
     },
     "denied": "Closet has no access to the camera. You can allow it in the system settings.",
-    "saveFailed": "The item could not be saved. Please try again."
+    "saveFailed": "The item could not be saved. Please try again.",
+    "keepPhoto": "Keep the current photo",
+    "skipTagging": "Fill in myself"
   },
   "itemForm": {
     "suggested": "Suggested",
@@ -396,7 +403,8 @@
     "confirm": "Confirm",
     "discard": "Discard",
     "reviewDone": "Everything is reviewed.",
-    "retryAll": "Retry all"
+    "retryAll": "Retry all",
+    "unreadable": "{{count}} photos could not be read and were left out."
   },
   "linkImport": {
     "title": "Add from a link",
@@ -612,7 +620,8 @@
     "timeInvalid": "Enter a time like 7:30.",
     "denied": "Notifications are not allowed for Closet. You can allow them in the system settings.",
     "title": "What are you wearing today?",
-    "body": "Open Closet to pick today's outfit."
+    "body": "Open Closet to pick today's outfit.",
+    "update": "Change the time"
   },
   "stylist": {
     "title": "AI stylist",

@@ -127,7 +127,7 @@ export default function OnboardingScreen() {
           label={t(
             step === 'welcome' ? 'onboarding.start' : isLast ? 'onboarding.finish' : 'common.next',
           )}
-          disabled={!canContinue || (isLast && (!photo || photoPending))}
+          disabled={!canContinue || (isLast && (!photo || (photoPending && step === 'avatar')))}
           loading={saving}
           onPress={() => (isLast ? void finish(photo) : go(1))}
         />

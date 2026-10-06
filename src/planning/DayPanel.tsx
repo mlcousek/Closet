@@ -201,17 +201,19 @@ export function DayPanel({
       worn ? calendarRepository.logWorn(day, outfitId) : calendarRepository.plan(day, outfitId),
     );
 
-  const accept = async (chosen: Suggestion, worn: boolean) => {
-    if (busy) return;
-    let outfit = chosen.outfit;
-    if (!outfit) {
-      // A new combination becomes a saved outfit first.
-      outfit = await outfitRepository.create(chosen.pieces);
-      await invalidateOutfits();
-      if (isAutoRenderOn()) void requestRender(outfit);
-    }
-    await place(outfit.id, worn);
-  };
+  const accept = (chosen: Suggestion, worn: boolean) =>
+    done(async () => {
+      let outfit = chosen.outfit;
+      if (!outfit) {
+        // A new combination becomes a saved outfit first.
+        outfit = await outfitRepository.create(chosen.pieces);
+        await invalidateOutfits();
+        if (isAutoRenderOn()) void requestRender(outfit, false, true).catch(() => {});
+      }
+      await (worn
+        ? calendarRepository.logWorn(day, outfit.id)
+        : calendarRepository.plan(day, outfit.id));
+    });
 
   const remove = (entry: CalendarEntry) =>
     deleteWithUndo({

@@ -141,7 +141,12 @@ export default function LinkImportScreen() {
             testID="link-fallback"
             kind="secondary"
             label={t('linkImport.fallback')}
-            onPress={() => router.replace({ pathname: '/item/new', params: { source: 'library' } })}
+            onPress={() =>
+              router.replace({
+                pathname: '/item/new',
+                params: { source: 'library', target: target === 'wishlist' ? 'wishlist' : 'owned' },
+              })
+            }
           />
         </View>
       ) : null}

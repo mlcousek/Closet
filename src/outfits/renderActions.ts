@@ -45,6 +45,12 @@ export const setAutoRender = (on: boolean) => setSetting(AUTO_RENDER_SETTING, on
 export const isDisclosed = () => getSetting(DISCLOSED_SETTING) === 'yes';
 export const setDisclosed = () => setSetting(DISCLOSED_SETTING, 'yes');
 
+const STUDIO_CANDIDATE_SETTING = 'avatar.studioCandidate';
+/** A studio avatar that was made and paid for but not yet accepted or rejected. */
+export const getStudioCandidate = () => getSetting(STUDIO_CANDIDATE_SETTING);
+export const setStudioCandidate = (path: string | null) =>
+  setSetting(STUDIO_CANDIDATE_SETTING, path);
+
 /** The image renders are based on: the accepted studio avatar, otherwise the downscaled photo. */
 export function avatarBasePath(
   profile: Pick<Profile, 'avatarStudioPath' | 'avatarSmallPath'> | null,

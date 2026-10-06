@@ -97,7 +97,8 @@
     "importConfirmAction": "Nahradit",
     "importDone": "Záloha byla obnovena.",
     "importInvalid": "Tento soubor není záloha aplikace Closet. Nic se nezměnilo.",
-    "importNewer": "Tato záloha pochází z novější verze aplikace. Aktualizujte aplikaci a zkuste to znovu."
+    "importNewer": "Tato záloha pochází z novější verze aplikace. Aktualizujte aplikaci a zkuste to znovu.",
+    "working": "Pracuji na záloze. S mnoha fotkami to může chvíli trvat."
   },
   "ai": {
     "title": "Klíče poskytovatelů AI",
@@ -181,7 +182,10 @@
       "cutOff": "Část postavy je zřejmě mimo záběr. Vykreslení funguje nejlépe, když jste vidět od hlavy po chodidla.",
       "tooSmall": "Na fotce jste dost malí. Když se postavíte blíž k foťáku, bude vykreslení lepší."
     },
-    "discard": "Použít jinou fotku"
+    "discard": "Použít jinou fotku",
+    "replaceStudioTitle": "Nahradit vaši fotku?",
+    "replaceStudioMessage": "Vaše studiová fotka vznikla ze současné fotky a bude odstraněna. Obrázky outfitů bude potřeba vytvořit znovu.",
+    "replaceStudioAction": "Nahradit"
   },
   "taxonomy": {
     "category": {
@@ -316,7 +320,8 @@
     "needsReview": "Importované kousky ke kontrole: {{count}}",
     "review": "Zkontrolovat",
     "importRunning": "Import: {{done}} z {{total}}",
-    "deleteManyUsedMessage": "Outfity s těmito kousky: {{count}}. Kousky se odstraní i z nich."
+    "deleteManyUsedMessage": "Outfity s těmito kousky: {{count}}. Kousky se odstraní i z nich.",
+    "importFailed": "Nepovedlo se: {{count}} fotek"
   },
   "addItem": {
     "menuPhoto": "Vyfotit kousek",
@@ -341,7 +346,9 @@
       "error": "Automatické návrhy se tentokrát nepovedly. Údaje můžete vyplnit sami."
     },
     "denied": "Closet nemá přístup k fotoaparátu. Povolit ho můžete v nastavení systému.",
-    "saveFailed": "Kousek se nepodařilo uložit. Zkuste to prosím znovu."
+    "saveFailed": "Kousek se nepodařilo uložit. Zkuste to prosím znovu.",
+    "keepPhoto": "Nechat současnou fotku",
+    "skipTagging": "Vyplním sám"
   },
   "itemForm": {
     "suggested": "Návrh",
@@ -396,7 +403,8 @@
     "confirm": "Potvrdit",
     "discard": "Zahodit",
     "reviewDone": "Vše je zkontrolováno.",
-    "retryAll": "Zkusit vše znovu"
+    "retryAll": "Zkusit vše znovu",
+    "unreadable": "Fotky, které se nepodařilo načíst a byly vynechány: {{count}}."
   },
   "linkImport": {
     "title": "Přidat z odkazu",
@@ -612,7 +620,8 @@
     "timeInvalid": "Zadejte čas ve tvaru 7:30.",
     "denied": "Aplikace Closet nemá povolená oznámení. Povolit je můžete v nastavení systému.",
     "title": "Co si dnes obléknete?",
-    "body": "Otevřete Closet a vyberte dnešní outfit."
+    "body": "Otevřete Closet a vyberte dnešní outfit.",
+    "update": "Změnit čas"
   },
   "stylist": {
     "title": "AI stylista",

@@ -28,11 +28,14 @@ type Cell = { key: string; item: Item | null };
 export function SlotCarousel({
   items,
   selectedId,
+  takenIds = [],
   onSelect,
   testID,
 }: {
   items: Item[];
   selectedId: string | null;
+  /** Pieces chosen in other rows of the same slot; the same piece cannot be worn twice. */
+  takenIds?: string[];
   onSelect: (itemId: string | null) => void;
   testID: string;
 }) {
@@ -61,6 +64,12 @@ export function SlotCarousel({
       Math.max(0, Math.round(event.nativeEvent.contentOffset.x / STEP)),
     );
     const id = cells[index].item?.id ?? null;
+    if (id !== null && takenIds.includes(id)) {
+      // The selection stays, so the row goes back to it instead of resting on a piece it
+      // does not show as selected.
+      list.current?.scrollToOffset({ offset: selectedIndex * STEP, animated: true });
+      return;
+    }
     if (id !== selectedId) onSelect(id);
   };
 

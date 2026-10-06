@@ -12,8 +12,8 @@ import type { Outfit } from '@/outfits/repository';
 import { useOutfits, useRenderSummary } from '@/outfits/useOutfits';
 import { DayPanel } from '@/planning/DayPanel';
 import { fromDay, weekOf, type Day } from '@/planning/dates';
-import { useToday } from '@/planning/useToday';
-import { getTemperatureUnit } from '@/planning/settings';
+import { useClock, useToday } from '@/planning/useToday';
+import { useTemperatureUnit } from '@/planning/settings';
 import { useCalendar, useWeather, weatherFor } from '@/planning/usePlanning';
 import { conditionOf, type Condition } from '@/planning/weather';
 import { greetingKey } from '@/profile/greeting';
@@ -40,8 +40,7 @@ export default function HomeScreen() {
   // A day picked in the strip holds until midnight; the next morning Home shows today again.
   const [picked, setPicked] = useState<{ on: Day; day: Day } | null>(null);
   const selected = picked?.on === now ? picked.day : now;
-  // Read once when the screen opens; the age shown only needs to be roughly right.
-  const [openedAt] = useState(() => Date.now());
+  const clock = useClock();
   const week = weekOf(now);
   const { data: byDay } = useCalendar(week[0], week[6]);
   const { data: outfits = [] } = useOutfits({});
@@ -51,18 +50,18 @@ export default function HomeScreen() {
 
   const outfitsById = new Map<string, Outfit>(outfits.map((outfit) => [outfit.id, outfit]));
   const locale = i18n.language === 'cs' ? 'cs-CZ' : 'en-GB';
-  const unit = getTemperatureUnit();
+  const unit = useTemperatureUnit();
   const dayWeather = weatherFor(weather, selected);
   const current = weather?.weather?.current ?? null;
   const ageHours = weather?.weather
-    ? Math.round((openedAt - weather.weather.fetchedAt) / 3_600_000)
+    ? Math.round((clock.getTime() - weather.weather.fetchedAt) / 3_600_000)
     : 0;
 
   return (
     <Screen scroll style={{ gap: spacing.lg, paddingTop: spacing.lg, paddingBottom: 140 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
         <AppText variant="title" testID="greeting" style={{ flex: 1 }}>
-          {profile ? t(greetingKey(), { name: profile.name }) : t('tabs.home')}
+          {profile ? t(greetingKey(clock), { name: profile.name }) : t('tabs.home')}
         </AppText>
         <Pressable
           testID="open-calendar"

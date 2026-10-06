@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { create } from 'zustand';
 import { getLocales } from 'expo-localization';
 
 import { getSetting, setSetting } from '@/db/settings';
@@ -37,7 +38,19 @@ export function getTemperatureUnit(): TemperatureUnit {
   if (stored === 'celsius' || stored === 'fahrenheit') return stored;
   return defaultTemperatureUnit(getLocales()[0]?.regionCode);
 }
-export const setTemperatureUnit = (unit: TemperatureUnit | null) => setSetting(UNIT, unit);
+export const setTemperatureUnit = (unit: TemperatureUnit | null) => {
+  setSetting(UNIT, unit);
+  useChangedUnit.setState({ unit: getTemperatureUnit() });
+};
+
+/** The unit as last changed in this run of the app; null until it is changed. */
+const useChangedUnit = create<{ unit: TemperatureUnit | null }>(() => ({ unit: null }));
+
+/** The temperature unit, for screens that stay open while it is changed in Settings. */
+export function useTemperatureUnit(): TemperatureUnit {
+  const changed = useChangedUnit((state) => state.unit);
+  return changed ?? getTemperatureUnit();
+}
 
 export type PlaceResult =
   | { status: 'ok'; place: Place }

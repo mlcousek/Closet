@@ -11,7 +11,7 @@ import { useSaveProfile } from '@/profile/useProfile';
 import { imageStore } from '@/storage/imageStore';
 import { useTheme } from '@/theme/useTheme';
 
-import { createStudioAvatar } from './renderActions';
+import { createStudioAvatar, getStudioCandidate, setStudioCandidate } from './renderActions';
 import { confirmDisclosure } from './useRenderRequest';
 
 /**
@@ -23,7 +23,11 @@ export function StudioAvatar({ profile }: { profile: Profile }) {
   const { colors, spacing, radius } = useTheme();
   const saveProfile = useSaveProfile();
   const [busy, setBusy] = useState(false);
-  const [candidate, setCandidate] = useState<string | null>(null);
+  const [candidate, setCandidateState] = useState<string | null>(getStudioCandidate);
+  const setCandidate = (path: string | null) => {
+    setStudioCandidate(path);
+    setCandidateState(path);
+  };
   const [problem, setProblem] = useState<'noKey' | 'failed' | null>(null);
 
   if (!profile.avatarSmallPath) return null;

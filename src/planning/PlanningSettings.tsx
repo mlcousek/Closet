@@ -32,6 +32,8 @@ export function PlanningSettings() {
     return stored ? formatTime(stored) : '';
   });
   const [reminderOn, setReminderOn] = useState(() => getReminderTime() !== null);
+  // The time that is really scheduled, as opposed to what is being typed.
+  const [scheduled, setScheduled] = useState(time);
   const [notice, setNotice] = useState<'searchFailed' | 'timeInvalid' | 'denied' | null>(null);
 
   const chooseCity = async (place: Place | null) => {
@@ -61,6 +63,10 @@ export function PlanningSettings() {
     }
     const allowed = await setReminder(parsed, text);
     setReminderOn(allowed);
+    if (allowed) {
+      setScheduled(formatTime(parsed));
+      setTime(formatTime(parsed));
+    }
     setNotice(allowed ? null : 'denied');
   };
 
@@ -152,9 +158,16 @@ export function PlanningSettings() {
           onPress={() => void (reminderOn ? turnOff() : turnOn())}
         />
       </View>
+      {reminderOn && time.trim() !== scheduled ? (
+        <Button
+          testID="reminder-update"
+          label={t('reminder.update')}
+          onPress={() => void turnOn()}
+        />
+      ) : null}
       {reminderOn ? (
         <AppText testID="reminder-on" muted>
-          {t('reminder.onAt', { time })}
+          {t('reminder.onAt', { time: scheduled })}
         </AppText>
       ) : null}
       {notice === 'timeInvalid' ? (

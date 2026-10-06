@@ -41,8 +41,10 @@ export default function NewItemScreen() {
   const [saveFailed, setSaveFailed] = useState(false);
   const started = useRef(false);
   // Decided by where the add was started: the Wishlist tab passes it along, also through link import.
+  // A link import brings its own target, which has to outlive the link's photo being replaced.
+  const [linkTarget, setLinkTarget] = useState<'owned' | 'wishlist' | null>(null);
   const target: 'owned' | 'wishlist' =
-    (fromLink?.target ?? targetParam) === 'wishlist' ? 'wishlist' : 'owned';
+    (linkTarget ?? targetParam) === 'wishlist' ? 'wishlist' : 'owned';
 
   const prepare = async (uri: string, size?: { width: number; height: number }) => {
     setStage('working');
@@ -70,6 +72,8 @@ export default function NewItemScreen() {
     }
     if (result.status === 'cancelled') {
       if (leaveOnCancel) router.back();
+      // Changing one's mind about another photo goes back to the form as it was.
+      else if (photo) setStage('form');
       return;
     }
     // A photo chosen here replaces anything that came from a shop link.
@@ -86,6 +90,7 @@ export default function NewItemScreen() {
         // Starting the one-off photo flow is the purpose of this effect.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setFromLink(pending);
+        setLinkTarget(pending.target);
         void prepare(pending.uri);
       }
     } else if (source === 'library') {
@@ -177,6 +182,14 @@ export default function NewItemScreen() {
           label={t('addItem.choosePhoto')}
           onPress={() => void pick('library', false)}
         />
+        {photo ? (
+          <Button
+            testID="add-item-keep-photo"
+            kind="secondary"
+            label={t('addItem.keepPhoto')}
+            onPress={() => setStage('form')}
+          />
+        ) : null}
       </Screen>
     );
   }
@@ -191,6 +204,15 @@ export default function NewItemScreen() {
         <AppText testID="add-item-progress" muted>
           {t(stage === 'tagging' ? 'addItem.tagging' : 'addItem.working')}
         </AppText>
+        {stage === 'tagging' && photo ? (
+          // Suggestions are a convenience; on a slow connection the form must not wait for them.
+          <Button
+            testID="add-item-skip-tagging"
+            kind="secondary"
+            label={t('addItem.skipTagging')}
+            onPress={() => setStage('form')}
+          />
+        ) : null}
       </Screen>
     );
   }

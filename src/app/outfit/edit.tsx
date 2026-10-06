@@ -80,6 +80,11 @@ function Editor({
     return startItem ? draftFromItem(startItem) : emptyDraft();
   }, [outfit, startItem, startItems]);
 
+  const title = t(outfit ? 'outfitEditor.editTitle' : 'outfitEditor.newTitle');
+  useEffect(() => {
+    navigation.setOptions({ title });
+  }, [navigation, title]);
+
   const [draft, setDraft] = useState(initial);
   const [season, setSeason] = useState<Season | null>(null);
   const [saving, setSaving] = useState(false);
@@ -165,7 +170,7 @@ function Editor({
       setLeaving(true);
       setLeaveTo(outfit ? 'back' : { id: saved.id });
       // The outfit is saved whatever happens to the render, which runs in the background.
-      if (isAutoRenderOn()) void requestRender(saved);
+      if (isAutoRenderOn()) void requestRender(saved, false, true).catch(() => {});
     } catch {
       showToast({ message: t('common.somethingWentWrong') });
       setSaving(false);
@@ -286,6 +291,9 @@ function Editor({
                       testID={`carousel-${slot}-${row}`}
                       items={itemsBySlot[slot]}
                       selectedId={selectedId}
+                      takenIds={draft.rows[slot].filter(
+                        (id, other): id is string => id !== null && other !== row,
+                      )}
                       onSelect={(itemId) => setDraft(select(draft, slot, row, itemId))}
                     />
                   </View>

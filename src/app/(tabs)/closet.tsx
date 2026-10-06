@@ -103,7 +103,7 @@ export default function ClosetScreen() {
   const [search, setSearch] = useState('');
   const [sheet, setSheet] = useState<SheetFilter>(EMPTY_SHEET_FILTER);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [chosen, setSelected] = useState<string[]>([]);
   const [retagging, setRetagging] = useState(false);
 
   const { tab, setTab, category, setCategory } = useClosetTab();
@@ -137,6 +137,8 @@ export default function ClosetScreen() {
     [listed, search, t],
   );
 
+  // A piece hidden by a search or a filter since it was picked is not silently included.
+  const selected = chosen.filter((id) => items.some((item) => item.id === id));
   const selecting = selected.length > 0;
   const filterCount = activeFilterCount(sheet);
   const narrowed = category !== null || search.trim() !== '' || filterCount > 0;

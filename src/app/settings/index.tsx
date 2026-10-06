@@ -10,6 +10,7 @@ import { getLanguageOverride, setLanguageOverride } from '@/i18n';
 import type { Language } from '@/i18n/language';
 import { DisplaySettings } from '@/display/DisplaySettings';
 import { PlanningSettings } from '@/planning/PlanningSettings';
+import { restoreReminder } from '@/planning/reminder';
 import { StylistUsage } from '@/stylist/StylistUsage';
 import { useToast } from '@/shell/toast';
 import { BackupError } from '@/storage/backup';
@@ -23,7 +24,7 @@ const LANGUAGE_OPTIONS: { value: Language | null; labelKey: string }[] = [
 ];
 
 export default function SettingsScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { colors, spacing, radius } = useTheme();
@@ -34,6 +35,8 @@ export default function SettingsScreen() {
   const chooseLanguage = async (language: Language | null) => {
     setOverride(language);
     await setLanguageOverride(language);
+    // The reminder was scheduled with its text; it gets the new language.
+    void restoreReminder({ title: i18n.t('reminder.title'), body: i18n.t('reminder.body') });
   };
 
   const onExport = async () => {
@@ -53,7 +56,7 @@ export default function SettingsScreen() {
     try {
       await importBackup(archive);
       // Everything on screen may be stale now, including the language override.
-      queryClient.clear();
+      await queryClient.resetQueries();
       const restoredOverride = getLanguageOverride();
       setOverride(restoredOverride);
       await setLanguageOverride(restoredOverride);
@@ -149,6 +152,11 @@ export default function SettingsScreen() {
       <AppText variant="label" muted style={{ marginTop: spacing.xl }}>
         {t('settings.backup')}
       </AppText>
+      {busy ? (
+        <AppText testID="backup-working" muted>
+          {t('backup.working')}
+        </AppText>
+      ) : null}
       <Row
         testID="export-backup"
         icon="share-outline"

@@ -282,6 +282,11 @@ export function ItemForm({ initial, suggested = [], submitLabel, busy, onSubmit,
         onChangeText={(text) => set('notes', text)}
       />
 
+      {error ? (
+        <AppText testID="item-form-error-bottom" style={{ color: colors.danger }}>
+          {t(`itemForm.${error}`)}
+        </AppText>
+      ) : null}
       <Button testID="item-save" label={submitLabel} loading={busy} onPress={submit} />
       {footer}
     </View>

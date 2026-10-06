@@ -11,14 +11,19 @@ import { useImportProgress } from './importActions';
 
 const TAB_BAR_HEIGHT = 49;
 
-/** A pill shown above the tab bar on every main section while a bulk import is running. */
+/**
+ * A pill shown above the tab bar on every main section while a bulk import is
+ * running, and afterwards for as long as photos that failed wait to be retried
+ * or discarded: it is the only way back to them.
+ */
 export function ImportIndicator() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, radius, spacing } = useTheme();
   const progress = useImportProgress((state) => state.progress);
-  if (progress.queued + progress.processing === 0) return null;
+  const running = progress.queued + progress.processing > 0;
+  if (!running && progress.failed === 0) return null;
   return (
     <Pressable
       testID="import-indicator"
@@ -36,9 +41,15 @@ export function ImportIndicator() {
         },
       ]}
     >
-      <Ionicons name="cloud-upload-outline" size={16} color={colors.onPrimary} />
+      <Ionicons
+        name={running ? 'cloud-upload-outline' : 'alert-circle-outline'}
+        size={16}
+        color={colors.onPrimary}
+      />
       <AppText variant="label" style={{ color: colors.onPrimary }}>
-        {t('closet.importRunning', { done: progress.done, total: progress.total })}
+        {running
+          ? t('closet.importRunning', { done: progress.done, total: progress.total })
+          : t('closet.importFailed', { count: progress.failed })}
       </AppText>
     </Pressable>
   );

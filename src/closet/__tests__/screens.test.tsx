@@ -676,7 +676,7 @@ describe('importing from a shop link', () => {
     fireEvent.press(screen.getByTestId('link-fallback'));
     expect(mockRouter.replace).toHaveBeenCalledWith({
       pathname: '/item/new',
-      params: { source: 'library' },
+      params: { source: 'library', target: 'owned' },
     });
   });
 });

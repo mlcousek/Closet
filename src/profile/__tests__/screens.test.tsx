@@ -338,9 +338,14 @@ describe('profile editing', () => {
   it('drops the studio photo made from the old photo when the photo is replaced', async () => {
     mockProfile = { ...fullProfile, avatarStudioPath: 'images/avatar/studio.png' };
     mockPickPhoto.mockResolvedValue({ status: 'picked', photo });
+    // The studio photo was paid for, so replacing the photo it came from asks first.
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+      buttons?.[buttons.length - 1].onPress?.();
+    });
     renderWithQuery(<EditProfileScreen />);
     fireEvent.press(await screen.findByTestId('avatar-camera'));
     await waitFor(() => expect(mockRemoved).toContain('images/avatar/studio.png'));
+    expect(alert.mock.calls[0][0]).toBe('Replace your photo?');
     expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({ avatarStudioPath: null }));
   });
 

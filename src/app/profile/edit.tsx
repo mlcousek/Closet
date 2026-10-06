@@ -42,8 +42,20 @@ function EditForm({ profile }: { profile: Profile }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const chooseAvatar = (photo: PickedPhoto) => {
+    if (!profile.avatarStudioPath) {
+      void replaceAvatar(photo);
+      return;
+    }
+    Alert.alert(t('avatar.replaceStudioTitle'), t('avatar.replaceStudioMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('avatar.replaceStudioAction'), onPress: () => void replaceAvatar(photo) },
+    ]);
+  };
+
   const replaceAvatar = async (photo: PickedPhoto) => {
     setBusy(true);
+    setError(null);
     try {
       await storeAvatarAnd(photo, avatarDeps, (stored) =>
         saveProfile.mutateAsync({ ...stored, avatarStudioPath: null }),
@@ -119,7 +131,7 @@ function EditForm({ profile }: { profile: Profile }) {
         </AppText>
         <AvatarPicker
           currentUri={profile.avatarPath ? imageStore.uri(profile.avatarPath) : null}
-          onAccept={(photo) => void replaceAvatar(photo)}
+          onAccept={chooseAvatar}
           showGuidance={!profile.avatarPath}
         />
         {profile.avatarPath ? (
