@@ -180,9 +180,14 @@ export function createRenderRepository(db: () => Db = getDb, now: () => number =
      * Forgets renders nobody can see any more: those of outfits that are gone
      * for good, those that were dropped, and finished ones older than the
      * newest `keep` of their outfit (the current picture and the one before).
+     * A picture made from what an outfit is right now is always kept.
      * Returns the image files no remaining render uses, for deletion.
      */
-    async purge(goneOutfitIds: string[], keep = 2): Promise<string[]> {
+    async purge(
+      goneOutfitIds: string[],
+      keep = 2,
+      currentFingerprints: Set<string> = new Set(),
+    ): Promise<string[]> {
       const rows = db()
         .select()
         .from(renders)
@@ -194,7 +199,8 @@ export function createRenderRepository(db: () => Db = getDb, now: () => number =
       const stay: Row[] = [];
       for (const row of rows) {
         let drop = gone.has(row.outfitId) || row.deletedAt !== null;
-        if (!drop && row.status === 'done') {
+        // An outfit edited back to earlier pieces shows an older picture as current.
+        if (!drop && row.status === 'done' && !currentFingerprints.has(row.fingerprint)) {
           const count = kept.get(row.outfitId) ?? 0;
           if (count >= keep) drop = true;
           else kept.set(row.outfitId, count + 1);

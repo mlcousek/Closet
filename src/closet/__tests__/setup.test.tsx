@@ -16,6 +16,8 @@ jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
 const mockQueue = { resume: jest.fn(async () => {}) };
 jest.mock('@/outfits/renderActions', () => ({
   renderQueue: { resume: () => mockQueue.resume() },
+  avatarBasePath: () => 'avatar.jpg',
+  currentFingerprint: (outfit: { id: string }) => `fp-${outfit.id}`,
 }));
 const mockForget = jest.fn(async (..._args: unknown[]) => {});
 const mockPurgeOutfits = jest.fn(async (..._args: unknown[]) => ['old-outfit']);
@@ -23,6 +25,7 @@ jest.mock('@/outfits/repository', () => ({
   outfitRepository: {
     forgetItems: (...args: unknown[]) => mockForget(...args),
     purgeDeleted: (...args: unknown[]) => mockPurgeOutfits(...args),
+    list: async () => [{ id: 'live' }],
   },
 }));
 const mockPurgeRenders = jest.fn(async (..._args: unknown[]) => ['images/renders/old.png']);
@@ -37,6 +40,7 @@ jest.mock('@/planning/reminder', () => ({
   restoreReminder: jest.fn(async () => {}),
   installReminderHandling: () => () => {},
 }));
+jest.mock('@/profile/repository', () => ({ profileRepository: { get: async () => null } }));
 jest.mock('../deviceImages', () => ({ itemImageDeps: {} }));
 const mockImports = { resume: jest.fn(async () => {}) };
 jest.mock('../importActions', () => ({
@@ -136,6 +140,10 @@ describe('closet setup', () => {
     expect(mockForget).toHaveBeenCalledWith(['gone']);
     // Outfits deleted long ago take their try-on pictures with them.
     await waitFor(() => expect(mockRemoveFile).toHaveBeenCalledWith('images/renders/old.png'));
-    expect(mockPurgeRenders).toHaveBeenCalledWith(['old-outfit']);
+    // The pictures that outfits show as current are named, so they are kept.
+    expect(mockPurgeRenders).toHaveBeenCalledWith(['old-outfit'], 2, new Set(['fp-live']));
+    const cutoff = mockPurgeOutfits.mock.calls[0][0] as number;
+    expect(Date.now() - cutoff).toBeGreaterThanOrEqual(24 * 60 * 60 * 1000);
+    expect(Date.now() - cutoff).toBeLessThan(25 * 60 * 60 * 1000);
   });
 });

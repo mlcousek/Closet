@@ -122,17 +122,17 @@ function TripView({ trip }: { trip: Trip }) {
   const [shown, setShown] = useState<Record<string, string[]>>({});
   const [extraText, setExtraText] = useState('');
   const [picking, setPicking] = useState(false);
-  const [round, setRound] = useState(0);
 
   const items = new Map<string, Item>([...owned, ...others].map((item) => [item.id, item]));
   const locale = formatLocale(i18n.language === 'cs' ? 'cs' : 'en', getLocales()[0]?.regionCode);
   const unit = getTemperatureUnit();
   const inputs = dayInputs(trip, weather);
-  const refresh = () => client.invalidateQueries({ queryKey: [TRIPS] });
+  // A day that is in the calendar changes its saved outfit too, so outfits are read again.
+  const refresh = () =>
+    Promise.all([client.invalidateQueries({ queryKey: [TRIPS] }), invalidateOutfits()]);
   const change = async (action: () => Promise<unknown>) => {
     await action();
-    // A day that is in the calendar changes its saved outfit too.
-    await Promise.all([refresh(), invalidateOutfits()]);
+    await refresh();
   };
   const keyOf = (pieces: { itemId: string }[]) =>
     pieces
@@ -166,9 +166,15 @@ function TripView({ trip }: { trip: Trip }) {
   const suggestNow = async () => {
     setBusy('suggest');
     try {
-      // A new round each time, so asking again really gives another plan.
-      await generateTrip(trip, owned, weather.length > 0 ? weather : undefined, undefined, round);
-      setRound(round + 1);
+      // A different round every time, also after leaving the screen, so asking again really
+      // gives another plan and never quietly the first one.
+      await generateTrip(
+        trip,
+        owned,
+        weather.length > 0 ? weather : undefined,
+        undefined,
+        Date.now() % 1_000_000,
+      );
       setShown({});
       await refresh();
     } finally {

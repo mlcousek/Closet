@@ -16,7 +16,7 @@ import { formatTemperature } from '@/i18n/format';
 import { OutfitCollage } from '@/outfits/OutfitImage';
 import { usageLog } from '@/outfits/renders';
 import { outfitRepository } from '@/outfits/repository';
-import { useInvalidateOutfits } from '@/outfits/useOutfits';
+import { useInvalidateOutfits, useOutfits } from '@/outfits/useOutfits';
 import { calendarRepository } from '@/planning/calendar';
 import { addDays, fromDay, today, type Day } from '@/planning/dates';
 import { getChosenCity, getTemperatureUnit } from '@/planning/settings';
@@ -58,6 +58,10 @@ function ProposalCard({
   const invalidatePlanning = useInvalidatePlanning();
   const showToast = useToast((state) => state.show);
   const [savedId, setSavedId] = useState<string | null>(proposal.outfitId ?? null);
+  // An outfit saved from here and deleted since can be saved again.
+  const { data: outfits = [] } = useOutfits({});
+  const [savedNow, setSavedNow] = useState(false);
+  const saved = savedId !== null && (savedNow || outfits.some((outfit) => outfit.id === savedId));
   const [planned, setPlanned] = useState(proposal.planned ?? false);
   // One action at a time: a second tap while saving would create the outfit twice.
   const [working, setWorking] = useState(false);
@@ -73,6 +77,7 @@ function ProposalCard({
     if (savedId && (await outfitRepository.get(savedId))) return savedId;
     const outfit = await outfitRepository.create(pieces);
     setSavedId(outfit.id);
+    setSavedNow(true);
     await onMark({ outfitId: outfit.id });
     await invalidateOutfits();
     return outfit.id;
@@ -114,9 +119,9 @@ function ProposalCard({
           <Button
             testID={`proposal-save-${id}`}
             kind="secondary"
-            icon={savedId ? 'checkmark' : 'bookmark-outline'}
-            label={t(savedId ? 'stylist.saved' : 'common.save')}
-            disabled={!!savedId || working}
+            icon={saved ? 'checkmark' : 'bookmark-outline'}
+            label={t(saved ? 'stylist.saved' : 'common.save')}
+            disabled={saved || working}
             onPress={() =>
               void run(async () => {
                 await save();

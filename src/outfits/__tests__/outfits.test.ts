@@ -345,6 +345,15 @@ describe('renders', () => {
     expect(await renders.forOutfit(old.id)).toEqual([]);
     expect(await renders.forOutfit(recent.id)).toHaveLength(1);
     expect(await renders.purge([])).toEqual([]);
+
+    // An outfit edited back to earlier pieces shows an older picture as current: it stays.
+    const edited = await outfits.create(pieces, { name: 'Edited' });
+    await renders.createDone(edited.id, 'now', file('e1'));
+    await renders.createDone(edited.id, 'then', file('e2'));
+    await renders.createDone(edited.id, 'later', file('e3'));
+    expect(await renders.purge([], 2, new Set(['now']))).toEqual([]);
+    expect(await renders.forOutfit(edited.id)).toHaveLength(3);
+    expect((await renders.purge([], 2, new Set())).sort()).toEqual(['e1-t.jpg', 'e1.png']);
   });
 
   it('removes an outfit when every one of its pieces is gone for good', async () => {

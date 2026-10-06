@@ -22,7 +22,8 @@ export type ItemFormValues = {
   sourceUrl: string | null;
 };
 
-export type ItemFormError = 'categoryRequired' | 'priceInvalid' | 'purchasedAtInvalid';
+export type ItemFormError =
+  'categoryRequired' | 'priceInvalid' | 'currencyInvalid' | 'purchasedAtInvalid';
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -83,6 +84,9 @@ export function fromFormValues(
   if (!values.category) return { ok: false, error: 'categoryRequired' };
   const price = values.price.trim() ? parsePriceInput(values.price) : null;
   if (values.price.trim() && price === null) return { ok: false, error: 'priceInvalid' };
+  if (price !== null && values.currency.trim() && currencyOf(values.currency) === null) {
+    return { ok: false, error: 'currencyInvalid' };
+  }
   const purchasedAt = values.purchasedAt.trim() ? parseDateInput(values.purchasedAt) : null;
   if (values.purchasedAt.trim() && purchasedAt === null) {
     return { ok: false, error: 'purchasedAtInvalid' };

@@ -207,14 +207,17 @@ export function createOutfitRepository(db: () => Db = getDb, now: () => number =
     },
     /**
      * Forgets outfits deleted before the cutoff, with their pieces and their
-     * place in lookbooks, and returns their ids. Calendar entries stay: the
-     * day still shows that something was worn, as a deleted outfit.
+     * place in lookbooks, and returns their ids. An outfit that is still in
+     * the calendar is kept: undoing the removal of a worn day rebuilds its
+     * wears from the pieces, and the wear history must survive that.
      */
     async purgeDeleted(before: number): Promise<string[]> {
       const ids = db()
         .select({ id: outfits.id })
         .from(outfits)
-        .where(sql`${outfits.deletedAt} IS NOT NULL AND ${outfits.deletedAt} < ${before}`)
+        .where(
+          sql`${outfits.deletedAt} IS NOT NULL AND ${outfits.deletedAt} < ${before} AND ${outfits.id} NOT IN (SELECT outfit_id FROM calendar_entries WHERE deleted_at IS NULL)`,
+        )
         .all()
         .map((row) => row.id);
       if (ids.length === 0) return [];

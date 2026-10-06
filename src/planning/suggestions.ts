@@ -133,7 +133,13 @@ export function scoreItems(
   items: Item[],
   profile: DayProfile,
   history: History,
-  extra: { outfitId?: string; favourite?: boolean; seasons?: Season[] } = {},
+  extra: {
+    outfitId?: string;
+    favourite?: boolean;
+    seasons?: Season[];
+    /** The set is still being put together: rules about the whole outfit do not apply yet. */
+    partial?: boolean;
+  } = {},
 ): number {
   if (items.length === 0) return 0;
   const weights = RULES.score;
@@ -149,11 +155,13 @@ export function scoreItems(
     score -= Math.abs(effective - profile.band) * weights.perWarmthStep;
     // Hard limits, which no bonus can outweigh: nothing made only of light pieces on a cold
     // day, with or without a coat over it, and nothing warm on a hot day.
-    if (profile.band >= 4 && body.every((item) => warmthOf(item) <= 2)) return UNSUITABLE;
+    if (!extra.partial && profile.band >= 4 && body.every((item) => warmthOf(item) <= 2)) {
+      return UNSUITABLE;
+    }
     if (profile.band === 1 && items.some((item) => warmthOf(item) >= 4)) return UNSUITABLE;
   }
   // A day that needs an outer layer never gets an outfit without one.
-  if (profile.needsOuter && !hasOuter) return UNSUITABLE;
+  if (!extra.partial && profile.needsOuter && !hasOuter) return UNSUITABLE;
   if (!profile.needsOuter && hasOuter && profile.band <= 2) score -= weights.unneededOuter;
 
   const tagged = [...(extra.seasons ?? []), ...items.flatMap((item) => item.seasons)];
@@ -236,13 +244,16 @@ export function generateCombinations(
     const jitter = () => random() * 12;
     const leastWorn = (item: Item) =>
       (history.wearCounts.get(item.id) ?? 0) === 0 ? RULES.score.leastWornBonus : 0;
-    // While the outfit is being built it has no outer layer yet, so that rule waits for the
-    // finished set; otherwise every first pick would be unsuitable and only the coat would remain.
-    const building = { ...profile, needsOuter: false };
+    // While the outfit is being built it is not whole: a light top alone on a cold day, or a
+    // set still without its coat, must not be thrown out before the rest has been added. The
+    // finished set is judged by every rule below.
     const add = (candidates: Item[]) => {
       const pick = pickBest(
         candidates,
-        (item) => scoreItems([...chosen, item], building, history) + leastWorn(item) + jitter(),
+        (item) =>
+          scoreItems([...chosen, item], profile, history, { partial: true }) +
+          leastWorn(item) +
+          jitter(),
       );
       if (pick) chosen.push(pick);
     };
@@ -255,8 +266,9 @@ export function generateCombinations(
     } else continue;
     add(bySlot('shoes'));
     if (profile.needsOuter) add(bySlot('outer'));
-    // No piece that covers the body suited the day: a coat and shoes alone are not an outfit.
-    if (!chosen.some((item) => ['top', 'bottom', 'fullBody'].includes(slotOf(item)))) continue;
+    // An outfit covers the body: a dress, or a top with a bottom. Anything less is not one.
+    const has = (slot: Slot) => chosen.some((item) => slotOf(item) === slot);
+    if (!has('fullBody') && !(has('top') && has('bottom'))) continue;
 
     const key = chosen
       .map((item) => item.id)
@@ -345,9 +357,9 @@ export function suggest(input: {
       ),
   );
   const all = [...saved, ...generated.sort((a, b) => b.score - a.score)].slice(0, limit);
-  // A closet without outerwear still deserves a suggestion on a cold day.
-  const hasOuterwear = owned.some((item) => item.ownership === 'owned' && slotOf(item) === 'outer');
-  if (all.length === 0 && profile.needsOuter && !hasOuterwear) {
+  // A closet without outerwear, or with only a winter coat on a wet summer day, still
+  // deserves a suggestion.
+  if (all.length === 0 && profile.needsOuter) {
     return suggest({ ...input, profile: { ...profile, needsOuter: false } });
   }
   return all;

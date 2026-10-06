@@ -369,7 +369,8 @@
     "purchasedAtPlaceholder": "RRRR-MM-DD",
     "purchasedAtInvalid": "Zadejte datum ve tvaru rok-měsíc-den, například 2026-03-15.",
     "notes": "Poznámky",
-    "save": "Uložit kousek"
+    "save": "Uložit kousek",
+    "currencyInvalid": "Zadejte měnu jako třípísmenný kód, například CZK nebo EUR."
   },
   "item": {
     "title": "Kousek",

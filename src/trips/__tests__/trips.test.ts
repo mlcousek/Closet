@@ -3,7 +3,7 @@ import type { Item } from '@/closet/types';
 import { createTestDb } from '@/db/testing';
 import { createOutfitRepository } from '@/outfits/repository';
 import { createCalendarRepository } from '@/planning/calendar';
-import type { DayProfile } from '@/planning/suggestions';
+import { suggest, type DayProfile } from '@/planning/suggestions';
 import type { DayWeather } from '@/planning/weather';
 import { computeStats, costPerWear, periodStart } from '@/stats/stats';
 
@@ -223,6 +223,65 @@ describe('trip outfits', () => {
       'jumper',
       'wool',
     ]);
+  });
+
+  it('dresses a cold day fully when nothing in the closet has a warmth', () => {
+    const cold: DayProfile = { ...mild, band: 5, needsOuter: true, season: 'winter' };
+    // Without a warmth, tops count as light; a light top alone must not be thrown out
+    // before the rest of the outfit is there.
+    const untagged = [
+      item('tee', 'tops', { warmth: null }),
+      item('jeans', 'bottoms', { warmth: null }),
+      item('trainers', 'shoes', { warmth: null }),
+      item('coat', 'outerwear', { warmth: null }),
+    ];
+    const [suggestion] = suggest({
+      day: '2026-12-01',
+      profile: cold,
+      outfits: [],
+      owned: untagged,
+    });
+    expect(suggestion.items.map((entry) => entry.id).sort()).toEqual([
+      'coat',
+      'jeans',
+      'tee',
+      'trainers',
+    ]);
+  });
+
+  it('never offers a bottom without a top', () => {
+    const cold: DayProfile = { ...mild, band: 5, needsOuter: true, season: 'winter' };
+    const noTops = [item('jeans', 'bottoms'), item('boots', 'shoes'), item('coat', 'outerwear')];
+    expect(suggest({ day: '2026-12-01', profile: cold, outfits: [], owned: noTops })).toEqual([]);
+  });
+
+  it('still suggests something on a wet summer day when the only coat is a winter one', () => {
+    const wet: DayProfile = { ...mild, band: 1, needsOuter: true, rain: true, season: 'summer' };
+    const summer = [
+      item('tee', 'tops', { warmth: 1 }),
+      item('shorts', 'bottoms', { warmth: 1 }),
+      item('sandals', 'shoes', { warmth: 1 }),
+      item('parka', 'outerwear', { warmth: 5 }),
+    ];
+    const [suggestion] = suggest({ day: '2026-07-01', profile: wet, outfits: [], owned: summer });
+    expect(suggestion.items.map((entry) => entry.id).sort()).toEqual(['sandals', 'shorts', 'tee']);
+  });
+
+  it('gives up the activity before the coat on a freezing day', () => {
+    const cold: DayProfile = { ...mild, band: 5, needsOuter: true, season: 'winter' };
+    const closetForSport = [
+      item('thermal', 'tops', { warmth: 4, occasions: ['sport'] }),
+      item('leggings', 'bottoms', { warmth: 4, occasions: ['sport'] }),
+      item('work-coat', 'outerwear', { warmth: 5, occasions: ['work'] }),
+    ];
+    const pieces = pickDayOutfit({
+      tripSeed: 'trip',
+      day: { day: '2026-12-01', profile: cold, activity: 'sport' },
+      owned: closetForSport,
+      others: [],
+      shoeLimit: 2,
+    });
+    expect(pieces.map((piece) => piece.itemId)).toContain('work-coat');
   });
 
   it('falls back to other pieces when nothing is tagged for the activity', () => {

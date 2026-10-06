@@ -148,7 +148,8 @@ export function createTripRepository(db: () => Db = getDb, now: () => number = D
       const { pieces, ...rest } = patch;
       const where = and(eq(tripDays.tripId, tripId), eq(tripDays.day, day));
       const linked = db().select({ outfitId: tripDays.outfitId }).from(tripDays).where(where).get();
-      if (pieces && pieces.length > 0 && linked?.outfitId) {
+      // A past day stays as it was worn; only days still ahead follow the trip.
+      if (pieces && pieces.length > 0 && linked?.outfitId && day >= todayOf(new Date(now()))) {
         // The day is already in the calendar: its saved outfit follows the change, so the
         // calendar never shows an outfit the trip no longer has, and none is created twice.
         const outfitId = linked.outfitId;

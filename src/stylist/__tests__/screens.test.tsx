@@ -446,6 +446,8 @@ describe('stylist', () => {
       outfitId: 'saved-outfit',
       planned: true,
     });
+    // The saved outfit is in the closet's outfits now.
+    mockOutfits = [outfit('saved-outfit', null, ['tee'])];
     fireEvent.press(screen.getByTestId('stylist-new'));
     fireEvent.press(await screen.findByTestId('stylist-session-s1'));
     expect(screen.getByTestId('proposal-save-0-0')).toBeDisabled();
@@ -477,7 +479,9 @@ describe('stylist', () => {
     mockDeletedOutfits = ['old-outfit'];
     mockParams = { sessionId: 's1' };
     renderWithQuery(<StylistScreen />);
-    fireEvent.press(await screen.findByTestId('proposal-plan-0-0'));
+    // The outfit it was saved as is gone, so it is offered for saving again.
+    expect(await screen.findByTestId('proposal-save-0-0')).not.toBeDisabled();
+    fireEvent.press(screen.getByTestId('proposal-plan-0-0'));
     await waitFor(() => expect(mockCalendar.plan).toHaveBeenCalledWith(today(), 'saved-outfit'));
     expect(mockOutfitRepo.create).toHaveBeenCalledTimes(1);
   });

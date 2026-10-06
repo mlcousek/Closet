@@ -31,8 +31,13 @@ export function useDisplayAutoStart() {
     const subscription = Battery.addBatteryStateListener(({ batteryState }) => react(batteryState));
     // Battery changes are not delivered while the app is in the background, so coming back to
     // the app counts as a new chance: opened on the charger means the display starts.
+    // Control Centre, a permission alert or Face ID also make the app inactive and active
+    // again; those are not a return to the app and must not bring the display back.
+    let wasInBackground = false;
     const appState = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') return;
+      if (state === 'background') wasInBackground = true;
+      if (state !== 'active' || !wasInBackground) return;
+      wasInBackground = false;
       opened = false;
       check();
     });

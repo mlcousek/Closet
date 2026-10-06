@@ -5,10 +5,11 @@ import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { renderQueue } from '@/outfits/renderActions';
+import { avatarBasePath, currentFingerprint, renderQueue } from '@/outfits/renderActions';
 import { renderRepository } from '@/outfits/renders';
 import { outfitRepository } from '@/outfits/repository';
 import { installReminderHandling, restoreReminder } from '@/planning/reminder';
+import { profileRepository } from '@/profile/repository';
 import { useAddActions } from '@/shell/addActions';
 import { useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
@@ -138,7 +139,13 @@ export function useClosetSetup(): void {
     // any more; those are the largest files the app stores.
     void outfitRepository
       .purgeDeleted(Date.now() - PURGE_AFTER_MS)
-      .then((gone) => renderRepository.purge(gone))
+      .then(async (gone) => {
+        const base = avatarBasePath(await profileRepository.get());
+        const current = (await outfitRepository.list())
+          .map((outfit) => currentFingerprint(outfit, base))
+          .filter((print): print is string => print !== null);
+        return renderRepository.purge(gone, 2, new Set(current));
+      })
       .then(async (paths) => {
         for (const path of paths) await imageStore.remove(path).catch(() => {});
       })

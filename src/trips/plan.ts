@@ -105,17 +105,18 @@ export function pickDayOutfit(input: {
   // tagged for other occasions are allowed, then wearing a piece more often than planned,
   // and last going without a coat the closet does not have.
   let options: Suggestion[] = [];
-  for (const rules of [
-    { activity: true, limits: true },
-    { activity: false, limits: true },
-    { activity: false, limits: false },
-  ]) {
-    const items = available(rules);
-    options = candidates(items, day.profile);
-    if (options.length === 0 && day.profile.needsOuter) {
-      options = candidates(items, { ...day.profile, needsOuter: false });
+  const profiles = day.profile.needsOuter
+    ? [day.profile, { ...day.profile, needsOuter: false }]
+    : [day.profile];
+  attempts: for (const profile of profiles) {
+    for (const rules of [
+      { activity: true, limits: true },
+      { activity: false, limits: true },
+      { activity: false, limits: false },
+    ]) {
+      options = candidates(available(rules), profile);
+      if (options.length > 0) break attempts;
     }
-    if (options.length > 0) break;
   }
   const value = (candidate: Suggestion) =>
     candidate.score +
