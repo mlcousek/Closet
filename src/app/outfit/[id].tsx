@@ -342,7 +342,7 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
       ) : null}
       {manual ? (
         <ManualTryOn
-          outfit={outfit}
+          outfits={[outfit]}
           onClose={() => {
             setManual(false);
             setShowPrevious(false);

@@ -506,7 +506,13 @@
     "add": "Přidat hotový obrázek z Fotek",
     "copied": "Zadání je zkopírované. V druhé aplikaci ho vložte k obrázku.",
     "added": "Obrázek se teď zobrazuje u tohoto outfitu.",
-    "noPhoto": "V profilu nemáte svou fotku, proto jsou na obrázku jen kousky. V druhé aplikaci přiložte i fotku celé své postavy."
+    "noPhoto": "V profilu nemáte svou fotku, proto jsou na obrázku jen kousky. V druhé aplikaci přiložte i fotku celé své postavy.",
+    "openSeveral": "Vyzkoušet outfity bez obrázku zdarma ({{count}})",
+    "progress": "Outfit {{current}} z {{total}}",
+    "next": "Další outfit",
+    "addAll": "Přidat obrázky pro všechny najednou ({{count}})",
+    "addedSeveral": "Přidané obrázky: {{count}}",
+    "severalHint": "Rychlejší postup pro víc outfitů: každý outfit sdílejte a klepněte na Další, v druhé aplikaci vytvořte všechny obrázky a pak je přidejte najednou. Ve Fotkách je označte ve stejném pořadí, v jakém jsou outfity tady."
   },
   "studio": {
     "title": "Studiová fotka",

@@ -9,6 +9,7 @@ import { OCCASIONS, SEASONS, type Occasion, type Season } from '@/closet/taxonom
 import { AppText, Button, EmptyState, Screen } from '@/components/ui';
 import { LookbookPicker } from '@/lookbooks/LookbookPicker';
 import { useLookbooks } from '@/lookbooks/useLookbooks';
+import { ManualTryOn } from '@/outfits/ManualTryOn';
 import { OutfitImage } from '@/outfits/OutfitImage';
 import { hasWishlistItem, type Outfit, type OutfitFilter } from '@/outfits/repository';
 import { useOutfits, useRenderSummary } from '@/outfits/useOutfits';
@@ -40,6 +41,12 @@ export default function OutfitsScreen() {
   const { data: lookbooks = [] } = useLookbooks();
   const summarise = useRenderSummary();
   const selecting = selected.length > 0;
+  /** The outfits a free try-on run goes through, fixed when it starts so adding pictures cannot shift it. */
+  const [manualRun, setManualRun] = useState<Outfit[] | null>(null);
+  const withoutPicture = allOutfits.filter((outfit) => {
+    const summary = summarise(outfit);
+    return !summary.pending && (summary.current === null || summary.outdated);
+  });
 
   const toggle = (chip: FilterChip) => {
     if (chip === 'favourite') setFavourite(!favourite);
@@ -127,6 +134,16 @@ export default function OutfitsScreen() {
           );
         })}
       </ScrollView>
+
+      {withoutPicture.length > 0 ? (
+        <Button
+          testID="outfits-manual-run"
+          kind="secondary"
+          icon="swap-horizontal-outline"
+          label={t('manualTryOn.openSeveral', { count: withoutPicture.length })}
+          onPress={() => setManualRun(withoutPicture)}
+        />
+      ) : null}
 
       <Chips<FilterChip>
         scroll
@@ -238,6 +255,7 @@ export default function OutfitsScreen() {
         </View>
       ) : null}
 
+      {manualRun ? <ManualTryOn outfits={manualRun} onClose={() => setManualRun(null)} /> : null}
       {picking ? (
         <LookbookPicker
           outfitIds={picking === 'selection' ? selected : []}

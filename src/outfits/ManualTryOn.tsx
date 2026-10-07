@@ -8,7 +8,7 @@ import { captureRef } from 'react-native-view-shot';
 
 import { displayPath } from '@/closet/types';
 import { AppText, Button } from '@/components/ui';
-import { pickPhoto } from '@/profile/photo';
+import { pickPhoto, pickPhotos } from '@/profile/photo';
 import { useProfile } from '@/profile/useProfile';
 import { shareImage } from '@/sharing/share';
 import { useToast } from '@/shell/toast';
@@ -27,17 +27,23 @@ const SHEET = { background: '#FFFFFF', badge: '#1B1622', badgeText: '#FFFFFF' };
  * Try-on without a provider key: the user's photo and the outfit's pieces go,
  * as one picture and through the system share sheet, to an assistant app the
  * user already has; the picture made there is then added back from Photos.
+ * With several outfits it walks through them one after another, and the
+ * finished pictures can be added for all of them in one go.
  */
-export function ManualTryOn({ outfit, onClose }: { outfit: Outfit; onClose: () => void }) {
+export function ManualTryOn({ outfits, onClose }: { outfits: Outfit[]; onClose: () => void }) {
   const { t } = useTranslation();
   const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const showToast = useToast((state) => state.show);
   const { data: profile } = useProfile();
   const sheet = useRef<View>(null);
-  const [busy, setBusy] = useState<'share' | 'add' | null>(null);
+  const [index, setIndex] = useState(0);
+  const [busy, setBusy] = useState<'share' | 'add' | 'addAll' | null>(null);
   const [notice, setNotice] = useState<'copied' | 'failed' | null>(null);
 
+  const outfit = outfits[index];
+  const several = outfits.length > 1;
+  const last = index === outfits.length - 1;
   const photoPath = avatarBasePath(profile ?? null);
   const columns = pieceColumns(outfit.entries.length);
   const rows = Math.ceil(outfit.entries.length / columns);
@@ -70,7 +76,30 @@ export function ManualTryOn({ outfit, onClose }: { outfit: Outfit; onClose: () =
       const picked = await pickPhoto('library');
       if (picked.status !== 'picked') return;
       await saveManualRender(outfit, picked.photo);
-      showToast({ message: t('manualTryOn.added') });
+      if (last) {
+        showToast({ message: t('manualTryOn.added') });
+        onClose();
+      } else setIndex(index + 1);
+    } catch {
+      setNotice('failed');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /** The pictures are taken in the order they were picked, one for each outfit from the first on. */
+  const addAll = async () => {
+    setBusy('addAll');
+    setNotice(null);
+    let added = 0;
+    try {
+      const photos = await pickPhotos(outfits.length);
+      if (photos.length === 0) return;
+      for (const [position, photo] of photos.slice(0, outfits.length).entries()) {
+        await saveManualRender(outfits[position], photo);
+        added++;
+      }
+      showToast({ message: t('manualTryOn.addedSeveral', { count: added }) });
       onClose();
     } catch {
       setNotice('failed');
@@ -93,6 +122,12 @@ export function ManualTryOn({ outfit, onClose }: { outfit: Outfit; onClose: () =
       >
         <AppText variant="heading">{t('manualTryOn.title')}</AppText>
         <AppText muted>{t('manualTryOn.explain')}</AppText>
+        {several ? (
+          <AppText testID="manual-progress" variant="label">
+            {t('manualTryOn.progress', { current: index + 1, total: outfits.length })}
+            {outfit.name ? ` · ${outfit.name}` : ''}
+          </AppText>
+        ) : null}
 
         <View
           ref={sheet}
@@ -160,6 +195,7 @@ export function ManualTryOn({ outfit, onClose }: { outfit: Outfit; onClose: () =
           <AppText>{t('manualTryOn.step1')}</AppText>
           <AppText>{t('manualTryOn.step2')}</AppText>
           <AppText>{t('manualTryOn.step3')}</AppText>
+          {several ? <AppText muted>{t('manualTryOn.severalHint')}</AppText> : null}
         </View>
 
         {notice === 'copied' ? (
@@ -188,6 +224,32 @@ export function ManualTryOn({ outfit, onClose }: { outfit: Outfit; onClose: () =
           disabled={busy !== null}
           onPress={() => void add()}
         />
+        {several ? (
+          <>
+            {last ? null : (
+              <Button
+                testID="manual-next"
+                kind="secondary"
+                icon="arrow-forward-outline"
+                label={t('manualTryOn.next')}
+                disabled={busy !== null}
+                onPress={() => {
+                  setNotice(null);
+                  setIndex(index + 1);
+                }}
+              />
+            )}
+            <Button
+              testID="manual-add-all"
+              kind="secondary"
+              icon="images-outline"
+              label={t('manualTryOn.addAll', { count: outfits.length })}
+              loading={busy === 'addAll'}
+              disabled={busy !== null}
+              onPress={() => void addAll()}
+            />
+          </>
+        ) : null}
         <Button
           testID="manual-close"
           kind="secondary"

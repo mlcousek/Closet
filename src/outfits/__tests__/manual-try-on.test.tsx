@@ -27,7 +27,11 @@ const mockShare = jest.fn(async (..._args: unknown[]) => {});
 jest.mock('@/sharing/share', () => ({ shareImage: (...args: unknown[]) => mockShare(...args) }));
 
 const mockPick = jest.fn();
-jest.mock('@/profile/photo', () => ({ pickPhoto: (...args: unknown[]) => mockPick(...args) }));
+const mockPickSeveral = jest.fn();
+jest.mock('@/profile/photo', () => ({
+  pickPhoto: (...args: unknown[]) => mockPick(...args),
+  pickPhotos: (...args: unknown[]) => mockPickSeveral(...args),
+}));
 
 let mockProfile: Partial<Profile> | null = null;
 jest.mock('@/profile/useProfile', () => ({ useProfile: () => ({ data: mockProfile }) }));
@@ -57,7 +61,7 @@ const outfit = {
 } as Outfit;
 
 const onClose = jest.fn();
-const open = () => render(<ManualTryOn outfit={outfit} onClose={onClose} />);
+const open = () => render(<ManualTryOn outfits={[outfit]} onClose={onClose} />);
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -148,5 +152,104 @@ describe('try-on in another app', () => {
     open();
     fireEvent.press(screen.getByTestId('manual-close'));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('a run through several outfits', () => {
+  const second = {
+    ...outfit,
+    id: 'o2',
+    name: 'Friday',
+    entries: outfit.entries.slice(1),
+  } as Outfit;
+  const third = { ...outfit, id: 'o3', entries: outfit.entries.slice(0, 1) } as Outfit;
+  const photo = (name: string) => ({ uri: `file:///picked/${name}.png`, width: 900, height: 1200 });
+  const openRun = () => render(<ManualTryOn outfits={[outfit, second, third]} onClose={onClose} />);
+
+  it('shows where it is and offers no run controls for a single outfit', () => {
+    open();
+    expect(screen.queryByTestId('manual-progress')).toBeNull();
+    expect(screen.queryByTestId('manual-next')).toBeNull();
+    expect(screen.queryByTestId('manual-add-all')).toBeNull();
+  });
+
+  it('steps through the outfits, sharing the sheet and request of the one shown', async () => {
+    openRun();
+    expect(screen.getByTestId('manual-progress')).toHaveTextContent('Outfit 1 of 3');
+    fireEvent.press(screen.getByTestId('manual-next'));
+    expect(screen.getByTestId('manual-progress')).toHaveTextContent('Outfit 2 of 3 · Friday');
+    expect(screen.queryByTestId('manual-sheet-piece-shirt')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('manual-share'));
+    await waitFor(() => expect(mockShare).toHaveBeenCalled());
+    expect(mockClipboard.mock.calls[0][0]).toContain('1. bottom: skirt');
+    expect(mockClipboard.mock.calls[0][0]).not.toContain('shirt');
+
+    fireEvent.press(screen.getByTestId('manual-next'));
+    expect(screen.getByTestId('manual-progress')).toHaveTextContent('Outfit 3 of 3');
+    expect(screen.queryByTestId('manual-next')).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('moves on after a picture is added, and closes after the last one', async () => {
+    mockPick.mockResolvedValue({ status: 'picked', photo: photo('a') });
+    openRun();
+    fireEvent.press(screen.getByTestId('manual-add'));
+    await waitFor(() =>
+      expect(screen.getByTestId('manual-progress')).toHaveTextContent(/Outfit 2 of 3/),
+    );
+    expect(mockSave).toHaveBeenLastCalledWith(outfit, photo('a'));
+    expect(onClose).not.toHaveBeenCalled();
+
+    await waitFor(() => expect(screen.getByTestId('manual-next')).toBeEnabled());
+    fireEvent.press(screen.getByTestId('manual-next'));
+    fireEvent.press(screen.getByTestId('manual-add'));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(mockSave).toHaveBeenLastCalledWith(third, photo('a'));
+  });
+
+  it('adds pictures for all outfits at once, in the order they were picked', async () => {
+    mockPickSeveral.mockResolvedValue([photo('a'), photo('b'), photo('c')]);
+    openRun();
+    fireEvent.press(screen.getByTestId('manual-next'));
+    fireEvent.press(screen.getByTestId('manual-add-all'));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(mockPickSeveral).toHaveBeenCalledWith(3);
+    expect(mockSave.mock.calls).toEqual([
+      [outfit, photo('a')],
+      [second, photo('b')],
+      [third, photo('c')],
+    ]);
+    expect(useToast.getState().toast?.message).toBe('Pictures added: 3');
+  });
+
+  it('gives fewer pictures to the first outfits and ignores extra ones', async () => {
+    mockPickSeveral.mockResolvedValue([photo('a'), photo('b')]);
+    openRun();
+    fireEvent.press(screen.getByTestId('manual-add-all'));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(mockSave.mock.calls.map(([target]) => (target as Outfit).id)).toEqual(['o1', 'o2']);
+
+    jest.clearAllMocks();
+    mockPickSeveral.mockResolvedValue([photo('a'), photo('b'), photo('c'), photo('d')]);
+    openRun();
+    fireEvent.press(screen.getAllByTestId('manual-add-all').at(-1)!);
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(mockSave).toHaveBeenCalledTimes(3);
+  });
+
+  it('stays open when nothing is picked or a picture cannot be stored', async () => {
+    mockPickSeveral.mockResolvedValue([]);
+    openRun();
+    fireEvent.press(screen.getByTestId('manual-add-all'));
+    await waitFor(() => expect(screen.getByTestId('manual-add-all')).toBeEnabled());
+    expect(mockSave).not.toHaveBeenCalled();
+
+    mockPickSeveral.mockResolvedValue([photo('a'), photo('b')]);
+    mockSave.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('disk full'));
+    fireEvent.press(screen.getByTestId('manual-add-all'));
+    expect(await screen.findByTestId('manual-notice')).toHaveTextContent(/went wrong/i);
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

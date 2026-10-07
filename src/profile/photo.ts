@@ -32,6 +32,23 @@ export async function pickPhoto(source: 'camera' | 'library'): Promise<PickResul
   return { status: 'picked', photo: { uri: asset.uri, width: asset.width, height: asset.height } };
 }
 
+/** Lets the user choose several photos from the library, in the order they tap them. */
+export async function pickPhotos(limit: number): Promise<PickedPhoto[]> {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    quality: 1,
+    allowsMultipleSelection: true,
+    orderedSelection: true,
+    selectionLimit: limit,
+  });
+  if (result.canceled) return [];
+  return result.assets.map((asset) => ({
+    uri: asset.uri,
+    width: asset.width,
+    height: asset.height,
+  }));
+}
+
 /**
  * Checks a photo on the device. Returns null when it looks suitable, and also
  * when the check cannot run, because the check only ever warns.

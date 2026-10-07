@@ -506,7 +506,13 @@
     "add": "Add finished picture from Photos",
     "copied": "The request is copied. Paste it next to the picture in the other app.",
     "added": "The picture is now shown for this outfit.",
-    "noPhoto": "You have no photo of yourself in your profile, so only the pieces are on the picture. Attach a full-body photo of you in the other app as well."
+    "noPhoto": "You have no photo of yourself in your profile, so only the pieces are on the picture. Attach a full-body photo of you in the other app as well.",
+    "openSeveral": "Try on {{count}} outfits without a picture, free",
+    "progress": "Outfit {{current}} of {{total}}",
+    "next": "Next outfit",
+    "addAll": "Add pictures for all {{count}} at once",
+    "addedSeveral": "Pictures added: {{count}}",
+    "severalHint": "Faster for many: share each outfit and tap Next, make all the pictures in the other app, then add them all at once. Tap them in Photos in the same order as the outfits here."
   },
   "studio": {
     "title": "Studio photo",
