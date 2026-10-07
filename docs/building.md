@@ -19,9 +19,9 @@ This runs lint, type-check, the translation check and the unit tests, the same a
 
 ## Getting a build
 
-Builds run on macOS runners, which use GitHub Actions minutes ten times faster than Linux runners, so they only run on demand and for version tags.
+The repository is public, so builds on macOS runners are free. Every push that changes code builds `Closet.ipa`; changes to documentation alone do not. The file is under **Artifacts** on the run's page on GitHub and is kept for 14 days. A version tag or a manual run can also build the development client.
 
-Start a build for the current branch:
+Start a build by hand for the current branch:
 
 ```bash
 gh workflow run build-ios.yml -f variant=both
@@ -37,7 +37,7 @@ gh run watch
 gh run download --dir build
 ```
 
-You get two files:
+With `variant=both` you get two files:
 
 | File             | App name on the phone | Use                                                                       |
 | ---------------- | --------------------- | ------------------------------------------------------------------------- |

@@ -1,8 +1,9 @@
 name: Build iOS
 
 # Produces unsigned .ipa files for sideloading with AltStore, which signs them
-# on install. macOS runners are expensive, so this only runs on demand and on
-# version tags.
+# on install. The repository is public, so macOS runner minutes are free: every
+# push builds the release app, and a version tag or a manual run can build the
+# development client as well.
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +13,17 @@ on:
         default: both
         options: [both, release, development]
   push:
+    branches: ['**']
     tags: ['v*']
+    paths-ignore:
+      - 'docs/**'
+      - 'openspec/**'
+      - '**.md'
+
+# A newer push to the same branch replaces the build still running for it.
+concurrency:
+  group: build-ios-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -28,7 +39,8 @@ jobs:
       - name: Decide whether this variant is wanted
         id: gate
         run: |
-          wanted="${{ github.event.inputs.variant || 'both' }}"
+          # A manual run says what it wants; a tag builds both; a plain push only the app.
+          wanted="${{ github.event.inputs.variant || (startsWith(github.ref, 'refs/tags/v') && 'both' || 'release') }}"
           if [ "$wanted" = "both" ] || [ "$wanted" = "${{ matrix.variant }}" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
