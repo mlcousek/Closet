@@ -408,6 +408,64 @@ describe('stylist', () => {
     expect(mockSessions[0].day).toBe(today());
   });
 
+  describe('left open past midnight', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date(2026, 9, 6, 23, 59, 30));
+    });
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+    const passMidnight = () =>
+      act(() => {
+        jest.advanceTimersByTime(60_000);
+      });
+
+    it('moves the day chips on and calls the new day today', () => {
+      renderWithQuery(<StylistScreen />);
+      expect(screen.getByTestId('stylist-day-2026-10-06')).toHaveTextContent('Today');
+      expect(screen.getByTestId('stylist-day-2026-10-12')).toBeTruthy();
+      expect(screen.queryByTestId('stylist-day-2026-10-13')).toBeNull();
+
+      passMidnight();
+
+      expect(screen.queryByTestId('stylist-day-2026-10-06')).toBeNull();
+      expect(screen.getByTestId('stylist-day-2026-10-07')).toHaveTextContent('Today');
+      expect(screen.getByTestId('stylist-day-2026-10-13')).toBeTruthy();
+    });
+
+    it('keeps a picked day that is still ahead', () => {
+      renderWithQuery(<StylistScreen />);
+      fireEvent.press(screen.getByTestId('stylist-day-2026-10-07'));
+      expect(screen.getByTestId('stylist-day-2026-10-07')).toBeChecked();
+
+      passMidnight();
+
+      expect(screen.getByTestId('stylist-day-2026-10-07')).toBeChecked();
+      expect(screen.getByTestId('stylist-day-2026-10-07')).toHaveTextContent('Today');
+      expect(screen.getByTestId('stylist-day-')).not.toBeChecked();
+    });
+
+    it('goes back to any day when the picked day has passed, and asks for no day', async () => {
+      renderWithQuery(<StylistScreen />);
+      fireEvent.press(screen.getByTestId('stylist-day-2026-10-06'));
+      expect(screen.getByTestId('stylist-day-2026-10-06')).toBeChecked();
+      expect(screen.getByTestId('stylist-day-')).not.toBeChecked();
+
+      passMidnight();
+
+      expect(screen.getByTestId('stylist-day-')).toBeChecked();
+      expect(screen.getByTestId('stylist-day-2026-10-07')).not.toBeChecked();
+
+      fireEvent.changeText(screen.getByTestId('stylist-request'), 'Work');
+      fireEvent.press(screen.getByTestId('stylist-ask'));
+      await waitFor(() => expect(mockSessions).toHaveLength(1));
+      // Yesterday is neither dressed for nor stored with the request.
+      expect(mockPropose.mock.calls[0][0].profile).toBeNull();
+      expect(mockSessions[0].day).toBeNull();
+    });
+  });
+
   it('refines within the session with the earlier proposals as context', async () => {
     renderWithQuery(<StylistScreen />);
     fireEvent.changeText(screen.getByTestId('stylist-request'), 'Work');

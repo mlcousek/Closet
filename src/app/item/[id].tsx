@@ -58,9 +58,11 @@ function ItemView({ item }: { item: Item }) {
     if (result.status !== 'picked') return;
     setBusy(true);
     try {
-      const cutout = await itemImageDeps.cutout(result.photo.uri);
+      // As for a new item: the cutout and the stored original both come from the reduced photo.
+      const photo = await itemImageDeps.reduce(result.photo);
+      const cutout = await itemImageDeps.cutout(photo.uri);
       const images = await storeItemImages(
-        { originalUri: result.photo.uri, cutoutUri: cutout?.uri ?? null },
+        { originalUri: photo.uri, cutoutUri: cutout?.uri ?? null },
         itemImageDeps,
       );
       await itemRepository.update(item.id, images);

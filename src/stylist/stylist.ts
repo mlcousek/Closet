@@ -9,6 +9,7 @@ import {
   modelOptions,
   toUnavailable,
 } from '@/ai/client';
+import { promptName } from '@/ai/promptText';
 import { CATEGORY_SLOT, DEFAULT_WARMTH, type Slot } from '@/closet/taxonomy';
 import type { Item } from '@/closet/types';
 import type { OutfitPiece } from '@/outfits/draft';
@@ -50,7 +51,8 @@ export function buildCatalogue(
       item.id,
       CATEGORY_SLOT[item.category],
       item.subcategory ?? item.category,
-      item.name ?? '',
+      // A name copied from a shop page must not break the line or pose as another field.
+      promptName(item.name),
       item.colours.join('/'),
       `warmth ${warmth(item)}`,
       item.occasions.join('/'),

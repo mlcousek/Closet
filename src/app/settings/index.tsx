@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { TaggingUsage } from '@/ai/TaggingUsage';
 import { AppText, Row, Screen } from '@/components/ui';
 import { getLanguageOverride, setLanguageOverride } from '@/i18n';
 import type { Language } from '@/i18n/language';
@@ -166,6 +167,7 @@ export default function SettingsScreen() {
           onPress={() => router.push('/settings/ai-keys')}
         />
         <StylistUsage />
+        <TaggingUsage />
       </View>
 
       <View style={{ marginTop: spacing.xl }}>

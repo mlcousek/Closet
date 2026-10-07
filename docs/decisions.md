@@ -78,16 +78,19 @@ These replace what the try-on spec in `openspec/changes/add-outfits-try-on` says
 
 Known limits of the free route, not yet seen on a device:
 
-- The shared picture is a snapshot of an on-screen view about 300 points wide, scaled up. The user's face in it is small, so likeness may be worse than with the paid route, which sends each image on its own.
+- The shared picture is laid out 800 points wide and shown scaled down, and it is taken by drawing the view's layer at that size (2400 pixels wide on a 3x screen). This has only been checked in tests with the capture mocked; if the picture comes out blank or cut off on a phone, the capture in `src/outfits/ManualTryOn.tsx` is the place to look.
 - Adding several pictures at once relies on the user picking them in the order of the outfits. A wrong picture can only be replaced by adding another one.
+
+## Photos of clothes are reduced when they enter the app
+
+A photo of a piece is reduced once to at most 2400 pixels on its longest side, as a JPEG, before the background is removed, before tagging and before it is stored; that copy is the item's original from then on. Nothing the app shows or sends needs more, and bulk import of full camera photos could run the app out of memory. HEIC photos become JPEG on the way. A reduction that fails leaves the photo as it came. Items added earlier keep the originals they have.
+
+Still true: the reduction itself decodes the full photo once, two at a time during bulk import. Doing it without a full decode needs a native downsampling function in `modules/closet-vision`.
 
 ## Limits from the review of 2026-10-07, left open
 
-- **Bulk import and memory.** Two photos are worked on at a time at full camera resolution. A photo that makes the app run out of memory is now tried twice and then marked as failed instead of at every start, but the memory use itself is unchanged.
 - **Restore while photos are being imported** is refused rather than made safe.
 - **Statistics in several currencies** are listed per currency; nothing is converted.
-- **Reason text of a suggestion** can still mention an outer layer when the closet has none that fits and the suggestion was made without one.
-- **Day chips in the stylist** are not refreshed when the screen stays open over midnight; planning from a reopened session never lands in the past.
-- **Usage counts** show paid renders only. Studio photos and tagging requests are not shown, and a request that timed out is not counted although it may have been charged; the message for a timeout now says so.
-- **Item names from a shop link go into prompts as they are.** The stylist's answers are checked against real item ids, so the worst case is an odd picture or explanation.
+- **A request that timed out is not counted as usage** although it may have been charged; the message for a timeout says so. Renders, studio photos, tagging and stylist requests that were answered are all counted and shown in Settings.
+- **Item names sent in prompts** are cleaned of line breaks, control characters and the catalogue's separator and cut to 80 characters. The words themselves are still sent, so a product title can still colour a picture or an explanation; the stylist's answers are checked against real item ids.
 - **Prepared SQL statements** may not be released until the database closes (not confirmed); only a very long session, such as display mode left on, could notice.

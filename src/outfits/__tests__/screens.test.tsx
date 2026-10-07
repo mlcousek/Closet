@@ -808,6 +808,21 @@ describe('render settings', () => {
     expect(mockSettings.auto).toBe(false);
   });
 
+  it('counts studio photos apart from renders', async () => {
+    mockUsage.counts.mockImplementation(async (kind: string) =>
+      kind === 'studio' ? { month: 1, total: 3 } : { month: 4, total: 19 },
+    );
+    renderWithQuery(<RenderSettings />);
+    await settle();
+    expect(screen.getByTestId('studio-usage')).toHaveTextContent(
+      '1 studio photos this month · 3 in total',
+    );
+    expect(screen.getByTestId('render-usage')).toHaveTextContent(
+      '4 renders this month · 19 in total',
+    );
+    mockUsage.counts.mockImplementation(async () => ({ month: 4, total: 19 }));
+  });
+
   it('stores another image model', () => {
     renderWithQuery(<RenderSettings />);
     expect(screen.getByTestId('image-model')).toHaveProp('value', '');
@@ -849,6 +864,38 @@ describe('studio avatar', () => {
     render(<StudioAvatar profile={profile} />);
     fireEvent.press(screen.getByTestId('studio-create'));
     expect(await screen.findByTestId('key-needed')).toBeTruthy();
+    expect(screen.queryByTestId('studio-failed')).toBeNull();
+  });
+
+  it.each([
+    ['connectionLost', /connection was lost.*may have been made and charged anyway/],
+    ['timeout', /took too long to answer.*may have been made and charged anyway/],
+    ['rejectedKey', /did not accept your key\. Check the key/],
+    ['offline', /nothing was sent and nothing was charged/],
+    ['rateLimited', /busy or your quota is used up/],
+    // The render wording speaks of an outfit, so these two have their own.
+    ['declined', /declined to make a studio photo.*original photo stays in use/],
+    ['error', /^The studio photo could not be created\.$/],
+  ])('explains a %s failure in its own words', async (reason, message) => {
+    const { TryOnError } = jest.requireMock('@/ai/tryOn');
+    mockCreateStudio.mockRejectedValueOnce(new TryOnError(reason));
+    render(<StudioAvatar profile={profile} />);
+    fireEvent.press(screen.getByTestId('studio-create'));
+    expect(await screen.findByTestId('studio-failed')).toHaveTextContent(message);
+    expect(screen.queryByTestId('key-needed')).toBeNull();
+    expect(screen.queryByTestId('studio-preview')).toBeNull();
+  });
+
+  it('treats a failure that is not from the provider as a plain one, and clears it on the next try', async () => {
+    mockCreateStudio.mockRejectedValueOnce(new Error('disk full'));
+    render(<StudioAvatar profile={profile} />);
+    fireEvent.press(screen.getByTestId('studio-create'));
+    expect(await screen.findByTestId('studio-failed')).toHaveTextContent(
+      'The studio photo could not be created.',
+    );
+    fireEvent.press(screen.getByTestId('studio-create'));
+    expect(await screen.findByTestId('studio-preview')).toBeTruthy();
+    expect(screen.queryByTestId('studio-failed')).toBeNull();
   });
 
   it('goes back to the original photo', async () => {

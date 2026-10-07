@@ -4,6 +4,7 @@ import { Image } from 'react-native';
 import { create } from 'zustand';
 
 import { keyManager } from '@/ai/keys';
+import { promptName } from '@/ai/promptText';
 import {
   TryOnError,
   encodeWithinBudget,
@@ -88,7 +89,9 @@ export const SLOT_LABEL: Record<Slot, string> = {
 /** A plain-English description of an item for the image model. */
 export function describeItem(item: Outfit['entries'][number]['item']): string {
   const words = [...item.colours, item.subcategory ?? item.category];
-  return item.name ? `${item.name}; ${words.join(' ')}` : words.join(' ');
+  // The name may come from a shop page: it is sent as one tidy line, never as it was pasted.
+  const name = promptName(item.name);
+  return name ? `${name}; ${words.join(' ')}` : words.join(' ');
 }
 
 async function encode(path: string, format: 'png' | 'jpeg', max: number): Promise<EncodedImage> {
@@ -256,5 +259,9 @@ export async function createStudioAvatar(
   const avatar = await encode(profile.avatarSmallPath, 'jpeg', INPUT_MAX);
   const image = await provider.studioAvatar(avatar, hintsOf(profile), key);
   await usageLog.record('studio');
-  return (await store(image, 'avatar')).imagePath;
+  // The usage shown in Settings reads its counts again.
+  useRenderVersion.setState((state) => ({ version: state.version + 1 }));
+  // The picture is paid for by now, so one failed write must not throw it away.
+  const stored = await store(image, 'avatar').catch(() => store(image, 'avatar'));
+  return stored.imagePath;
 }

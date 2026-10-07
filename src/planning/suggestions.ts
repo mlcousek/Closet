@@ -117,13 +117,21 @@ export const NO_HISTORY: History = {
   wearCounts: new Map(),
 };
 
-export type Reason = 'hot' | 'warm' | 'mild' | 'cool' | 'cold' | 'rain' | 'season';
+export type Reason = 'hot' | 'warm' | 'mild' | 'cool' | 'cold' | 'rain' | 'noOuter' | 'season';
 
-export function reasonFor(profile: DayProfile): Reason {
+/**
+ * Why an outfit is suggested for a day. The reason has to be true of the
+ * outfit as well as of the day: one without an outer piece, suggested because
+ * the closet has nothing better, is not described as having a coat or a layer.
+ */
+export function reasonFor(profile: DayProfile, hasOuter = true): Reason {
   if (profile.source === 'season') return 'season';
-  if (profile.rain) return 'rain';
+  if (!hasOuter && profile.band >= 4) return 'noOuter';
+  if (profile.rain && hasOuter) return 'rain';
   return (['hot', 'warm', 'mild', 'cool', 'cold'] as const)[profile.band - 1];
 }
+
+const hasOuterPiece = (items: Item[]) => items.some((item) => slotOf(item) === 'outer');
 
 /** The score of an outfit that breaks a hard rule for the day. */
 export const UNSUITABLE = -Infinity;
@@ -289,7 +297,7 @@ export function generateCombinations(
         return { itemId: item.id, slot, position };
       }),
       score,
-      reason: reasonFor(profile),
+      reason: reasonFor(profile, hasOuterPiece(chosen)),
     });
   }
   return results;
@@ -308,7 +316,6 @@ export function suggest(input: {
   limit?: number;
 }): Suggestion[] {
   const { day, profile, outfits, owned, history = NO_HISTORY, limit = 5 } = input;
-  const reason = reasonFor(profile);
   const saved: Suggestion[] = outfits
     .filter(isWearable)
     .map((outfit) => {
@@ -326,7 +333,7 @@ export function suggest(input: {
           favourite: outfit.favourite,
           seasons: outfit.seasons,
         }),
-        reason,
+        reason: reasonFor(profile, hasOuterPiece(items)),
       };
     })
     .filter((suggestion) => suggestion.score >= RULES.threshold)
@@ -358,7 +365,7 @@ export function suggest(input: {
   );
   const all = [...saved, ...generated.sort((a, b) => b.score - a.score)].slice(0, limit);
   // A closet without outerwear, or with only a winter coat on a wet summer day, still
-  // deserves a suggestion.
+  // deserves a suggestion. Its reason then says what it is: nothing in it is an outer layer.
   if (all.length === 0 && profile.needsOuter) {
     return suggest({ ...input, profile: { ...profile, needsOuter: false } });
   }

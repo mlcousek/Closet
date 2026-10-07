@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 import { AiUnavailableError, createAnthropic, modelOptions, toUnavailable } from '../client';
+import { PROMPT_NAME_MAX, promptName } from '../promptText';
 import { checkAnthropicKey, checkGeminiKey } from '../providers';
 import { normaliseTags, tagItem } from '../tagging';
 
@@ -46,7 +47,7 @@ describe('item tagging', () => {
       parsed_output: goodOutput,
     });
 
-    const tags = await tagItem(image, 'en', client);
+    const tags = await tagItem(image, 'en', { client });
 
     expect(tags).toEqual({
       name: 'Pink pleated skirt',
@@ -74,7 +75,7 @@ describe('item tagging', () => {
       stop_reason: 'end_turn',
       parsed_output: goodOutput,
     });
-    await tagItem(image, 'cs', client);
+    await tagItem(image, 'cs', { client });
     expect(((parse.mock.calls[0] as unknown[])[0] as { system: string }).system).toContain('Czech');
   });
 
@@ -84,7 +85,7 @@ describe('item tagging', () => {
       stop_reason: 'end_turn',
       parsed_output: goodOutput,
     });
-    await tagItem(image, 'en', client);
+    await tagItem(image, 'en', { client });
     const request = (parse.mock.calls[0] as unknown[])[0] as Record<string, any>;
     expect(request.model).toBe('claude-haiku-4-5');
     expect(request.fallbacks).toBeUndefined();
@@ -115,7 +116,7 @@ describe('item tagging', () => {
       stop_reason: 'end_turn',
       parsed_output: { ...goodOutput, category: 'swimwear' },
     });
-    await expect(tagItem(image, 'en', client)).rejects.toMatchObject({ reason: 'error' });
+    await expect(tagItem(image, 'en', { client })).rejects.toMatchObject({ reason: 'error' });
   });
 
   it('lists the allowed values in the instructions', async () => {
@@ -123,7 +124,7 @@ describe('item tagging', () => {
       stop_reason: 'end_turn',
       parsed_output: goodOutput,
     });
-    await tagItem(image, 'en', client);
+    await tagItem(image, 'en', { client });
     const system = ((parse.mock.calls[0] as unknown[])[0] as { system: string }).system;
     for (const value of ['multicolour', 'autumn', 'outdoor', 'jewellery', 'crossbody']) {
       expect(system).toContain(value);
@@ -162,14 +163,50 @@ describe('item tagging', () => {
     const client = {
       beta: { messages: { parse: jest.fn(async () => Promise.reject(apiError(type))) } },
     } as unknown as Anthropic;
-    expect(await reasonOf(tagItem(image, 'en', client))).toBe(reason);
+    expect(await reasonOf(tagItem(image, 'en', { client }))).toBe(reason);
   });
 
   it('treats a refusal or an unparseable answer as unavailable', async () => {
     const refused = clientReturning({ stop_reason: 'refusal', parsed_output: null });
-    expect(await reasonOf(tagItem(image, 'en', refused.client))).toBe('error');
+    expect(await reasonOf(tagItem(image, 'en', { client: refused.client }))).toBe('error');
     const empty = clientReturning({ stop_reason: 'end_turn', parsed_output: null });
-    expect(await reasonOf(tagItem(image, 'en', empty.client))).toBe('error');
+    expect(await reasonOf(tagItem(image, 'en', { client: empty.client }))).toBe('error');
+  });
+
+  it('reports an answered request once, so it can be counted as paid', async () => {
+    const onAnswered = jest.fn();
+    const { client } = clientReturning({ stop_reason: 'end_turn', parsed_output: goodOutput });
+    await tagItem(image, 'en', { client, onAnswered });
+    expect(onAnswered).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports an answer that turned out to be unusable too, because it was paid for', async () => {
+    const onAnswered = jest.fn();
+    const refused = clientReturning({ stop_reason: 'refusal', parsed_output: null });
+    expect(await reasonOf(tagItem(image, 'en', { client: refused.client, onAnswered }))).toBe(
+      'error',
+    );
+    const offVocabulary = clientReturning({
+      stop_reason: 'end_turn',
+      parsed_output: { ...goodOutput, category: 'swimwear' },
+    });
+    expect(await reasonOf(tagItem(image, 'en', { client: offVocabulary.client, onAnswered }))).toBe(
+      'error',
+    );
+    expect(onAnswered).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports nothing when the provider never answered', async () => {
+    const onAnswered = jest.fn();
+    mockGetKey.mockResolvedValue(null);
+    expect(await reasonOf(tagItem(image, 'en', { onAnswered }))).toBe('noKey');
+    for (const type of [Anthropic.APIConnectionError, Anthropic.RateLimitError] as const) {
+      const client = {
+        beta: { messages: { parse: jest.fn(async () => Promise.reject(apiError(type))) } },
+      } as unknown as Anthropic;
+      await reasonOf(tagItem(image, 'en', { client, onAnswered }));
+    }
+    expect(onAnswered).not.toHaveBeenCalled();
   });
 
   it('tells a request that ran out of time apart from having no connection', () => {
@@ -197,6 +234,38 @@ describe('item tagging', () => {
       fallbacks: 'default',
     });
     expect(modelOptions('claude-haiku-4-5', 'low')).toEqual({ betas: [] });
+  });
+});
+
+describe('names in prompts', () => {
+  it('leaves an ordinary name as it is', () => {
+    expect(promptName('Bílé lněné tričko')).toBe('Bílé lněné tričko');
+    expect(promptName("Levi's 501 – 3/4, size M (new)")).toBe("Levi's 501 – 3/4, size M (new)");
+  });
+
+  it('turns line breaks, tabs and runs of spaces into single spaces', () => {
+    expect(promptName('  Wool\tcoat\r\n\nnavy   blue long ')).toBe('Wool coat navy blue long');
+  });
+
+  it('removes the field separator of the catalogue and control characters', () => {
+    expect(promptName('Coat | outer | WISHLIST')).toBe('Coat outer WISHLIST');
+    expect(promptName('Co\u0000at\u0007 \u001b[31mred\u007f')).toBe('Coat [31mred');
+    expect(promptName('a|b')).toBe('a b');
+  });
+
+  it('caps the length without cutting a character in half', () => {
+    expect(promptName('a'.repeat(200))).toHaveLength(PROMPT_NAME_MAX);
+    const emoji = promptName('👗'.repeat(200));
+    expect([...emoji]).toHaveLength(PROMPT_NAME_MAX);
+    expect(emoji.endsWith('👗')).toBe(true);
+    // A cut that lands on a space leaves none at the end.
+    expect(promptName(`${'a'.repeat(79)} tail`)).toBe('a'.repeat(79));
+  });
+
+  it('gives an empty text for a missing or empty name', () => {
+    expect(promptName(null)).toBe('');
+    expect(promptName(undefined)).toBe('');
+    expect(promptName(' \n|\t')).toBe('');
   });
 });
 

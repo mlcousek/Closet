@@ -1,8 +1,14 @@
 import { SLOT_LABEL, describeItem } from './renderActions';
 import type { Outfit } from './repository';
 
-/** Pixel width of the picture handed to the other app. */
-export const SHEET_WIDTH = 1600;
+/**
+ * Width of the sheet in points. It is laid out this large, far wider than the
+ * screen, and shown scaled down: images are decoded for the size of the view
+ * they sit in, so a sheet the width of the preview would hand the other app a
+ * face a few dozen pixels across. At this width the picture is 1600 pixels
+ * wide on a 2x screen and 2400 on a 3x one.
+ */
+export const SHEET_POINTS = 800;
 /** Width divided by height of that picture. */
 export const SHEET_RATIO = 4 / 3;
 

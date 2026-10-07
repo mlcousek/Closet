@@ -127,7 +127,8 @@
     "removeConfirmMessage": "Features that use this provider will stop working until you add a key again.",
     "keyNeededTitle": "A provider key is needed",
     "keyNeededMessage": "This feature uses {{provider}}. Add your key in Settings to use it.",
-    "openKeySettings": "Open key settings"
+    "openKeySettings": "Open key settings",
+    "taggingUsage": "Tagging requests: {{month}} this month, {{total}} in total"
   },
   "greeting": {
     "morning": "Good morning, {{name}}",
@@ -495,6 +496,7 @@
     "settingsTitle": "Outfit renders",
     "autoRender": "Render when I save an outfit",
     "usage": "{{month}} renders this month · {{total}} in total",
+    "usageStudio": "{{month}} studio photos this month · {{total}} in total",
     "imageModel": "Image model",
     "textModel": "Text model",
     "modelHint": "Leave empty to use the default."
@@ -528,7 +530,8 @@
     "reject": "Keep my original photo",
     "inUse": "Renders use your studio photo.",
     "remove": "Go back to my original photo",
-    "failed": "The studio photo could not be created."
+    "failed": "The studio photo could not be created.",
+    "declined": "The provider declined to make a studio photo from your photo. Your original photo stays in use."
   },
   "lookbooks": {
     "title": "Lookbook",
@@ -614,6 +617,7 @@
       "cool": "Warmer pieces and a layer for a cool day ({{temperature}})",
       "cold": "Warm pieces and a coat for the cold ({{temperature}})",
       "rain": "With an outer layer for the rain ({{temperature}})",
+      "noOuter": "Warm pieces for a cold day, without an outer layer ({{temperature}})",
       "season": "Chosen for the season, because there is no forecast"
     },
     "deletedOutfit": "An outfit that has since been deleted."

@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { KeyNeededPrompt } from '@/ai/KeyNeededPrompt';
-import { TryOnError } from '@/ai/tryOn';
+import { TryOnError, type TryOnFailure } from '@/ai/tryOn';
 import { AppText, Button } from '@/components/ui';
 import type { Profile } from '@/profile/types';
 import { useSaveProfile } from '@/profile/useProfile';
@@ -14,6 +14,16 @@ import { useTheme } from '@/theme/useTheme';
 
 import { createStudioAvatar, getStudioCandidate, setStudioCandidate } from './renderActions';
 import { confirmDisclosure } from './useRenderRequest';
+
+/**
+ * Failures whose render message speaks of an outfit and so does not fit here.
+ * Every other one is explained in the words used for renders, among them the
+ * warnings that a request may have been charged.
+ */
+const STUDIO_MESSAGE: Partial<Record<TryOnFailure, string>> = {
+  declined: 'studio.declined',
+  error: 'studio.failed',
+};
 
 /**
  * Lets the user create a studio version of their photo, look at the result,
@@ -29,7 +39,7 @@ export function StudioAvatar({ profile }: { profile: Profile }) {
     setStudioCandidate(path);
     setCandidateState(path);
   };
-  const [problem, setProblem] = useState<'noKey' | 'failed' | null>(null);
+  const [problem, setProblem] = useState<TryOnFailure | null>(null);
 
   if (!profile.avatarSmallPath) return null;
 
@@ -40,7 +50,7 @@ export function StudioAvatar({ profile }: { profile: Profile }) {
     try {
       setCandidate(await createStudioAvatar());
     } catch (error) {
-      setProblem(error instanceof TryOnError && error.reason === 'noKey' ? 'noKey' : 'failed');
+      setProblem(error instanceof TryOnError ? error.reason : 'error');
     } finally {
       setBusy(false);
     }
@@ -133,9 +143,9 @@ export function StudioAvatar({ profile }: { profile: Profile }) {
       )}
 
       {problem === 'noKey' ? <KeyNeededPrompt provider="image" /> : null}
-      {problem === 'failed' ? (
+      {problem && problem !== 'noKey' ? (
         <AppText testID="studio-failed" style={{ color: colors.danger }}>
-          {t('studio.failed')}
+          {t(STUDIO_MESSAGE[problem] ?? `tryOn.failure.${problem}`)}
         </AppText>
       ) : null}
     </View>

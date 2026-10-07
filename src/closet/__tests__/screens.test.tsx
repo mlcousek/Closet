@@ -147,8 +147,12 @@ const mockStoreImages = jest.fn(async (..._args: unknown[]) => ({
   cutoutPath: 'images/items/n.png',
   thumbPath: 'images/items/n-t.png',
 }));
+const mockReduce = jest.fn();
 jest.mock('../deviceImages', () => ({
-  itemImageDeps: { cutout: (uri: string) => mockCutout(uri) },
+  itemImageDeps: {
+    cutout: (uri: string) => mockCutout(uri),
+    reduce: (photo: object) => mockReduce(photo),
+  },
   toTagImage: jest.fn(async () => ({ base64: 'x', mediaType: 'image/png' })),
 }));
 jest.mock('../itemImages', () => ({
@@ -214,6 +218,8 @@ beforeEach(() => {
   Object.assign(mockProgress, { queued: 0, processing: 0, done: 0, failed: 0, total: 0 });
   Object.assign(mockClipboard, { hasUrl: false, url: '' });
   mockCutout.mockResolvedValue({ uri: 'file:///tmp/cut.png', width: 10, height: 10 });
+  // Photos small enough to be left as they are, unless a test says otherwise.
+  mockReduce.mockImplementation(async (photo: object) => photo);
   useAddActions.setState({ actions: [], menuOpen: false });
   useClosetTab.setState({ tab: 'closet' });
 });
@@ -622,6 +628,63 @@ describe('adding an item from a photo', () => {
     // The handed-over data is used once.
     expect(usePendingLink.getState().pending).toBeNull();
   });
+
+  const reduced = { uri: 'file:///cache/ImageManipulator/reduced.jpg', width: 1800, height: 2400 };
+
+  it.each(['camera', 'library'] as const)(
+    'reduces a large photo from the %s once and works on the reduced copy from then on',
+    async (source) => {
+      const large = { uri: 'file:///picked/IMG_1.heic', width: 6048, height: 8064 };
+      mockParams = { source };
+      mockPickPhoto.mockResolvedValue({ status: 'picked', photo: large });
+      mockReduce.mockResolvedValue(reduced);
+      mockCutout.mockResolvedValue(null);
+      mockTagItem.mockResolvedValue(tags);
+      renderWithQuery(<NewItemScreen />);
+      if (source === 'camera') fireEvent.press(screen.getByTestId('add-item-camera'));
+
+      expect(await screen.findByTestId('item-preview')).toHaveProp('source', { uri: reduced.uri });
+      expect(mockReduce.mock.calls).toEqual([[large]]);
+      expect(mockCutout.mock.calls).toEqual([[reduced.uri]]);
+      // The copy for tagging is made from the reduced photo, with the size it has now.
+      const { toTagImage } = jest.requireMock('../deviceImages');
+      expect(toTagImage).toHaveBeenCalledWith(reduced.uri, false, { width: 1800, height: 2400 });
+
+      fireEvent.press(screen.getByTestId('item-save'));
+      await waitFor(() => expect(mockStoreImages).toHaveBeenCalled());
+      expect(mockStoreImages.mock.calls[0][0]).toEqual({
+        originalUri: reduced.uri,
+        cutoutUri: null,
+      });
+      expect(mockReduce).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('reduces a photo downloaded from a shop link, and cuts out the reduced copy', async () => {
+    mockParams = { source: 'link' };
+    usePendingLink.getState().set({
+      uri: 'file:///cache/link-import-1.webp',
+      name: null,
+      brand: null,
+      price: null,
+      currency: null,
+      sourceUrl: 'https://shop.example/p/1',
+      target: 'owned',
+    });
+    mockReduce.mockResolvedValue(reduced);
+    mockTagItem.mockResolvedValue(tags);
+    renderWithQuery(<NewItemScreen />);
+
+    fireEvent.press(await screen.findByTestId('item-save'));
+    await waitFor(() => expect(mockStoreImages).toHaveBeenCalled());
+    // The size of a downloaded photo is not known beforehand.
+    expect(mockReduce.mock.calls).toEqual([[{ uri: 'file:///cache/link-import-1.webp' }]]);
+    expect(mockCutout.mock.calls).toEqual([[reduced.uri]]);
+    expect(mockStoreImages.mock.calls[0][0]).toEqual({
+      originalUri: reduced.uri,
+      cutoutUri: 'file:///tmp/cut.png',
+    });
+  });
 });
 
 describe('importing from a shop link', () => {
@@ -891,6 +954,31 @@ describe('item detail', () => {
     expect(mockRouter.push).toHaveBeenCalledWith({
       pathname: '/outfit/edit',
       params: { itemId: 'coat' },
+    });
+  });
+
+  it('replaces the photo with a reduced copy of the chosen one, cut out from that copy', async () => {
+    const large = { uri: 'file:///picked/IMG_9.heic', width: 8064, height: 6048 };
+    const reduced = { uri: 'file:///cache/ImageManipulator/r.jpg', width: 2400, height: 1800 };
+    mockItems = [full];
+    mockParams = { id: 'coat' };
+    mockPickPhoto.mockResolvedValue({ status: 'picked', photo: large });
+    mockReduce.mockResolvedValue(reduced);
+    renderWithQuery(<ItemScreen />);
+
+    fireEvent.press(await screen.findByTestId('item-replace-image'));
+
+    await waitFor(() =>
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        'coat',
+        expect.objectContaining({ originalPath: 'images/items/n.jpg' }),
+      ),
+    );
+    expect(mockReduce.mock.calls).toEqual([[large]]);
+    expect(mockCutout.mock.calls).toEqual([[reduced.uri]]);
+    expect(mockStoreImages.mock.calls[0][0]).toEqual({
+      originalUri: reduced.uri,
+      cutoutUri: 'file:///tmp/cut.png',
     });
   });
 

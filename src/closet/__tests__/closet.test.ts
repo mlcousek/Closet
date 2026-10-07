@@ -10,7 +10,17 @@ import {
 } from '../importActions';
 import { createImportJobRepository, createImportProcessor } from '../importQueue';
 import { fromFormValues, parseDateInput, parsePriceInput, toFormValues } from '../itemFormLogic';
-import { THUMB_WIDTH, removeItemImages, storeItemImages, type ItemImageDeps } from '../itemImages';
+import {
+  PHOTO_MAX,
+  THUMB_WIDTH,
+  photoSize,
+  reducePhoto,
+  removeItemImages,
+  storeItemImages,
+  type ItemImageDeps,
+  type OpenImage,
+  type Photo,
+} from '../itemImages';
 import { createItemRepository } from '../repository';
 import { matchesSearch, normalise } from '../search';
 import {
@@ -461,6 +471,8 @@ describe('item images', () => {
     const saved: { uri: string; extension: string }[] = [];
     const removed: string[] = [];
     const deps: ItemImageDeps = {
+      reduce: async (photo) => photo,
+      discard: async () => {},
       save: async (uri, _folder, extension) => {
         if (uri === failOn) throw new Error('disk full');
         saved.push({ uri, extension });
@@ -512,6 +524,169 @@ describe('item images', () => {
     await removeItemImages(images('x'), deps);
     await removeItemImages({ ...images('y'), cutoutPath: null }, deps);
     expect(removed).toHaveLength(5);
+  });
+});
+
+describe('reducing a photo as it enters the app', () => {
+  /** An image of the given size, recording what was asked of it. */
+  const opener = (width: number, height: number) => {
+    const saveJpeg = jest.fn<Promise<Required<Photo>>, Parameters<OpenImage['saveJpeg']>>(
+      async (resize) => {
+        const scale = !resize
+          ? 1
+          : 'width' in resize
+            ? resize.width / width
+            : resize.height / height;
+        return {
+          uri: 'file:///cache/ImageManipulator/reduced.jpg',
+          width: Math.round(width * scale),
+          height: Math.round(height * scale),
+        };
+      },
+    );
+    const close = jest.fn();
+    const open = jest.fn(async (_uri: string): Promise<OpenImage> => {
+      return { width, height, saveJpeg, close };
+    });
+    return { open, saveJpeg, close };
+  };
+
+  it('keeps 2400 px as the limit', () => {
+    expect(PHOTO_MAX).toBe(2400);
+  });
+
+  it.each([
+    ['landscape', 8064, 6048, { width: 2400 }, { width: 2400, height: 1800 }],
+    ['portrait', 3024, 4032, { height: 2400 }, { width: 1800, height: 2400 }],
+    ['square', 3000, 3000, { width: 2400 }, { width: 2400, height: 2400 }],
+  ])('caps the longest side of a %s photo and saves it as a JPEG', async (...row) => {
+    const [, width, height, resize, size] = row;
+    const { open, saveJpeg, close } = opener(width, height);
+
+    const reduced = await reducePhoto({ uri: 'file:///picked/IMG_1.jpg', width, height }, open);
+
+    expect(saveJpeg.mock.calls).toEqual([[resize]]);
+    expect(reduced).toEqual({ uri: 'file:///cache/ImageManipulator/reduced.jpg', ...size });
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['jpg', 'JPEG', 'png'])(
+    'returns a small .%s photo untouched, without even opening it',
+    async (extension) => {
+      const { open } = opener(1200, 1600);
+      const photo = { uri: `file:///picked/small.${extension}`, width: 1200, height: 1600 };
+
+      expect(await reducePhoto(photo, open)).toBe(photo);
+      expect(open).not.toHaveBeenCalled();
+    },
+  );
+
+  it('leaves a photo of exactly the limit alone', async () => {
+    const { open } = opener(2400, 1800);
+    const photo = { uri: 'file:///picked/edge.jpg', width: 2400, height: 1800 };
+    expect(await reducePhoto(photo, open)).toBe(photo);
+  });
+
+  it('measures a photo of unknown size and leaves it alone when it is small', async () => {
+    const { open, saveJpeg, close } = opener(800, 600);
+
+    const reduced = await reducePhoto({ uri: 'file:///documents/images/import/a.png' }, open);
+
+    expect(open).toHaveBeenCalledWith('file:///documents/images/import/a.png');
+    expect(saveJpeg).not.toHaveBeenCalled();
+    expect(reduced).toEqual({
+      uri: 'file:///documents/images/import/a.png',
+      width: 800,
+      height: 600,
+    });
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it('measures a photo of unknown size and reduces it when it is large', async () => {
+    const { open, saveJpeg } = opener(3024, 4032);
+
+    const reduced = await reducePhoto({ uri: 'file:///cache/link-import-1.jpg?v=2' }, open);
+
+    expect(saveJpeg).toHaveBeenCalledWith({ height: 2400 });
+    expect(reduced.uri).toBe('file:///cache/ImageManipulator/reduced.jpg');
+  });
+
+  it('goes by the size the image really has when that differs from what was reported', async () => {
+    const { open, saveJpeg } = opener(1000, 800);
+    const uri = 'file:///picked/odd.jpg';
+
+    // Reported as too large, found to be small: nothing is written.
+    expect(await reducePhoto({ uri, width: 5000, height: 4000 }, open)).toEqual({
+      uri,
+      width: 1000,
+      height: 800,
+    });
+    expect(saveJpeg).not.toHaveBeenCalled();
+  });
+
+  it.each(['heic', 'HEIC', 'webp', 'no-extension'])(
+    'converts a small photo that is neither JPEG nor PNG (%s) without resizing it',
+    async (ending) => {
+      const { open, saveJpeg } = opener(1200, 1600);
+      const uri = ending === 'no-extension' ? 'file:///picked/photo' : `file:///picked/a.${ending}`;
+
+      const reduced = await reducePhoto({ uri, width: 1200, height: 1600 }, open);
+
+      expect(saveJpeg.mock.calls).toEqual([[null]]);
+      expect(reduced).toEqual({
+        uri: 'file:///cache/ImageManipulator/reduced.jpg',
+        width: 1200,
+        height: 1600,
+      });
+    },
+  );
+
+  it('uses the photo as it came when it cannot be opened', async () => {
+    const photo = { uri: 'file:///picked/IMG_1.heic', width: 6000, height: 8000 };
+    const open = jest.fn(async (): Promise<OpenImage> => {
+      throw new Error('cannot decode image');
+    });
+
+    expect(await reducePhoto(photo, open)).toBe(photo);
+  });
+
+  it('uses the photo as it came when the copy cannot be written, and still frees the image', async () => {
+    const photo = { uri: 'file:///picked/IMG_1.jpg', width: 6000, height: 8000 };
+    const { open, saveJpeg, close } = opener(6000, 8000);
+    saveJpeg.mockRejectedValue(new Error('disk full'));
+
+    expect(await reducePhoto(photo, open)).toBe(photo);
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it('stores the reduced HEIC as a JPEG original', async () => {
+    const { open } = opener(3024, 4032);
+    const saved: [string, string][] = [];
+    const reduced = await reducePhoto({ uri: 'file:///picked/IMG_1.HEIC' }, open);
+
+    const result = await storeItemImages(
+      { originalUri: reduced.uri, cutoutUri: null },
+      {
+        reduce: async (photo) => photo,
+        discard: async () => {},
+        save: async (uri, _folder, extension) => {
+          saved.push([uri, extension]);
+          return `images/items/${saved.length}.${extension}`;
+        },
+        remove: async () => {},
+        resize: async () => 'file:///tmp/thumb.jpeg',
+        cutout: async () => null,
+      },
+    );
+
+    expect(saved[0]).toEqual(['file:///cache/ImageManipulator/reduced.jpg', 'jpg']);
+    expect(result.originalPath).toBe('images/items/1.jpg');
+  });
+
+  it('reads the size of a photo only when both sides are known', () => {
+    expect(photoSize({ uri: 'a', width: 3, height: 4 })).toEqual({ width: 3, height: 4 });
+    expect(photoSize({ uri: 'a' })).toBeUndefined();
+    expect(photoSize({ uri: 'a', width: 3 })).toBeUndefined();
   });
 });
 
@@ -736,6 +911,8 @@ describe('import job', () => {
     let counter = 0;
     const deps: ImportJobDeps = {
       images: {
+        reduce: async (photo) => photo,
+        discard: async () => {},
         save: async (_uri, _folder, extension) => `images/items/${++counter}.${extension}`,
         remove: async (path) => void removed.push(path),
         resize: async () => 'file:///tmp/thumb.png',

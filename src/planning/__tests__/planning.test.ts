@@ -655,6 +655,57 @@ describe('suggestions', () => {
     expect(suggestions.length).toBeGreaterThan(0);
   });
 
+  it('does not claim a coat or an outer layer for an outfit that has none', () => {
+    const noCoat = closet.filter((entry) => entry.category !== 'outerwear');
+    const suggestions = suggest({
+      day: '2026-12-02',
+      profile: coldWet,
+      outfits: [winterNoCoat],
+      owned: noCoat,
+    });
+    expect(suggestions.length).toBeGreaterThan(0);
+    for (const suggestion of suggestions) {
+      expect(suggestion.items.some((entry) => entry.category === 'outerwear')).toBe(false);
+      expect(suggestion.reason).toBe('noOuter');
+    }
+    // The saved outfit and the new combinations are both told the truth about.
+    expect(suggestions.some((suggestion) => suggestion.outfit?.id === 'winter-no-coat')).toBe(true);
+
+    // Cold and dry: the same, since "a coat for the cold" would be just as untrue.
+    const coldDry = dayProfile('2026-12-02', weather({ feelsMax: 1, feelsMin: -4 }));
+    const dry = suggest({ day: '2026-12-02', profile: coldDry, outfits: [], owned: noCoat });
+    expect(dry.length).toBeGreaterThan(0);
+    expect(dry.map((suggestion) => suggestion.reason)).toEqual(dry.map(() => 'noOuter'));
+  });
+
+  it('names the temperature and not the rain for a wet mild day without an outer layer', () => {
+    const wetMild = dayProfile(
+      '2026-10-02',
+      weather({ feelsMax: 16, feelsMin: 10, precipitationChance: 70, precipitation: 4 }),
+    );
+    expect(wetMild).toMatchObject({ band: 3, needsOuter: true, rain: true });
+    const noCoat = closet.filter((entry) => entry.category !== 'outerwear');
+    const suggestions = suggest({
+      day: '2026-10-02',
+      profile: wetMild,
+      outfits: [mildLook],
+      owned: noCoat,
+    });
+    expect(suggestions.length).toBeGreaterThan(0);
+    expect(suggestions.map((suggestion) => suggestion.reason)).toEqual(
+      suggestions.map(() => 'mild'),
+    );
+
+    // With something to put on over it, the rain is the reason again.
+    const withCoat = suggest({
+      day: '2026-10-02',
+      profile: wetMild,
+      outfits: [outfitOf('mild-coat', [shirt, jeans, coat, sneakers])],
+      owned: [],
+    });
+    expect(withCoat[0]).toMatchObject({ outfit: { id: 'mild-coat' }, reason: 'rain' });
+  });
+
   it('uses a category default when an item has no warmth', () => {
     const plain = [item('tops'), item('bottoms')];
     expect(scoreItems(plain, mild, NO_HISTORY)).toBeGreaterThanOrEqual(RULES.threshold);
@@ -675,5 +726,15 @@ describe('suggestions', () => {
     expect(reasonFor(mild)).toBe('mild');
     expect(reasonFor(coldWet)).toBe('rain');
     expect(reasonFor(dayProfile('2026-01-10', null))).toBe('season');
+  });
+
+  it('names a reason that is true of an outfit without an outer piece', () => {
+    expect(reasonFor(coldWet, false)).toBe('noOuter');
+    expect(reasonFor(coldWet, true)).toBe('rain');
+    // Nothing about an outer layer is claimed on a mild or hot day anyway.
+    expect(reasonFor(mild, false)).toBe('mild');
+    expect(reasonFor(hot, false)).toBe('hot');
+    // Without a forecast the season is the reason, with or without a coat.
+    expect(reasonFor(dayProfile('2026-01-10', null), false)).toBe('season');
   });
 });

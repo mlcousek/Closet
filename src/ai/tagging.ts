@@ -118,10 +118,14 @@ export type TagImage = { base64: string; mediaType: 'image/png' | 'image/jpeg' }
 export async function tagItem(
   image: TagImage,
   language: 'en' | 'cs',
-  client?: Anthropic,
+  options: {
+    client?: Anthropic;
+    /** Called once the provider has answered, which is when the request has been paid for. */
+    onAnswered?: () => Promise<void> | void;
+  } = {},
 ): Promise<ItemTags> {
   try {
-    const anthropic = client ?? (await getAnthropic());
+    const anthropic = options.client ?? (await getAnthropic());
     const model = getTextModel();
     const { betas, fallbacks, effort } = modelOptions(model, 'low');
     const response = await anthropic.beta.messages.parse({
@@ -147,6 +151,8 @@ export async function tagItem(
         ...(effort ? { effort } : {}),
       },
     });
+    // Paid for from here on, even when the answer turns out to be unusable.
+    await options.onAnswered?.();
     const tags =
       response.stop_reason !== 'refusal' && response.parsed_output
         ? normaliseTags(response.parsed_output)

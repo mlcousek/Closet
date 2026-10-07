@@ -22,6 +22,7 @@ import { addDays, fromDay, today, type Day } from '@/planning/dates';
 import { getChosenCity, getTemperatureUnit } from '@/planning/settings';
 import { dayProfile } from '@/planning/suggestions';
 import { useInvalidatePlanning, useWeather, weatherFor } from '@/planning/usePlanning';
+import { useToday } from '@/planning/useToday';
 import { useProfile } from '@/profile/useProfile';
 import { deleteWithUndo, useToast } from '@/shell/toast';
 import {
@@ -189,7 +190,11 @@ export default function StylistScreen() {
   const [activeId, setActiveId] = useState<string | null>(params.sessionId ?? null);
   const [styleItemId, setStyleItemId] = useState<string | null>(params.itemId ?? null);
   const [text, setText] = useState('');
-  const [day, setDay] = useState<Day | null>(null);
+  // Kept current: a screen left open over midnight must not offer yesterday.
+  const currentDay = useToday();
+  const [pickedDay, setDay] = useState<Day | null>(null);
+  // A day picked before midnight that has since passed counts as no day picked.
+  const day = pickedDay && pickedDay >= currentDay ? pickedDay : null;
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<AiUnavailableReason | 'noneValid' | null>(null);
   const [disclosed, setDisclosedState] = useState(isDisclosed);
@@ -271,7 +276,7 @@ export default function StylistScreen() {
     });
 
   const dayLabel = (value: Day) =>
-    value === today()
+    value === currentDay
       ? t('stylist.today')
       : new Intl.DateTimeFormat(i18n.language, { weekday: 'short', day: 'numeric' }).format(
           fromDay(value),
@@ -358,7 +363,7 @@ export default function StylistScreen() {
               options={[
                 { value: '', label: t('stylist.anyDay') },
                 ...Array.from({ length: 7 }, (_, index) => {
-                  const value = addDays(today(), index);
+                  const value = addDays(currentDay, index);
                   return { value, label: dayLabel(value) };
                 }),
               ]}

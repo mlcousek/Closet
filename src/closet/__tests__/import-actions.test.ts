@@ -2,6 +2,7 @@ import { AiUnavailableError } from '@/ai/client';
 import type { ItemTags } from '@/ai/tagging';
 import type { Db } from '@/db/client';
 import { createTestDb } from '@/db/testing';
+import { usageLog } from '@/outfits/renders';
 
 import {
   detailsFromTags,
@@ -80,9 +81,17 @@ jest.mock('@/storage/imageStore', () => ({
   },
 }));
 
-const mockImages = { cutout: jest.fn(), resize: jest.fn(), toTagImage: jest.fn() };
+const mockImages = {
+  cutout: jest.fn(),
+  resize: jest.fn(),
+  toTagImage: jest.fn(),
+  reduce: jest.fn(),
+  discard: jest.fn(),
+};
 jest.mock('../deviceImages', () => ({
   itemImageDeps: {
+    reduce: (...args: unknown[]) => mockImages.reduce(...args),
+    discard: (...args: unknown[]) => mockImages.discard(...args),
     save: (uri: string, folder: string, extension: string) =>
       mockStore.save(uri, folder, extension),
     remove: (path: string) => mockStore.remove(path),
@@ -140,6 +149,9 @@ beforeEach(async () => {
   mockStore.removed = [];
   mockTag.mockReset().mockResolvedValue(tags);
   mockImages.cutout.mockReset().mockResolvedValue(CUTOUT);
+  // Photos small enough to be left as they are, unless a test says otherwise.
+  mockImages.reduce.mockReset().mockImplementation(async (photo: object) => photo);
+  mockImages.discard.mockReset().mockResolvedValue(undefined);
   mockImages.resize
     .mockReset()
     .mockImplementation(
@@ -175,6 +187,8 @@ describe('turning one imported photo into an item', () => {
     );
     const deps: ImportJobDeps = {
       images: {
+        reduce: async (photo) => photo,
+        discard: async () => {},
         save: (uri, folder, extension) => mockStore.save(uri, folder, extension),
         remove: (path) => mockStore.remove(path),
         resize: async (_uri, _width, format) => `file:///cache/thumb.${format}`,
@@ -340,6 +354,108 @@ describe('turning one imported photo into an item', () => {
     expect(await processImportJob(job, deps)).toBe('job-1');
     expect(await itemRepository.get('job-1')).not.toBeNull();
   });
+
+  describe('with a photo that is reduced first', () => {
+    const SOURCE = 'file:///documents/images/import/a.heic';
+    const REDUCED = {
+      uri: 'file:///cache/ImageManipulator/reduced.jpg',
+      width: 1800,
+      height: 2400,
+    };
+    /** Deps that reduce the photo, recording the order of the steps and what is discarded. */
+    const reducing = (overrides: Partial<ImportJobDeps> = {}) => {
+      const { deps, tag } = makeDeps(overrides);
+      const steps: string[] = [];
+      const discarded: string[] = [];
+      const cutout = deps.images.cutout;
+      deps.images.reduce = async (photo) => {
+        steps.push(`reduce ${photo.uri}`);
+        return REDUCED;
+      };
+      deps.images.cutout = async (uri) => {
+        steps.push(`cutout ${uri}`);
+        return cutout(uri);
+      };
+      deps.images.discard = async (uri) => void discarded.push(uri);
+      return { deps, tag, steps, discarded };
+    };
+
+    it('cuts out and stores the reduced copy, never the photo as it was picked', async () => {
+      const { deps, steps, discarded } = reducing();
+
+      await processImportJob(job, deps);
+
+      // Once, and before the cutout.
+      expect(steps).toEqual([`reduce ${SOURCE}`, `cutout ${REDUCED.uri}`]);
+      expect(mockStore.saved).toEqual([
+        [REDUCED.uri, 'items', 'jpg'],
+        [CUTOUT.uri, 'items', 'png'],
+        ['file:///cache/thumb.png', 'items', 'png'],
+      ]);
+      expect(await itemRepository.get('job-1')).toMatchObject({
+        originalPath: 'images/items/1.jpg',
+        cutoutPath: 'images/items/2.png',
+      });
+      // The picked photo and the temporary copy are both gone; only the item's images are left.
+      expect(mockStore.removed).toEqual([job.sourcePath]);
+      expect(discarded).toEqual([REDUCED.uri]);
+      expect([...mockStore.files].sort()).toEqual([
+        'images/items/1.jpg',
+        'images/items/2.png',
+        'images/items/3.png',
+      ]);
+    });
+
+    it('tags the reduced copy, with its size, when there is no cutout', async () => {
+      const { deps, tag } = reducing();
+      deps.images.cutout = async () => null;
+
+      await processImportJob(job, deps);
+
+      expect(tag).toHaveBeenCalledWith(REDUCED.uri, false, { width: 1800, height: 2400 });
+      expect(mockStore.saved[0]).toEqual([REDUCED.uri, 'items', 'jpg']);
+    });
+
+    it('discards the reduced copy when the job fails, and keeps the picked photo for a retry', async () => {
+      const { deps, discarded } = reducing({
+        tag: async () => {
+          throw new Error('rate limited');
+        },
+      });
+
+      await expect(processImportJob(job, deps)).rejects.toThrow('rate limited');
+
+      expect(discarded).toEqual([REDUCED.uri]);
+      expect(mockStore.files.has(job.sourcePath)).toBe(true);
+    });
+
+    it('counts as done when the reduced copy cannot be discarded', async () => {
+      const { deps } = reducing();
+      deps.images.discard = async () => {
+        throw new Error('busy');
+      };
+
+      expect(await processImportJob(job, deps)).toBe('job-1');
+    });
+  });
+
+  it('does not discard a photo that was left as it is', async () => {
+    const { deps } = makeDeps();
+    deps.images.discard = jest.fn(async () => {});
+
+    await processImportJob(job, deps);
+
+    expect(deps.images.discard).not.toHaveBeenCalled();
+  });
+
+  it('does not reduce the photo again when the item already exists', async () => {
+    const { deps } = makeDeps({ itemExists: async () => true });
+    deps.images.reduce = jest.fn(async (photo) => photo);
+
+    await processImportJob(job, deps);
+
+    expect(deps.images.reduce).not.toHaveBeenCalled();
+  });
 });
 
 describe('tagging on the device', () => {
@@ -350,7 +466,13 @@ describe('tagging on the device', () => {
     await settle();
 
     expect(mockImages.toTagImage).toHaveBeenCalledWith(CUTOUT.uri, true, CUTOUT);
-    expect(mockTag).toHaveBeenCalledWith({ base64: 'SMALL', mediaType: 'image/png' }, 'en');
+    expect(mockTag).toHaveBeenCalledWith({ base64: 'SMALL', mediaType: 'image/png' }, 'en', {
+      onAnswered: expect.any(Function),
+    });
+    // An answered request is a paid one, and is counted as such.
+    expect(await usageLog.counts('tag')).toEqual({ month: 0, total: 0 });
+    await mockTag.mock.calls[0][2].onAnswered();
+    expect(await usageLog.counts('tag')).toEqual({ month: 1, total: 1 });
     expect(await reviewItems()).toMatchObject([{ name: 'Pink skirt', brand: 'Zara' }]);
   });
 
@@ -366,7 +488,9 @@ describe('tagging on the device', () => {
       false,
       undefined,
     );
-    expect(mockTag).toHaveBeenCalledWith({ base64: 'SMALL', mediaType: 'image/jpeg' }, 'en');
+    expect(mockTag).toHaveBeenCalledWith({ base64: 'SMALL', mediaType: 'image/jpeg' }, 'en', {
+      onAnswered: expect.any(Function),
+    });
   });
 
   it.each([
@@ -493,6 +617,36 @@ describe('starting a bulk import on the device', () => {
     expect(failed).toBe(2);
     expect(progress()).toEqual({ ...EMPTY, done: 2, total: 2 });
     expect(await reviewItems()).toHaveLength(2);
+  });
+
+  it('reduces each photo when its turn comes, not while the selection is being queued', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    mockImages.reduce.mockImplementation(async (photo: { uri: string }) => {
+      await gate;
+      return { uri: photo.uri.replace('/documents/images/import/', '/cache/reduced-') };
+    });
+    const names = ['a', 'b', 'c', 'd', 'e'];
+
+    // All five are queued although no photo has been reduced yet.
+    expect(await startBulkImport(names.map((name) => `file:///picker/${name}.heic`))).toBe(0);
+    await flush();
+    expect(mockImages.reduce).toHaveBeenCalledTimes(IMPORT_CONCURRENCY);
+    expect(mockImages.cutout).not.toHaveBeenCalled();
+
+    release();
+    await settle();
+
+    // Each photo once, from its copy in the import folder, and the cutout from the reduced copy.
+    const reducedFrom = mockImages.reduce.mock.calls.map(([photo]) => photo.uri).sort();
+    expect(reducedFrom).toEqual(
+      [1, 2, 3, 4, 5].map((n) => `file:///documents/images/import/${n}.heic`),
+    );
+    expect(mockImages.cutout.mock.calls.map(([uri]) => uri).sort()).toEqual(
+      [1, 2, 3, 4, 5].map((n) => `file:///cache/reduced-${n}.heic`),
+    );
+    expect(mockImages.discard).toHaveBeenCalledTimes(5);
+    expect(progress()).toEqual({ ...EMPTY, done: 5, total: 5 });
   });
 
   it('does nothing for an empty selection', async () => {

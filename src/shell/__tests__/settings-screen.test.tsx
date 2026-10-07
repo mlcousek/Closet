@@ -526,6 +526,24 @@ describe('the rest of settings', () => {
     );
   });
 
+  it('counts tagging requests apart from stylist requests, only once there were some', async () => {
+    show();
+    await settle();
+    expect(mockUsage.counts).toHaveBeenCalledWith('tag');
+    expect(screen.queryByTestId('tagging-usage')).toBeNull();
+  });
+
+  it('shows the tagging requests of this month and in total', async () => {
+    mockUsage.counts.mockImplementation(async (kind: string) =>
+      kind === 'tag' ? { month: 5, total: 41 } : { month: 0, total: 0 },
+    );
+    show();
+    expect(await screen.findByTestId('tagging-usage')).toHaveTextContent(
+      'Tagging requests: 5 this month, 41 in total',
+    );
+    expect(screen.queryByTestId('stylist-usage')).toBeNull();
+  });
+
   it('includes the weather, reminder and display settings', async () => {
     show();
     await settle();

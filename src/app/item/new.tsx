@@ -7,9 +7,10 @@ import { useTranslation } from 'react-i18next';
 import { AiUnavailableError, type AiUnavailableReason } from '@/ai/client';
 import { tagItem, type ItemTags } from '@/ai/tagging';
 import { Chips } from '@/closet/Chips';
+import { usageLog } from '@/outfits/renders';
 import { itemImageDeps, toTagImage } from '@/closet/deviceImages';
 import { ItemForm } from '@/closet/ItemForm';
-import { storeItemImages } from '@/closet/itemImages';
+import { photoSize, storeItemImages, type Photo as SourcePhoto } from '@/closet/itemImages';
 import { usePendingLink, type PendingLinkItem } from '@/closet/pendingLink';
 import { itemRepository } from '@/closet/repository';
 import type { ItemDetails } from '@/closet/types';
@@ -57,20 +58,30 @@ export default function NewItemScreen() {
   /** Counts the photos worked on, so an answer for an earlier one is told apart and dropped. */
   const preparing = useRef(0);
 
-  const prepare = async (uri: string, size?: { width: number; height: number }) => {
+  const prepare = async (picked: SourcePhoto) => {
     const mine = ++preparing.current;
     const stale = () => mine !== preparing.current;
     setStage('working');
     setTags(null);
     setUnavailable(null);
+    // Every photo added here, from the camera, the library or a shop link, is reduced once,
+    // and everything after this works on the reduced copy.
+    const reduced = await itemImageDeps.reduce(picked);
+    const uri = reduced.uri;
     const cutout = await itemImageDeps.cutout(uri);
     if (stale()) return;
     setPhoto({ originalUri: uri, cutoutUri: cutout?.uri ?? null });
     setUseCutout(cutout !== null);
     setStage('tagging');
     try {
-      const image = await toTagImage(cutout?.uri ?? uri, cutout !== null, cutout ?? size);
-      const result = await tagItem(image, i18n.language === 'cs' ? 'cs' : 'en');
+      const image = await toTagImage(
+        cutout?.uri ?? uri,
+        cutout !== null,
+        cutout ?? photoSize(reduced),
+      );
+      const result = await tagItem(image, i18n.language === 'cs' ? 'cs' : 'en', {
+        onAnswered: () => usageLog.record('tag'),
+      });
       if (stale()) return;
       setTags(result);
     } catch (error) {
@@ -95,7 +106,7 @@ export default function NewItemScreen() {
     }
     // A photo chosen here replaces anything that came from a shop link.
     setFromLink(null);
-    await prepare(result.photo.uri, result.photo);
+    await prepare(result.photo);
   };
 
   useEffect(() => {
@@ -108,7 +119,7 @@ export default function NewItemScreen() {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setFromLink(pending);
         setLinkTarget(pending.target);
-        void prepare(pending.uri);
+        void prepare({ uri: pending.uri });
       }
     } else if (source === 'library') {
       attempt(() => pick('library', true), t('common.somethingWentWrong'));

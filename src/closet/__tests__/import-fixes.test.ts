@@ -68,6 +68,8 @@ describe('an import job run again', () => {
     const removed: string[] = [];
     const base = {
       images: {
+        reduce: async (photo: { uri: string }) => photo,
+        discard: async () => {},
         save: async (_uri: string, _folder: string, extension: string) =>
           `images/items/${removed.length}-${Math.random()}.${extension}`,
         remove: async (path: string) => void removed.push(path),

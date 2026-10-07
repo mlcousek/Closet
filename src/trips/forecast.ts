@@ -61,9 +61,10 @@ export async function fetchTypical(
 }
 
 /**
- * Weather for each day of a trip: the forecast where it reaches, typical
- * conditions beyond it, and nothing when neither could be fetched, in which
- * case the day falls back to the season.
+ * Weather for each day of a trip: the forecast where it reaches and typical
+ * conditions beyond it. A day neither source covers gets no weather and falls
+ * back to the season. Throws when neither source could be reached at all, so
+ * the caller keeps the weather it already had.
  */
 export async function tripWeather(
   place: Place,

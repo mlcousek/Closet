@@ -92,7 +92,14 @@ describe('try-on in another app', () => {
     expect(text).toContain('On the left is a photo of me');
     expect(text).toContain('1. top: shirt');
     expect(text).toContain('2. bottom: skirt');
-    expect(mockCapture.mock.calls[0][1]).toMatchObject({ format: 'jpg', result: 'tmpfile' });
+    // The sheet is taken at its own full size, not at the size of the preview on screen.
+    expect(mockCapture.mock.calls[0][1]).toMatchObject({
+      format: 'jpg',
+      result: 'tmpfile',
+      width: 800,
+      height: 600,
+      useRenderInContext: true,
+    });
     expect(await screen.findByTestId('manual-notice')).toHaveTextContent(/copied/i);
     expect(mockSave).not.toHaveBeenCalled();
   });

@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { AiUnavailableError } from '@/ai/client';
 import { tagItem, type ItemTags } from '@/ai/tagging';
 import i18n from '@/i18n';
+import { usageLog } from '@/outfits/renders';
 import { imageStore } from '@/storage/imageStore';
 
 import { itemImageDeps, toTagImage } from './deviceImages';
@@ -12,7 +13,13 @@ import {
   type ImportJob,
   type ImportProgress,
 } from './importQueue';
-import { extensionOf, removeItemImages, storeItemImages, type ItemImageDeps } from './itemImages';
+import {
+  extensionOf,
+  photoSize,
+  removeItemImages,
+  storeItemImages,
+  type ItemImageDeps,
+} from './itemImages';
 import { itemRepository } from './repository';
 import type { ItemDetails } from './types';
 
@@ -79,22 +86,34 @@ export async function processImportJob(job: ImportJob, deps: ImportJobDeps): Pro
     await deps.images.remove(job.sourcePath).catch(() => {});
     return job.id;
   }
-  const originalUri = deps.sourceUri(job.sourcePath);
-  const cutout = await deps.images.cutout(originalUri);
-  const tags = await deps.tag(cutout?.uri ?? originalUri, cutout !== null, cutout ?? undefined);
-  const images = await storeItemImages(
-    { originalUri, cutoutUri: cutout?.uri ?? null },
-    deps.images,
-  );
-  const item = await deps
-    .createItem(detailsFromTags(tags), images, { needsReview: true, id: job.id })
-    .catch(async (error: unknown) => {
-      // Without the item nothing points at these files any more.
-      await removeItemImages(images, deps.images);
-      throw error;
-    });
-  await deps.images.remove(job.sourcePath).catch(() => {});
-  return item.id;
+  const sourceUri = deps.sourceUri(job.sourcePath);
+  // Reduced here rather than when the photos are queued, so a large selection is queued quickly;
+  // and before the cutout, which is what needs the most memory for a full camera photo.
+  const photo = await deps.images.reduce({ uri: sourceUri });
+  try {
+    const cutout = await deps.images.cutout(photo.uri);
+    const tags = await deps.tag(
+      cutout?.uri ?? photo.uri,
+      cutout !== null,
+      cutout ?? photoSize(photo),
+    );
+    const images = await storeItemImages(
+      { originalUri: photo.uri, cutoutUri: cutout?.uri ?? null },
+      deps.images,
+    );
+    const item = await deps
+      .createItem(detailsFromTags(tags), images, { needsReview: true, id: job.id })
+      .catch(async (error: unknown) => {
+        // Without the item nothing points at these files any more.
+        await removeItemImages(images, deps.images);
+        throw error;
+      });
+    await deps.images.remove(job.sourcePath).catch(() => {});
+    return item.id;
+  } finally {
+    // A long import would otherwise leave a reduced copy of every photo behind.
+    if (photo.uri !== sourceUri) await deps.images.discard(photo.uri).catch(() => {});
+  }
 }
 
 /** Failures for which retrying the same photo later cannot help, so it is imported without tags. */
@@ -106,7 +125,9 @@ const deviceDeps: ImportJobDeps = {
   tag: async (uri, isCutout, size) => {
     try {
       const image = await toTagImage(uri, isCutout, size);
-      return await tagItem(image, i18n.language === 'cs' ? 'cs' : 'en');
+      return await tagItem(image, i18n.language === 'cs' ? 'cs' : 'en', {
+        onAnswered: () => usageLog.record('tag'),
+      });
     } catch (error) {
       if (error instanceof AiUnavailableError && NO_TAGS_REASONS.includes(error.reason)) {
         return null;

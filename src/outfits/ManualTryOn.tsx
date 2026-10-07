@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { useRef, useState } from 'react';
-import { Modal, PixelRatio, ScrollView, View } from 'react-native';
+import { Modal, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
@@ -15,11 +15,13 @@ import { useToast } from '@/shell/toast';
 import { imageStore } from '@/storage/imageStore';
 import { useTheme } from '@/theme/useTheme';
 
-import { SHEET_RATIO, SHEET_WIDTH, manualPrompt, pieceColumns } from './manualSheet';
+import { SHEET_POINTS, SHEET_RATIO, manualPrompt, pieceColumns } from './manualSheet';
 import { avatarBasePath, saveManualRender } from './renderActions';
 import type { Outfit } from './repository';
 
 const PREVIEW_WIDTH = 300;
+/** How much the full-size sheet is shrunk to be shown; its own sizes are given at full size. */
+const PREVIEW_SCALE = PREVIEW_WIDTH / SHEET_POINTS;
 /** The sheet is always light, whatever the app's appearance, so the other app sees clean pictures. */
 const SHEET = { background: '#FFFFFF', badge: '#1B1622', badgeText: '#FFFFFF' };
 
@@ -93,8 +95,12 @@ export function ManualTryOn({ outfits, onClose }: { outfits: Outfit[]; onClose: 
         format: 'jpg',
         quality: 0.92,
         result: 'tmpfile',
-        width: SHEET_WIDTH / PixelRatio.get(),
-        height: Math.round(SHEET_WIDTH / SHEET_RATIO) / PixelRatio.get(),
+        // The sheet at its own size, not as it appears: drawing the layer itself ignores
+        // the shrinking and the clipping around it, and works for a view larger than the
+        // screen, which a snapshot of the screen does not.
+        width: SHEET_POINTS,
+        height: SHEET_POINTS / SHEET_RATIO,
+        useRenderInContext: true,
       });
       await shareImage(uri, 'image/jpeg');
     });
@@ -149,58 +155,76 @@ export function ManualTryOn({ outfits, onClose }: { outfits: Outfit[]; onClose: 
         ) : null}
 
         <View
-          ref={sheet}
-          collapsable={false}
-          testID="manual-sheet"
           style={{
             alignSelf: 'center',
             width: PREVIEW_WIDTH,
             height: PREVIEW_WIDTH / SHEET_RATIO,
-            backgroundColor: SHEET.background,
-            flexDirection: 'row',
-            padding: 6,
-            gap: 6,
+            overflow: 'hidden',
           }}
         >
-          {photoPath ? (
-            <Image
-              testID="manual-sheet-photo"
-              source={{ uri: imageStore.uri(photoPath) }}
-              contentFit="contain"
-              style={{ flex: 9 }}
-            />
-          ) : null}
-          <View style={{ flex: 11, flexDirection: 'row', flexWrap: 'wrap' }}>
-            {outfit.entries.map(({ item }, index) => (
-              <View
-                key={item.id}
-                testID={`manual-sheet-piece-${item.id}`}
-                style={{ width: `${100 / columns}%`, height: `${100 / rows}%`, padding: 2 }}
-              >
+          <View
+            collapsable={false}
+            style={{
+              width: SHEET_POINTS,
+              height: SHEET_POINTS / SHEET_RATIO,
+              transform: [{ scale: PREVIEW_SCALE }],
+              transformOrigin: 'top left',
+            }}
+          >
+            <View
+              ref={sheet}
+              collapsable={false}
+              testID="manual-sheet"
+              style={{
+                width: SHEET_POINTS,
+                height: SHEET_POINTS / SHEET_RATIO,
+                backgroundColor: SHEET.background,
+                flexDirection: 'row',
+                padding: 16,
+                gap: 16,
+              }}
+            >
+              {photoPath ? (
                 <Image
-                  source={{ uri: imageStore.uri(displayPath(item)) }}
+                  testID="manual-sheet-photo"
+                  source={{ uri: imageStore.uri(photoPath) }}
                   contentFit="contain"
-                  style={{ flex: 1 }}
+                  style={{ flex: 9 }}
                 />
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 2,
-                    left: 2,
-                    minWidth: 16,
-                    height: 16,
-                    borderRadius: 8,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: SHEET.badge,
-                  }}
-                >
-                  <AppText style={{ fontSize: 10, lineHeight: 14, color: SHEET.badgeText }}>
-                    {index + 1}
-                  </AppText>
-                </View>
+              ) : null}
+              <View style={{ flex: 11, flexDirection: 'row', flexWrap: 'wrap' }}>
+                {outfit.entries.map(({ item }, index) => (
+                  <View
+                    key={item.id}
+                    testID={`manual-sheet-piece-${item.id}`}
+                    style={{ width: `${100 / columns}%`, height: `${100 / rows}%`, padding: 6 }}
+                  >
+                    <Image
+                      source={{ uri: imageStore.uri(displayPath(item)) }}
+                      contentFit="contain"
+                      style={{ flex: 1 }}
+                    />
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: 6,
+                        left: 6,
+                        minWidth: 42,
+                        height: 42,
+                        borderRadius: 21,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: SHEET.badge,
+                      }}
+                    >
+                      <AppText style={{ fontSize: 26, lineHeight: 36, color: SHEET.badgeText }}>
+                        {index + 1}
+                      </AppText>
+                    </View>
+                  </View>
+                ))}
               </View>
-            ))}
+            </View>
           </View>
         </View>
 

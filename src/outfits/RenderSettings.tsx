@@ -28,6 +28,11 @@ export function RenderSettings() {
     queryKey: ['ai-usage', 'render', version],
     queryFn: () => usageLog.counts('render'),
   });
+  // A studio photo is a paid request to the same provider, counted apart from the renders.
+  const { data: studioUsage } = useQuery({
+    queryKey: ['ai-usage', 'studio', version],
+    queryFn: () => usageLog.counts('studio'),
+  });
 
   return (
     <View
@@ -55,6 +60,12 @@ export function RenderSettings() {
       </View>
       <AppText testID="render-usage" muted>
         {t('tryOn.usage', { month: usage?.month ?? 0, total: usage?.total ?? 0 })}
+      </AppText>
+      <AppText testID="studio-usage" muted>
+        {t('tryOn.usageStudio', {
+          month: studioUsage?.month ?? 0,
+          total: studioUsage?.total ?? 0,
+        })}
       </AppText>
       <Field
         testID="image-model"

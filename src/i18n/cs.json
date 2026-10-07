@@ -127,7 +127,8 @@
     "removeConfirmMessage": "Funkce, které tohoto poskytovatele používají, přestanou fungovat, dokud klíč znovu nepřidáte.",
     "keyNeededTitle": "Je potřeba klíč poskytovatele",
     "keyNeededMessage": "Tato funkce používá službu {{provider}}. Přidejte svůj klíč v Nastavení.",
-    "openKeySettings": "Otevřít nastavení klíčů"
+    "openKeySettings": "Otevřít nastavení klíčů",
+    "taggingUsage": "Požadavky na popis oblečení: {{month}} tento měsíc, {{total}} celkem"
   },
   "greeting": {
     "morning": "Dobré ráno, {{name}}",
@@ -495,6 +496,7 @@
     "settingsTitle": "Vykreslování outfitů",
     "autoRender": "Vykreslit při uložení outfitu",
     "usage": "Tento měsíc: {{month}} · Celkem: {{total}}",
+    "usageStudio": "Studiové fotky tento měsíc: {{month}} · Celkem: {{total}}",
     "imageModel": "Model pro obrázky",
     "textModel": "Model pro text",
     "modelHint": "Nechte prázdné pro výchozí model."
@@ -528,7 +530,8 @@
     "reject": "Ponechat původní fotku",
     "inUse": "Vykreslování používá vaši studiovou fotku.",
     "remove": "Vrátit se k původní fotce",
-    "failed": "Studiovou fotku se nepodařilo vytvořit."
+    "failed": "Studiovou fotku se nepodařilo vytvořit.",
+    "declined": "Poskytovatel odmítl z vaší fotky vytvořit studiovou verzi. Dál se používá vaše původní fotka."
   },
   "lookbooks": {
     "title": "Lookbook",
@@ -614,6 +617,7 @@
       "cool": "Teplejší kousky a vrstva navíc na chladný den ({{temperature}})",
       "cold": "Teplé kousky a kabát do zimy ({{temperature}})",
       "rain": "Se svrchní vrstvou do deště ({{temperature}})",
+      "noOuter": "Teplé kousky na chladný den, bez svrchní vrstvy ({{temperature}})",
       "season": "Vybráno podle ročního období, protože chybí předpověď"
     },
     "deletedOutfit": "Outfit, který byl mezitím smazán."
