@@ -78,7 +78,6 @@ jest.mock('@/outfits/useOutfits', () => ({
     previous: null,
     pending: null,
     failed: null,
-    outdated: false,
   }),
 }));
 jest.mock('@/outfits/renderActions', () => ({ isAutoRenderOn: () => false }));

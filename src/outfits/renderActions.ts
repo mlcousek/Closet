@@ -199,10 +199,15 @@ const MANUAL_MAX = 1600;
  * render. Nothing is sent anywhere and nothing is counted as paid usage.
  */
 export async function saveManualRender(
-  outfit: Outfit,
+  target: Pick<Outfit, 'id'>,
   photo: { uri: string; width: number; height: number },
 ): Promise<void> {
-  const profile = await profileRepository.get();
+  // Read now, not when the screen opened: the picture belongs to the pieces as they are.
+  const [outfit, profile] = await Promise.all([
+    outfitRepository.get(target.id),
+    profileRepository.get(),
+  ]);
+  if (!outfit) throw new Error('The outfit no longer exists');
   const resize = fitWithin(photo, MANUAL_MAX);
   const full = await ImageManipulator.manipulateAsync(photo.uri, resize ? [{ resize }] : [], {
     compress: 0.9,

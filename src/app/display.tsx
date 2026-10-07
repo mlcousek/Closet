@@ -80,8 +80,10 @@ export default function DisplayScreen() {
   const shift = shiftAt(now);
 
   // What is planned or worn today comes first; without a plan, the best suggestion is shown.
-  const entry = byDay?.get(day)?.[0];
-  const planned = entry ? outfits.find((outfit) => outfit.id === entry.outfitId) : undefined;
+  // The first entry whose outfit still exists; one for a deleted outfit must not hide the rest.
+  const planned = (byDay?.get(day) ?? [])
+    .map((entry) => outfits.find((outfit) => outfit.id === entry.outfitId))
+    .find((outfit) => outfit !== undefined);
   const suggestion = planned ? undefined : suggestions[0];
   const pieces = planned ? planned.entries.map((item) => item.item) : (suggestion?.items ?? []);
   const render = planned ? (summarise(planned).current?.imagePath ?? null) : null;

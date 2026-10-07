@@ -1,16 +1,17 @@
 import { useQueryClient } from '@tanstack/react-query';
 import * as Application from 'expo-application';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppText, Row, Screen } from '@/components/ui';
 import { getLanguageOverride, setLanguageOverride } from '@/i18n';
 import type { Language } from '@/i18n/language';
-import { resumeImports } from '@/closet/importActions';
+import { isImporting, resumeImports } from '@/closet/importActions';
 import { DisplaySettings } from '@/display/DisplaySettings';
-import { renderQueue } from '@/outfits/renderActions';
+import { useRenderVersion } from '@/outfits/renderActions';
+import { renderRepository } from '@/outfits/renders';
 import { PlanningSettings } from '@/planning/PlanningSettings';
 import { restoreReminder } from '@/planning/reminder';
 import { StylistUsage } from '@/stylist/StylistUsage';
@@ -33,6 +34,10 @@ export default function SettingsScreen() {
   const showToast = useToast((state) => state.show);
   const [override, setOverride] = useState<Language | null>(getLanguageOverride);
   const [busy, setBusy] = useState(false);
+  // Set at once, unlike the state: two taps in one frame must not both start a backup.
+  const working = useRef(false);
+  // The file picker is open: a second tap must not open another one.
+  const picking = useRef(false);
 
   const chooseLanguage = async (language: Language | null) => {
     setOverride(language);
@@ -42,26 +47,31 @@ export default function SettingsScreen() {
   };
 
   const onExport = async () => {
-    if (busy) return;
+    if (working.current) return;
+    working.current = true;
     setBusy(true);
     try {
       await exportBackup();
     } catch {
       showToast({ message: t('backup.exportFailed') });
     } finally {
+      working.current = false;
       setBusy(false);
     }
   };
 
   const restore = async (archive: string) => {
+    if (working.current) return;
+    working.current = true;
     setBusy(true);
     try {
       await importBackup(archive);
       // Everything on screen may be stale now, including the language override.
-      // Imports and renders in the restored data start over from what it says, and the
-      // counters on screen follow.
+      // Imports in the restored data continue from what it says. Renders that were waiting
+      // when the backup was made are not started: each would be a paid request.
       await resumeImports();
-      await renderQueue.resume();
+      await renderRepository.failUnfinished();
+      useRenderVersion.setState((state) => ({ version: state.version + 1 }));
       await queryClient.resetQueries();
       const restoredOverride = getLanguageOverride();
       setOverride(restoredOverride);
@@ -75,21 +85,32 @@ export default function SettingsScreen() {
             ? t('backup.importNewer')
             : reason === 'invalid'
               ? t('backup.importInvalid')
-              : t('common.somethingWentWrong'),
+              : reason === 'unwritable'
+                ? t('backup.importNoSpace')
+                : t('common.somethingWentWrong'),
       });
     } finally {
+      working.current = false;
       setBusy(false);
     }
   };
 
   const onImport = async () => {
-    if (busy) return;
+    if (working.current || picking.current) return;
+    // Photos still being imported would be written into the restored closet.
+    if (isImporting()) {
+      showToast({ message: t('backup.importWhileImporting') });
+      return;
+    }
     let archive: string | null;
+    picking.current = true;
     try {
       archive = await pickBackupFile();
     } catch {
       showToast({ message: t('backup.importInvalid') });
       return;
+    } finally {
+      picking.current = false;
     }
     if (!archive) return;
     const picked = archive;

@@ -171,6 +171,9 @@ export async function startBulkImport(
 }
 
 /** Continues an import that was interrupted by the app closing. Called on app start. */
+/** True while photos are being turned into items. */
+export const isImporting = () => processor.isRunning();
+
 export async function resumeImports(): Promise<void> {
   await refreshProgress();
   const { queued, processing } = useImportProgress.getState().progress;

@@ -40,6 +40,8 @@ function EditForm({ profile }: { profile: Profile }) {
   const [sizeBottom, setSizeBottom] = useState(profile.sizeBottom ?? '');
   const [sizeShoes, setSizeShoes] = useState(profile.sizeShoes ?? '');
   const [busy, setBusy] = useState(false);
+  const replacing = useRef(false);
+  const [preparing, setPreparing] = useState(false);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -61,6 +63,11 @@ function EditForm({ profile }: { profile: Profile }) {
   };
 
   const replaceAvatar = async (photo: PickedPhoto) => {
+    // Cutting the person out takes a moment; a second photo picked meanwhile would be
+    // stored against the same old profile and leave the first one's files behind.
+    if (replacing.current) return;
+    replacing.current = true;
+    setPreparing(true);
     setBusy(true);
     setError(null);
     try {
@@ -74,6 +81,8 @@ function EditForm({ profile }: { profile: Profile }) {
     } catch {
       setError(t('common.somethingWentWrong'));
     } finally {
+      replacing.current = false;
+      setPreparing(false);
       setBusy(false);
     }
   };
@@ -148,6 +157,11 @@ function EditForm({ profile }: { profile: Profile }) {
           onAccept={chooseAvatar}
           showGuidance={!profile.avatarPath}
         />
+        {preparing ? (
+          <AppText testID="avatar-preparing" muted>
+            {t('avatar.preparing')}
+          </AppText>
+        ) : null}
         {profile.avatarPath ? (
           <Button
             testID="remove-avatar"

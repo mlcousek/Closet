@@ -131,8 +131,9 @@ public class ClosetVisionModule: Module {
         )
       )
       let white = CIImage(color: CIColor.white).cropped(to: source.extent)
+      // The mask has one channel, which Core Image reads as red; the plain mask blend reads green.
       let blended = source.applyingFilter(
-        "CIBlendWithMask",
+        "CIBlendWithRedMask",
         parameters: [kCIInputBackgroundImageKey: white, kCIInputMaskImageKey: mask]
       )
       guard

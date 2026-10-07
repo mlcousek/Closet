@@ -16,6 +16,7 @@ export const RENDER_FAILURES = [
   'declined',
   'rateLimited',
   'timeout',
+  'rejectedKey',
   'interrupted',
   'error',
 ] as const;
@@ -181,14 +182,27 @@ export function createRenderRepository(db: () => Db = getDb, now: () => number =
         .where(and(active, eq(renders.status, 'running')))
         .run();
     },
+    /**
+     * Renders that were waiting or running fail without being started. For data that
+     * came from a backup: what was queued when it was made may long since have been
+     * rendered, and starting it again would be a paid request nobody asked for.
+     */
+    async failUnfinished(): Promise<void> {
+      db()
+        .update(renders)
+        .set({ status: 'failed', error: 'interrupted', updatedAt: now() })
+        .where(and(active, inArray(renders.status, ['queued', 'running'])))
+        .run();
+    },
     async remove(id: string): Promise<void> {
       await base.softDelete(id);
     },
     /**
      * Forgets renders nobody can see any more: those of outfits that are gone
      * for good, those that were dropped, and finished ones older than the
-     * newest `keep` of their outfit (the current picture and the one before).
-     * A picture of the pieces an outfit has right now is always kept.
+     * newest `keep` of their outfit. Pictures of the pieces an outfit has right
+     * now (the one shown and the one before it) are counted apart from pictures
+     * of earlier pieces, so the shown picture never goes because of the others.
      * Returns the image files no remaining render uses, for deletion.
      */
     async purge(
@@ -209,10 +223,11 @@ export function createRenderRepository(db: () => Db = getDb, now: () => number =
       for (const row of rows) {
         let drop = gone.has(row.outfitId) || row.deletedAt !== null;
         // An outfit edited back to earlier pieces shows an older picture as current.
-        if (!drop && row.status === 'done' && !currentPieces.has(piecesOf(row.fingerprint))) {
-          const count = kept.get(row.outfitId) ?? 0;
+        if (!drop && row.status === 'done') {
+          const group = `${row.outfitId}|${currentPieces.has(piecesOf(row.fingerprint))}`;
+          const count = kept.get(group) ?? 0;
           if (count >= keep) drop = true;
-          else kept.set(row.outfitId, count + 1);
+          else kept.set(group, count + 1);
         }
         (drop ? remove : stay).push(row);
       }

@@ -122,7 +122,11 @@ export function computeStats(input: {
         return cost === null ? null : { item, wears: itemWears, cost };
       })
       .filter((entry): entry is { item: Item; wears: number; cost: number } => entry !== null)
-      .sort((a, b) => a.cost - b.cost),
+      // Amounts in different currencies cannot be ranked against each other, so each
+      // currency keeps its own run.
+      .sort(
+        (a, b) => (a.item.currency ?? '').localeCompare(b.item.currency ?? '') || a.cost - b.cost,
+      ),
     trend: months.map((month) => ({
       month,
       count: new Set(inPeriod.filter((wear) => wear.day.startsWith(month)).map((wear) => wear.day))

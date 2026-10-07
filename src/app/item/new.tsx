@@ -54,18 +54,27 @@ export default function NewItemScreen() {
   const target: 'owned' | 'wishlist' =
     (linkTarget ?? targetParam) === 'wishlist' ? 'wishlist' : 'owned';
 
+  /** Counts the photos worked on, so an answer for an earlier one is told apart and dropped. */
+  const preparing = useRef(0);
+
   const prepare = async (uri: string, size?: { width: number; height: number }) => {
+    const mine = ++preparing.current;
+    const stale = () => mine !== preparing.current;
     setStage('working');
     setTags(null);
     setUnavailable(null);
     const cutout = await itemImageDeps.cutout(uri);
+    if (stale()) return;
     setPhoto({ originalUri: uri, cutoutUri: cutout?.uri ?? null });
     setUseCutout(cutout !== null);
     setStage('tagging');
     try {
       const image = await toTagImage(cutout?.uri ?? uri, cutout !== null, cutout ?? size);
-      setTags(await tagItem(image, i18n.language === 'cs' ? 'cs' : 'en'));
+      const result = await tagItem(image, i18n.language === 'cs' ? 'cs' : 'en');
+      if (stale()) return;
+      setTags(result);
     } catch (error) {
+      if (stale()) return;
       setUnavailable(error instanceof AiUnavailableError ? error.reason : 'error');
     }
     setStage('form');
@@ -219,7 +228,11 @@ export default function NewItemScreen() {
             testID="add-item-skip-tagging"
             kind="secondary"
             label={t('addItem.skipTagging')}
-            onPress={() => setStage('form')}
+            onPress={() => {
+              // The suggestions that are still on their way are no longer wanted.
+              preparing.current++;
+              setStage('form');
+            }}
           />
         ) : null}
       </Screen>

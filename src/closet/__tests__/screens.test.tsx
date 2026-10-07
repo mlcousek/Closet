@@ -13,6 +13,7 @@ import { useAddActions } from '@/shell/addActions';
 
 import { useClosetTab } from '../closetTab';
 import { ImportIndicator } from '../ImportIndicator';
+import { ItemForm } from '../ItemForm';
 import { usePendingLink } from '../pendingLink';
 
 import type { Item, ItemFilter } from '../types';
@@ -196,6 +197,10 @@ const renderWithQuery = (ui: ReactElement) =>
 /** Lets a query for a changed filter resolve and render. */
 const settle = () =>
   act(async () => void (await new Promise((resolve) => setTimeout(resolve, 50))));
+
+/** The review screen ignores a tap that follows another within 400 ms; this waits that out. */
+const sinceLastAction = () =>
+  act(async () => void (await new Promise((resolve) => setTimeout(resolve, 450))));
 
 const confirmAlerts = () =>
   jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
@@ -715,11 +720,92 @@ describe('bulk import screens', () => {
 
     await waitFor(() => expect(screen.getByTestId('item-name')).toHaveProp('value', 'Second'));
     expect(screen.getByTestId('review-progress')).toHaveTextContent('2 of 2');
+    // The next item has been on screen long enough to have been seen.
+    await sinceLastAction();
     await act(async () => {
       fireEvent.press(screen.getByTestId('review-discard'));
     });
     expect(mockRepo.remove).toHaveBeenCalledWith(['second']);
     expect(await screen.findByText('Everything is reviewed.')).toBeTruthy();
+  });
+
+  it('discards one item when Discard is tapped twice', async () => {
+    mockItems = [
+      item('third', { needsReview: true, name: 'Third', createdAt: 3 }),
+      item('second', { needsReview: true, name: 'Second', createdAt: 2 }),
+      item('first', { needsReview: true, name: 'First', createdAt: 1 }),
+    ];
+    renderWithQuery(<ReviewScreen />);
+    expect(await screen.findByTestId('item-name')).toHaveProp('value', 'First');
+
+    // The second tap lands when the next item is already the one on screen.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('review-discard'));
+      fireEvent.press(screen.getByTestId('review-discard'));
+    });
+    await waitFor(() => expect(screen.getByTestId('item-name')).toHaveProp('value', 'Second'));
+    expect(mockRepo.remove).toHaveBeenCalledTimes(1);
+    expect(mockRepo.remove).toHaveBeenCalledWith(['first']);
+    expect(mockItems.map((entry) => entry.id)).toEqual(['third', 'second']);
+    expect(screen.getByTestId('review-progress')).toHaveTextContent('2 of 3');
+
+    // A moment later the item that is shown can be discarded as usual.
+    await sinceLastAction();
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('review-discard'));
+    });
+    expect(mockRepo.remove).toHaveBeenCalledTimes(2);
+    expect(mockRepo.remove).toHaveBeenLastCalledWith(['second']);
+    await waitFor(() => expect(screen.getByTestId('item-name')).toHaveProp('value', 'Third'));
+  });
+
+  it('confirms one item when Confirm is tapped again as the next item appears', async () => {
+    mockItems = [
+      item('third', { needsReview: true, name: 'Third', createdAt: 3 }),
+      item('second', { needsReview: true, name: 'Second', createdAt: 2 }),
+      item('first', { needsReview: true, name: 'First', createdAt: 1 }),
+    ];
+    renderWithQuery(<ReviewScreen />);
+    expect(await screen.findByTestId('item-name')).toHaveProp('value', 'First');
+
+    fireEvent.press(screen.getByTestId('item-save'));
+    await waitFor(() => expect(screen.getByTestId('item-name')).toHaveProp('value', 'Second'));
+    fireEvent.press(screen.getByTestId('item-save'));
+    await settle();
+    expect(mockRepo.update).toHaveBeenCalledTimes(1);
+    expect(mockRepo.update).toHaveBeenCalledWith(
+      'first',
+      expect.objectContaining({ needsReview: false }),
+    );
+    expect(mockItems.find((entry) => entry.id === 'second')?.needsReview).toBe(true);
+    expect(screen.getByTestId('item-name')).toHaveProp('value', 'Second');
+    expect(screen.getByTestId('review-progress')).toHaveTextContent('2 of 3');
+
+    await sinceLastAction();
+    fireEvent.press(screen.getByTestId('item-save'));
+    await waitFor(() => expect(screen.getByTestId('item-name')).toHaveProp('value', 'Third'));
+    expect(mockRepo.update).toHaveBeenCalledTimes(2);
+    expect(mockRepo.update).toHaveBeenLastCalledWith(
+      'second',
+      expect.objectContaining({ needsReview: false }),
+    );
+  });
+
+  it('confirms one item when two confirmations arrive before the screen is drawn again', async () => {
+    mockItems = [
+      item('second', { needsReview: true, name: 'Second', createdAt: 2 }),
+      item('first', { needsReview: true, name: 'First', createdAt: 1 }),
+    ];
+    renderWithQuery(<ReviewScreen />);
+    expect(await screen.findByTestId('item-name')).toHaveProp('value', 'First');
+
+    const submit = screen.UNSAFE_getByType(ItemForm).props.onSubmit as (details: object) => void;
+    await act(async () => {
+      submit({ name: 'First' });
+      submit({ name: 'First' });
+    });
+    await waitFor(() => expect(screen.getByTestId('item-name')).toHaveProp('value', 'Second'));
+    expect(mockRepo.update).toHaveBeenCalledTimes(1);
   });
 });
 

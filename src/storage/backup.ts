@@ -37,7 +37,8 @@ export type BackupManifest = {
   createdAt: string;
 };
 
-export type BackupErrorReason = 'invalid' | 'newer';
+/** `unwritable`: the archive is fine, but its files could not be written here (no space, usually). */
+export type BackupErrorReason = 'invalid' | 'newer' | 'unwritable';
 
 export class BackupError extends Error {
   constructor(public reason: BackupErrorReason) {
@@ -70,7 +71,16 @@ export async function writeBackupArchive(
   await zip.add(MANIFEST, textToBytes(JSON.stringify(manifest)));
   await zip.add(DB_ENTRY, await fs.readBytes(DB_FILE));
   for (const path of await fs.listFiles(IMAGES_DIR)) {
-    await zip.add(path, await fs.readBytes(path));
+    let bytes: Uint8Array;
+    try {
+      bytes = await fs.readBytes(path);
+    } catch (error) {
+      // The app keeps working while this runs: a photo deleted since the list was made
+      // (an import finishing, an item removed) is simply no longer part of the closet.
+      if (await fs.exists(path)) throw error;
+      continue;
+    }
+    await zip.add(path, bytes);
   }
   await zip.finish();
 }
@@ -144,11 +154,16 @@ export async function stageBackupFrom(
         } else if (!isSafeImagePath(path)) {
           throw new BackupError('invalid');
         }
-        await fs.writeBytes(`${STAGING_DIR}/${path}`, data);
+        try {
+          await fs.writeBytes(`${STAGING_DIR}/${path}`, data);
+        } catch {
+          // Not the archive's fault, and the user should not be told their backup is bad.
+          throw new BackupError('unwritable');
+        }
       });
     } catch (error) {
-      // Whatever went wrong while reading (not a zip, damaged, disk full), it is not a
-      // backup this app can restore; only "newer" has its own message.
+      // Whatever else went wrong while reading (not a zip, damaged), it is not a backup
+      // this app can restore.
       throw error instanceof BackupError ? error : new BackupError('invalid');
     }
     if (!manifest || !hasDb) throw new BackupError('invalid');
@@ -238,7 +253,16 @@ export async function rollbackRestore(fs: FsAdapter): Promise<void> {
 export async function finishRestore(fs: FsAdapter): Promise<void> {
   // Written first: from here on the restore counts as done, whatever happens to the
   // clean-up below. Deleting a large folder takes time and can fail or be cut off.
-  await fs.writeBase64(DONE_MARKER, '');
+  try {
+    await fs.writeBase64(DONE_MARKER, '');
+  } catch {
+    // No room even for an empty file. One rename needs none and says the same thing: with
+    // the set-aside folder gone, the next start has nothing to put back.
+    await fs.remove(DISCARD_DIR);
+    if (await fs.exists(PREVIOUS_DIR)) await fs.move(PREVIOUS_DIR, DISCARD_DIR);
+    await fs.remove(DISCARD_DIR);
+    return;
+  }
   await discardPrevious(fs);
 }
 

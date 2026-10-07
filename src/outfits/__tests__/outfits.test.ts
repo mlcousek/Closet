@@ -750,8 +750,9 @@ describe('try-on provider', () => {
   };
 
   it.each([
-    [401, 'noKey'],
-    [403, 'noKey'],
+    // A key was sent and refused: that is not the same as having no key.
+    [401, 'rejectedKey'],
+    [403, 'rejectedKey'],
     [429, 'rateLimited'],
     [400, 'error'],
     [500, 'error'],
@@ -760,7 +761,7 @@ describe('try-on provider', () => {
     expect(await reasonOf(provider.render(input, 'k'))).toBe(reason);
   });
 
-  it('recognises an invalid key, which Gemini reports as a bad request', async () => {
+  it('reports an invalid key, which Gemini answers as a bad request, as a rejected key', async () => {
     const invalid = {
       error: {
         code: 400,
@@ -770,7 +771,12 @@ describe('try-on provider', () => {
     };
     expect(
       await reasonOf(createGeminiProvider(respond(400, invalid), () => 'm').render(input, 'k')),
-    ).toBe('noKey');
+    ).toBe('rejectedKey');
+    // Any other bad request stays a plain error.
+    const other = { error: { code: 400, message: 'Unsupported image format' } };
+    expect(
+      await reasonOf(createGeminiProvider(respond(400, other), () => 'm').render(input, 'k')),
+    ).toBe('error');
     expect(isInvalidKey({ error: { message: 'Unsupported image format' } })).toBe(false);
     expect(isInvalidKey(null)).toBe(false);
   });

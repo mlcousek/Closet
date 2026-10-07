@@ -75,12 +75,23 @@ export function createImportJobRepository(db: () => Db = getDb, now: () => numbe
     async retry(id: string): Promise<void> {
       setStatus(id, 'queued', { error: null });
     },
-    /** Jobs left in "processing" by an app that was closed mid-import go back to the queue. */
+    /**
+     * Jobs left in "processing" by an app that was closed mid-import go back to
+     * the queue, once. A job that was already given that second chance fails
+     * instead: a photo that makes the app run out of memory would otherwise be
+     * tried again at every start, and the app would never get past it.
+     */
     async requeueInterrupted(): Promise<void> {
+      const processing = and(active, eq(importJobs.status, 'processing'));
       db()
         .update(importJobs)
-        .set({ status: 'queued', updatedAt: now() })
-        .where(and(active, eq(importJobs.status, 'processing')))
+        .set({ status: 'failed', updatedAt: now() })
+        .where(and(processing, eq(importJobs.error, INTERRUPTED)))
+        .run();
+      db()
+        .update(importJobs)
+        .set({ status: 'queued', error: INTERRUPTED, updatedAt: now() })
+        .where(processing)
         .run();
     },
     async progress(): Promise<ImportProgress> {
@@ -119,6 +130,9 @@ export function createImportJobRepository(db: () => Db = getDb, now: () => numbe
     },
   };
 }
+
+/** Kept in a job's error while it waits for its second and last automatic attempt. */
+const INTERRUPTED = 'interrupted';
 
 export type ImportJobRepository = ReturnType<typeof createImportJobRepository>;
 

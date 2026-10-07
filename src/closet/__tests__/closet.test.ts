@@ -617,6 +617,100 @@ describe('import queue', () => {
     expect(await jobs.progress()).toMatchObject({ done: 3, processing: 0, queued: 0 });
   });
 
+  describe('a photo that was being imported when the app closed', () => {
+    const only = async (jobs: Awaited<ReturnType<typeof setup>>['jobs']) => (await jobs.list())[0];
+
+    it('goes back to the queue once, and fails when it is interrupted again', async () => {
+      const { jobs } = await setup();
+      await jobs.enqueue(['heavy', 'other']);
+      await jobs.claimNext();
+
+      await jobs.requeueInterrupted();
+      expect(await only(jobs)).toMatchObject({
+        sourcePath: 'heavy',
+        status: 'queued',
+        error: 'interrupted',
+      });
+      // A job that was only waiting is not marked.
+      expect((await jobs.list())[1]).toMatchObject({ status: 'queued', error: null });
+
+      // The second attempt closes the app as well.
+      expect(await jobs.claimNext()).toMatchObject({ sourcePath: 'heavy', status: 'processing' });
+      await jobs.requeueInterrupted();
+      expect(await only(jobs)).toMatchObject({ status: 'failed', error: 'interrupted' });
+      expect(await jobs.progress()).toMatchObject({ queued: 1, processing: 0, failed: 1 });
+
+      // The next start has nothing to try again: the other photo is the one that is claimed.
+      await jobs.requeueInterrupted();
+      expect(await only(jobs)).toMatchObject({ status: 'failed' });
+      expect(await jobs.claimNext()).toMatchObject({ sourcePath: 'other' });
+    });
+
+    it('is not failed by further starts while it still waits for its second attempt', async () => {
+      const { jobs } = await setup();
+      await jobs.enqueue(['heavy']);
+      await jobs.claimNext();
+      await jobs.requeueInterrupted();
+      await jobs.requeueInterrupted();
+      await jobs.requeueInterrupted();
+      expect(await only(jobs)).toMatchObject({ status: 'queued', error: 'interrupted' });
+    });
+
+    it('gets a fresh chance when it is retried by hand', async () => {
+      const { jobs } = await setup();
+      await jobs.enqueue(['heavy']);
+      await jobs.claimNext();
+      await jobs.requeueInterrupted();
+      await jobs.claimNext();
+      await jobs.requeueInterrupted();
+      const failed = await only(jobs);
+      expect(failed.status).toBe('failed');
+
+      await jobs.retry(failed.id);
+      expect(await only(jobs)).toMatchObject({ status: 'queued', error: null });
+      // Interrupted once more, it is queued again instead of failing straight away.
+      await jobs.claimNext();
+      await jobs.requeueInterrupted();
+      expect(await only(jobs)).toMatchObject({ status: 'queued', error: 'interrupted' });
+    });
+
+    it('forgets the interruption once it is imported', async () => {
+      const { jobs } = await setup();
+      await jobs.enqueue(['heavy']);
+      await jobs.claimNext();
+      await jobs.requeueInterrupted();
+      const claimed = await jobs.claimNext();
+      await jobs.markDone(claimed!.id, 'item-1');
+      expect(await only(jobs)).toMatchObject({ status: 'done', error: null, itemId: 'item-1' });
+
+      await jobs.requeueInterrupted();
+      expect(await only(jobs)).toMatchObject({ status: 'done', error: null });
+    });
+
+    it('is tried a second time by the processor, but not a third', async () => {
+      const { jobs } = await setup();
+      await jobs.enqueue(['heavy']);
+      await jobs.claimNext();
+
+      // The app closes again in the middle of the second attempt.
+      const second = jest.fn(async () => {
+        throw new Error('stop');
+      });
+      const stopped = {
+        ...jobs,
+        markFailed: async () => {},
+      };
+      await createImportProcessor({ jobs: stopped, process: second }).start();
+      expect(second).toHaveBeenCalledTimes(1);
+      expect(await only(jobs)).toMatchObject({ status: 'processing', error: 'interrupted' });
+
+      const third = jest.fn(async () => 'item');
+      await createImportProcessor({ jobs, process: third }).start();
+      expect(third).not.toHaveBeenCalled();
+      expect(await jobs.progress()).toMatchObject({ failed: 1, queued: 0, processing: 0, done: 0 });
+    });
+  });
+
   it('does not start a second run while one is in progress', async () => {
     const { jobs } = await setup();
     await jobs.enqueue(['a']);

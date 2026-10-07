@@ -105,9 +105,11 @@ function TripView({ trip }: { trip: Trip }) {
   const { data: profile } = useProfile();
   const dayList = trip.days.map((day) => day.day);
   const { data: weather = [], isPending: weatherPending } = useQuery({
-    queryKey: [TRIPS, 'weather', trip.id, trip.startDay, trip.endDay],
+    // Not under the trips key: a ticked packing item must not ask for the weather again.
+    queryKey: ['trip-weather', trip.id, trip.startDay, trip.endDay],
     queryFn: () => tripWeather(trip.place, dayList),
     staleTime: 60 * 60 * 1000,
+    retry: 1,
   });
   // Pieces that were archived or are extras from outside the owned list still have to show.
   const referenced = [

@@ -76,17 +76,21 @@ export async function tripWeather(
   const forecast = sources.forecast ?? ((target: Place) => fetchWeather(target));
   const typical = sources.typical ?? ((target: Place, list: Day[]) => fetchTypical(target, list));
   const forecastDays = new Map<Day, DayWeather>();
+  let forecastFailed = false;
   try {
     for (const entry of (await forecast(place)).days) forecastDays.set(entry.day, entry);
   } catch {
     // Days without a forecast are looked up as typical below.
+    forecastFailed = true;
   }
   const missing = days.filter((day) => !forecastDays.has(day));
   let typicalDays = new Map<Day, DayWeather>();
   try {
     typicalDays = await typical(place, missing);
   } catch {
-    // Without either source the day is planned from the season.
+    // With nothing from either source this is a failure, not an answer: whoever asked keeps
+    // the weather they already had instead of having it replaced by "no forecast".
+    if (forecastFailed) throw new Error('No weather source could be reached');
   }
   return days.map((day) => {
     const fromForecast = forecastDays.get(day);

@@ -136,6 +136,40 @@ describe('statistics', () => {
     expect(costPerWear(300, 3)).toBe(100);
   });
 
+  it('keeps each currency in its own run of the cost-per-wear list', () => {
+    const mixed = [
+      item('boots', 'shoes', { price: 3000, currency: 'CZK' }),
+      item('coat', 'outerwear', { price: 100, currency: 'EUR' }),
+      item('tee', 'tops', { price: 400, currency: 'CZK' }),
+      item('scarf', 'accessories', { price: 60, currency: 'EUR' }),
+      item('bag', 'accessories', { price: 90, currency: 'USD' }),
+    ];
+    const worn = [
+      ...['2026-10-01', '2026-10-02'].map((day) => ({ itemId: 'boots', day })),
+      ...['2026-10-01', '2026-10-02'].map((day) => ({ itemId: 'coat', day })),
+      ...['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'].map((day) => ({
+        itemId: 'tee',
+        day,
+      })),
+      { itemId: 'scarf', day: '2026-10-01' },
+      { itemId: 'bag', day: '2026-10-01' },
+    ];
+    const list = computeStats({
+      items: mixed,
+      wears: worn,
+      period: 'all',
+      today: '2026-10-05',
+    }).costPerWear;
+    // 50 EUR is not less than 100 CZK: the numbers are ranked only within a currency.
+    expect(list.map((entry) => [entry.item.currency, entry.item.id, entry.cost])).toEqual([
+      ['CZK', 'tee', 100],
+      ['CZK', 'boots', 1500],
+      ['EUR', 'coat', 50],
+      ['EUR', 'scarf', 60],
+      ['USD', 'bag', 90],
+    ]);
+  });
+
   it('copes with an empty closet and an empty wear log', () => {
     const empty = computeStats({ items: [], wears: [], period: 'all', today: '2026-10-05' });
     expect(empty.usageShare).toBe(0);
@@ -408,12 +442,41 @@ describe('trip weather', () => {
     ]);
   });
 
-  it('falls back to no weather when nothing can be fetched', async () => {
-    const fail = async () => {
-      throw new Error('offline');
-    };
-    const result = await tripWeather(place, ['2026-10-06'], { forecast: fail, typical: fail });
-    expect(result).toEqual([{ day: '2026-10-06', weather: null, typical: false }]);
+  const fail = async (): Promise<never> => {
+    throw new Error('offline');
+  };
+
+  it('fails when neither source can be reached, so the weather already shown is kept', async () => {
+    await expect(
+      tripWeather(place, ['2026-10-06'], { forecast: fail, typical: fail }),
+    ).rejects.toThrow('No weather source could be reached');
+  });
+
+  it('answers from typical weather alone when the forecast cannot be fetched', async () => {
+    const typical = jest.fn(
+      async (_place: unknown, days: string[]) => new Map(days.map((day) => [day, weather(day, 5)])),
+    );
+    const result = await tripWeather(place, ['2026-10-06', '2026-12-02'], {
+      forecast: fail,
+      typical,
+    });
+    // Every day is looked up as typical, the near one too.
+    expect(typical.mock.calls[0][1]).toEqual(['2026-10-06', '2026-12-02']);
+    expect(result).toEqual([
+      { day: '2026-10-06', weather: weather('2026-10-06', 5), typical: true },
+      { day: '2026-12-02', weather: weather('2026-12-02', 5), typical: true },
+    ]);
+  });
+
+  it('answers from the forecast alone when typical weather cannot be fetched', async () => {
+    const result = await tripWeather(place, ['2026-10-06', '2026-12-02'], {
+      forecast: async () => ({ days: [weather('2026-10-06')] }),
+      typical: fail,
+    });
+    expect(result).toEqual([
+      { day: '2026-10-06', weather: weather('2026-10-06'), typical: false },
+      { day: '2026-12-02', weather: null, typical: false },
+    ]);
   });
 });
 

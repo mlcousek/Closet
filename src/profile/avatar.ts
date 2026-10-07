@@ -65,13 +65,14 @@ export async function storeAvatar(
   deps: AvatarDeps,
 ): Promise<StoredAvatar & AvatarOutcome> {
   const avatarPath = await deps.save(photo.uri, 'avatar');
+  const small = async (base: { uri: string; width: number; height: number }) =>
+    deps.save(await deps.resize(base.uri, smallSize(base.width, base.height)), 'avatar');
   try {
-    // Cutting out is a nicety: when it fails the photo is still a usable avatar.
+    // Cutting out is a nicety: when any part of it fails the photo is still a usable avatar.
     const person = deps.isolate ? await deps.isolate(photo.uri).catch(() => null) : null;
-    const base = person ?? photo;
-    const smallUri = await deps.resize(base.uri, smallSize(base.width, base.height));
-    const avatarSmallPath = await deps.save(smallUri, 'avatar');
-    return { avatarPath, avatarSmallPath, isolated: person !== null };
+    const isolatedPath = person ? await small(person).catch(() => null) : null;
+    if (isolatedPath) return { avatarPath, avatarSmallPath: isolatedPath, isolated: true };
+    return { avatarPath, avatarSmallPath: await small(photo), isolated: false };
   } catch (error) {
     // The reason the photo could not be stored is what matters, not a failed clean-up.
     await deps.remove(avatarPath).catch(() => {});

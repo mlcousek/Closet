@@ -13,7 +13,7 @@ import type { Category } from '@/closet/taxonomy';
 import type { Item } from '@/closet/types';
 import { DisplaySettings } from '@/display/DisplaySettings';
 import type { Outfit } from '@/outfits/repository';
-import { today } from '@/planning/dates';
+import { addDays, today } from '@/planning/dates';
 import { CostPerWear } from '@/stats/CostPerWear';
 import type { Trip } from '@/trips/repository';
 
@@ -486,6 +486,31 @@ describe('stylist', () => {
     expect(mockOutfitRepo.create).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    ['today, when its day has passed', addDays(today(), -3), today()],
+    ['its own day, when that is still to come', addDays(today(), 2), addDays(today(), 2)],
+    ['today, when its day is today', today(), today()],
+  ])('plans a proposal of a reopened session on %s', async (_case, day, planned) => {
+    mockSessions = [
+      {
+        id: 's1',
+        createdAt: 1,
+        request: 'Work',
+        day,
+        itemId: null,
+        turns: [{ request: 'Work', proposals: [proposal(['tee', 'jeans'], 'Fine.')] }],
+      },
+    ];
+    mockParams = { sessionId: 's1' };
+    renderWithQuery(<StylistScreen />);
+
+    fireEvent.press(await screen.findByTestId('proposal-plan-0-0'));
+    await waitFor(() => expect(mockCalendar.plan).toHaveBeenCalledTimes(1));
+    // An outfit is never planned on a day that is over.
+    expect(mockCalendar.plan).toHaveBeenCalledWith(planned, 'saved-outfit');
+    await waitFor(() => expect(mockSessions[0].turns[0].proposals[0].planned).toBe(true));
+  });
+
   it('requires the chosen piece when styling an item, and cannot plan a wishlist piece', async () => {
     mockParams = { itemId: 'wish' };
     mockPropose.mockResolvedValue([proposal(['wish', 'jeans'], 'Try it with denim.')]);
@@ -789,6 +814,28 @@ describe('display', () => {
     );
     expect(screen.getByTestId('display-outfit-label')).toHaveTextContent("Today's outfit");
     expect(screen.getByTestId('collage-piece-tee')).toBeTruthy();
+  });
+
+  it('shows the planned outfit that still exists when an entry before it is for a deleted one', () => {
+    mockOutfits = [outfit('o2', 'Office', ['shirt'])];
+    mockSuggested = [closet.find((entry) => entry.id === 'tee')!];
+    mockToday = [{ outfitId: 'deleted' }, { outfitId: 'o2' }];
+    renderWithQuery(<DisplayScreen />);
+    expect(screen.getByTestId('display-outfit-label')).toHaveTextContent('Office');
+    expect(screen.getByTestId('collage-piece-shirt')).toBeTruthy();
+    // The suggestion is for a day without a plan, which this is not.
+    expect(screen.queryByTestId('collage-piece-tee')).toBeNull();
+    expect(screen.queryByText('Suggested for today')).toBeNull();
+  });
+
+  it('falls back to the suggestion when every outfit planned for today was deleted', () => {
+    mockOutfits = [outfit('o2', 'Office', ['shirt'])];
+    mockSuggested = [closet.find((entry) => entry.id === 'tee')!];
+    mockToday = [{ outfitId: 'deleted' }, { outfitId: 'also-deleted' }];
+    renderWithQuery(<DisplayScreen />);
+    expect(screen.getByTestId('display-outfit-label')).toHaveTextContent('Suggested for today');
+    expect(screen.getByTestId('collage-piece-tee')).toBeTruthy();
+    expect(screen.queryByTestId('collage-piece-shirt')).toBeNull();
   });
 
   it('dims when left alone, wakes on a tap, and only then offers to close', () => {

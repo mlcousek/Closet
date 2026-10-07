@@ -20,6 +20,7 @@ export type TryOnFailure =
   | 'declined'
   | 'rateLimited'
   | 'timeout'
+  | 'rejectedKey'
   | 'error';
 
 /** A request that fails this quickly never reached the provider. */
@@ -181,7 +182,10 @@ export function createGeminiProvider(
     } finally {
       clearTimeout(timer);
     }
-    if (status === 401 || status === 403 || isInvalidKey(payload)) throw new TryOnError('noKey');
+    // There is a key, and the provider would not take it: asking for one again would mislead.
+    if (status === 401 || status === 403 || isInvalidKey(payload)) {
+      throw new TryOnError('rejectedKey');
+    }
     if (status === 429) throw new TryOnError('rateLimited');
     if (status < 200 || status >= 300) throw new TryOnError('error');
     return readGeminiImage(payload);

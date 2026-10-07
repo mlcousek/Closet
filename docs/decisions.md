@@ -52,6 +52,7 @@ The spec lets the user filter the items offered in a row. The editor has one sea
 - **Dates are typed as YYYY-MM-DD** in the trip form, as for the purchase date of an item. There is no date picker in the app yet.
 
 **Not yet verified:** the display's keep-awake, rotation, dimming and start-while-charging behaviour, and every stylist request, have only been exercised in tests with mocks.
+
 - **Trip activities are the closet's occasions.** The design named city, beach, hiking and travel day. Items are tagged with occasions (casual, work, formal, party, sport, home, outdoor), so a day's activity is one of those and filters by the same tag; a second vocabulary would have matched nothing in the closet.
 - **Reuse limits are fixed.** Tops and dresses twice, bottoms three times, two pairs of shoes (three beyond a week), in `TRIP_RULES`. There is no setting for them yet. When the closet is too small, the limits give way before a day is left without an outfit.
 - **Statistics are about items.** The overview counts saved outfits, but there are no most and least worn outfits, no worst-value list and no "not worn for a long time" list; "not worn in this period" shows the first eight.
@@ -65,3 +66,28 @@ The spec lets the user filter the items offered in a row. The editor has one sea
 - **Try-on requests stay within the provider's limit.** Pieces are sent at 1024 px when they fit in one request and at 768 or 512 px when an outfit has too many (`encodeWithinBudget`). The 12 MB budget is an estimate of what the provider accepts, to be checked with a real key.
 - **Temporary files are cleaned up.** At start, the app's own working files older than an hour are deleted from the cache folder. Cutouts are now written to the cache folder and not the system temporary folder, which changed one line of the Swift module.
 - **After a restore, background work starts over** from the restored data: queued imports and renders are read again and every screen reloads.
+
+## Try-on pictures: decided with the owner on 2026-10-07
+
+These replace what the try-on spec in `openspec/changes/add-outfits-try-on` says about outdated renders.
+
+- **A picture belongs to an outfit while its pieces stay the same.** Changing a piece, or the photo of a piece, drops the picture from view and the outfit shows the flat preview again. Going back to the earlier pieces shows their picture again. There is no "outdated" state any more.
+- **A new photo of the user leaves existing pictures as they are.** Nothing is rendered again unless the user taps Regenerate.
+- **The user's photo is reduced to the person on a white background, on the device** (Vision person segmentation). The original is kept as `avatarPath`; the cut-out, downscaled copy is `avatarSmallPath`, which renders and the free route use. When nobody can be told apart from the background the photo is used as it is and the app says so. A photo added before this is not cut out until it is added again.
+- **A free route without a provider key.** A subscription to Gemini, ChatGPT or Claude cannot be used from another app, so the app shares one picture (the user's photo and the numbered pieces) with a matching request to an assistant app the user already has, and the finished picture is added back from Photos. It can run through every outfit without a picture, and add the pictures for all of them at once in the order they were picked.
+
+Known limits of the free route, not yet seen on a device:
+
+- The shared picture is a snapshot of an on-screen view about 300 points wide, scaled up. The user's face in it is small, so likeness may be worse than with the paid route, which sends each image on its own.
+- Adding several pictures at once relies on the user picking them in the order of the outfits. A wrong picture can only be replaced by adding another one.
+
+## Limits from the review of 2026-10-07, left open
+
+- **Bulk import and memory.** Two photos are worked on at a time at full camera resolution. A photo that makes the app run out of memory is now tried twice and then marked as failed instead of at every start, but the memory use itself is unchanged.
+- **Restore while photos are being imported** is refused rather than made safe.
+- **Statistics in several currencies** are listed per currency; nothing is converted.
+- **Reason text of a suggestion** can still mention an outer layer when the closet has none that fits and the suggestion was made without one.
+- **Day chips in the stylist** are not refreshed when the screen stays open over midnight; planning from a reopened session never lands in the past.
+- **Usage counts** show paid renders only. Studio photos and tagging requests are not shown, and a request that timed out is not counted although it may have been charged; the message for a timeout now says so.
+- **Item names from a shop link go into prompts as they are.** The stylist's answers are checked against real item ids, so the worst case is an odd picture or explanation.
+- **Prepared SQL statements** may not be released until the database closes (not confirmed); only a very long session, such as display mode left on, could notice.

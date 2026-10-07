@@ -98,7 +98,9 @@
     "importDone": "Backup restored.",
     "importInvalid": "This file is not a Closet backup. Nothing was changed.",
     "importNewer": "This backup comes from a newer version of the app. Update the app and try again.",
-    "working": "Working on the backup. This can take a while with many photos."
+    "working": "Working on the backup. This can take a while with many photos.",
+    "importNoSpace": "The backup could not be unpacked on this phone, most likely for lack of free space. Restoring needs about twice the size of the backup. Nothing was changed.",
+    "importWhileImporting": "Photos are still being imported. Restore once that has finished."
   },
   "ai": {
     "title": "AI provider keys",
@@ -186,7 +188,8 @@
     "replaceStudioTitle": "Replace your photo?",
     "replaceStudioMessage": "Your studio photo was made from the current one and will be removed. Outfit pictures already made stay.",
     "replaceStudioAction": "Replace",
-    "notIsolated": "The background of your photo could not be removed, so the photo is used as it is. A photo of you alone in front of a plain wall works best."
+    "notIsolated": "The background of your photo could not be removed, so the photo is used as it is. A photo of you alone in front of a plain wall works best.",
+    "preparing": "Preparing your photo…"
   },
   "taxonomy": {
     "category": {
@@ -476,17 +479,18 @@
     "noAvatar": "Add a full-body photo to see outfits on you.",
     "addAvatar": "Add photo",
     "disclosureTitle": "Send images to the image provider?",
-    "disclosureMessage": "To render an outfit on you, your photo and the pictures of the pieces are sent to Google Gemini with your own key. This is asked only once.",
+    "disclosureMessage": "To render an outfit on you, your photo and the pictures of the pieces are sent to Google Gemini with your own key. From then on an outfit is also rendered when you save it or accept a suggestion; you can turn that off in Settings. This is asked only once.",
     "disclosureAccept": "Send and render",
     "failure": {
       "noAvatar": "There is no photo of you to render on. Add one in your profile.",
       "offline": "No connection, so nothing was sent and nothing was charged. Try again when you are online.",
       "declined": "The provider declined to render this outfit. The flat preview is shown instead.",
       "rateLimited": "The provider is busy or your quota is used up. Try again later.",
-      "timeout": "The provider took too long to answer. Try again.",
+      "timeout": "The provider took too long to answer. The picture may have been made and charged anyway, so check your usage before trying again.",
       "interrupted": "The app was closed before this render finished. Try again.",
       "error": "The render did not work this time. Try again.",
-      "connectionLost": "The connection was lost while the picture was being made. It may have been made and charged anyway, so check your usage before trying again."
+      "connectionLost": "The connection was lost while the picture was being made. It may have been made and charged anyway, so check your usage before trying again.",
+      "rejectedKey": "The image provider did not accept your key. Check the key, and that billing and image generation are enabled for it."
     },
     "settingsTitle": "Outfit renders",
     "autoRender": "Render when I save an outfit",
@@ -507,12 +511,12 @@
     "copied": "The request is copied. Paste it next to the picture in the other app.",
     "added": "The picture is now shown for this outfit.",
     "noPhoto": "You have no photo of yourself in your profile, so only the pieces are on the picture. Attach a full-body photo of you in the other app as well.",
-    "openSeveral": "Try on {{count}} outfits without a picture, free",
+    "openSeveral": "Try on outfits without a picture, free ({{count}})",
     "progress": "Outfit {{current}} of {{total}}",
     "next": "Next outfit",
-    "addAll": "Add pictures for all {{count}} at once",
+    "addAll": "Add pictures for the remaining {{count}} at once",
     "addedSeveral": "Pictures added: {{count}}",
-    "severalHint": "Faster for many: share each outfit and tap Next, make all the pictures in the other app, then add them all at once. Tap them in Photos in the same order as the outfits here."
+    "severalHint": "Faster for many: share each outfit and tap Next, make all the pictures in the other app, then add them all at once. Tap them in Photos in the same order as the outfits here; outfits that already got a picture in this run are skipped."
   },
   "studio": {
     "title": "Studio photo",

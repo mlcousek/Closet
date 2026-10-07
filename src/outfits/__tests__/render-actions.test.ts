@@ -331,7 +331,7 @@ describe('what a render is based on', () => {
     ]);
   });
 
-  it('has no fingerprint without an avatar', async () => {
+  it('uses a stand-in for the avatar in the fingerprint when there is none', async () => {
     const { outfit } = await setup();
     expect(currentFingerprint(outfit, null)).toBe(fingerprint('none', outfitItemIds(outfit)));
   });
@@ -345,7 +345,7 @@ describe('what a render is based on', () => {
     expect(currentFingerprint(outfit, 'studio.png')).not.toBe(print);
     expect(currentFingerprint({ entries: outfit.entries.slice(1) }, 'small.jpg')).not.toBe(print);
 
-    // The skirt gets a cutout: renders made with its old photo are out of date.
+    // The skirt gets a cutout: renders made with its old photo no longer belong to the outfit.
     await items.update(skirt.id, { cutoutPath: 'images/items/skirt.png' });
     const changed = (await outfitRepository.get(outfit.id))!;
     expect(currentFingerprint(changed, 'small.jpg')).not.toBe(print);
@@ -1038,6 +1038,50 @@ describe('a picture made in another app', () => {
     expect(render.thumbPath).toBe(render.imagePath);
     // Without a photo of the user there is nothing to judge the picture against.
     expect(render.fingerprint).toBe(fingerprint('none', outfitItemIds(outfit)));
+  });
+
+  it('belongs to the pieces as they are when it is added, not as the caller last saw them', async () => {
+    const { outfit, items, skirt, coat, basePath } = await setup();
+    const seen = currentFingerprint(outfit, basePath);
+    // While the screen was open the skirt got its cutout and the coat was taken out.
+    await items.update(skirt.id, { cutoutPath: 'images/items/skirt.png' });
+    await outfitRepository.setPieces(
+      outfit.id,
+      outfit.entries
+        .filter((entry) => entry.item.id !== coat.id)
+        .map(({ item, slot, position }) => ({ itemId: item.id, slot, position })),
+    );
+
+    await saveManualRender(outfit, { uri: 'file:///picked/me.jpg', width: 900, height: 1200 });
+
+    const now = (await outfitRepository.get(outfit.id))!;
+    const [render] = await renderRepository.forOutfit(outfit.id);
+    expect(render.fingerprint).toBe(currentFingerprint(now, basePath));
+    expect(render.fingerprint).not.toBe(seen);
+    expect(render.fingerprint).toContain(`${skirt.id}@images/items/skirt.png`);
+    expect(render.fingerprint).not.toContain(coat.id);
+  });
+
+  it('needs no more than the id of the outfit', async () => {
+    const { outfit, basePath } = await setup();
+    await saveManualRender({ id: outfit.id }, { uri: 'file:///p.jpg', width: 900, height: 1200 });
+    const [render] = await renderRepository.forOutfit(outfit.id);
+    expect(render.fingerprint).toBe(currentFingerprint(outfit, basePath));
+  });
+
+  it('fails and stores nothing for an outfit that was deleted meanwhile', async () => {
+    const { outfit } = await setup();
+    await outfitRepository.remove(outfit.id);
+
+    await expect(
+      saveManualRender(outfit, { uri: 'file:///picked/me.jpg', width: 900, height: 1200 }),
+    ).rejects.toThrow('The outfit no longer exists');
+    expect(await renderRepository.forOutfit(outfit.id)).toEqual([]);
+    expect(await renderRepository.all()).toEqual([]);
+    // No picture file is left behind without a render that points at it.
+    expect(mockStore.saved).toEqual([]);
+    expect(mockManipulate).not.toHaveBeenCalled();
+    expect(useRenderVersion.getState().version).toBe(0);
   });
 
   it('adds nothing when the picture cannot be stored', async () => {

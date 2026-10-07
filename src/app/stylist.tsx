@@ -151,7 +151,8 @@ function ProposalCard({
               onPress={() =>
                 void run(async () => {
                   const outfitId = await save();
-                  await calendarRepository.plan(day ?? today(), outfitId);
+                  // A session reopened later may be for a day that has passed.
+                  await calendarRepository.plan(day && day >= today() ? day : today(), outfitId);
                   setPlanned(true);
                   await onMark({ planned: true });
                   await invalidatePlanning();

@@ -17,7 +17,8 @@ import { useInvalidateOutfits, useOutfit, useRenderSummary } from '@/outfits/use
 import { useRenderRequest } from '@/outfits/useRenderRequest';
 import { ShareSheet } from '@/sharing/ShareSheet';
 import { calendarRepository } from '@/planning/calendar';
-import { addDays, fromDay, today } from '@/planning/dates';
+import { addDays, fromDay } from '@/planning/dates';
+import { useToday } from '@/planning/useToday';
 import { useInvalidatePlanning } from '@/planning/usePlanning';
 import { WearStats } from '@/planning/WearStats';
 import { attempt, deleteWithUndo, useToast } from '@/shell/toast';
@@ -37,7 +38,9 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
   const [planning, setPlanning] = useState(false);
   const invalidatePlanning = useInvalidatePlanning();
   const showToast = useToast((state) => state.show);
-  const planDays = Array.from({ length: 14 }, (_, index) => addDays(today(), index));
+  // Kept current: a screen left open over midnight must not offer yesterday.
+  const currentDay = useToday();
+  const planDays = Array.from({ length: 14 }, (_, index) => addDays(currentDay, index));
   const [pickingLookbook, setPickingLookbook] = useState(false);
   const [manual, setManual] = useState(false);
 

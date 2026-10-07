@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-import { AiUnavailableError, modelOptions, toUnavailable } from '../client';
+import { AiUnavailableError, createAnthropic, modelOptions, toUnavailable } from '../client';
 import { checkAnthropicKey, checkGeminiKey } from '../providers';
 import { normaliseTags, tagItem } from '../tagging';
 
@@ -155,6 +155,8 @@ describe('item tagging', () => {
     [Anthropic.PermissionDeniedError, 'rejectedKey'],
     [Anthropic.RateLimitError, 'rateLimited'],
     [Anthropic.APIConnectionError, 'offline'],
+    // A request that timed out was sent: the connection is not what failed.
+    [Anthropic.APIConnectionTimeoutError, 'error'],
     [Anthropic.InternalServerError, 'error'],
   ] as const)('maps %p to %s', async (type, reason) => {
     const client = {
@@ -168,6 +170,20 @@ describe('item tagging', () => {
     expect(await reasonOf(tagItem(image, 'en', refused.client))).toBe('error');
     const empty = clientReturning({ stop_reason: 'end_turn', parsed_output: null });
     expect(await reasonOf(tagItem(image, 'en', empty.client))).toBe('error');
+  });
+
+  it('tells a request that ran out of time apart from having no connection', () => {
+    expect(toUnavailable(new Anthropic.APIConnectionTimeoutError()).reason).toBe('error');
+    expect(toUnavailable(new Anthropic.APIConnectionError({ message: 'offline' })).reason).toBe(
+      'offline',
+    );
+  });
+
+  it('never sends a request a second time by itself, and gives up after a minute', () => {
+    const client = createAnthropic('sk-test');
+    // A retry would send the photos again and could be billed again.
+    expect(client.maxRetries).toBe(0);
+    expect(client.timeout).toBe(60_000);
   });
 
   it('maps unknown failures to a generic reason', () => {

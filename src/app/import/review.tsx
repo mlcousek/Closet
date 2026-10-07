@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ItemForm } from '@/closet/ItemForm';
@@ -25,6 +25,9 @@ export default function ReviewScreen() {
   const [handled, setHandled] = useState(0);
   // The item on screen stays there until it is dealt with, also when an earlier one comes back.
   const [pinnedId, setPinnedId] = useState<string | null>(null);
+  // A second tap arrives before the next item is on screen and would act on that one
+  // unseen; for a discard it would also take the first one's undo away.
+  const acting = useRef(false);
 
   if (isPending) return null;
 
@@ -55,7 +58,11 @@ export default function ReviewScreen() {
     setPinnedId(rest[rest.length - 1]?.id ?? null);
   };
 
+  const unlockSoon = () => setTimeout(() => (acting.current = false), 400);
+
   const confirm = async (details: ItemDetails) => {
+    if (acting.current) return;
+    acting.current = true;
     setBusy(true);
     try {
       await itemRepository.update(item.id, { ...details, needsReview: false });
@@ -66,10 +73,14 @@ export default function ReviewScreen() {
       showToast({ message: t('common.somethingWentWrong') });
     } finally {
       setBusy(false);
+      unlockSoon();
     }
   };
 
   const discard = () => {
+    if (acting.current) return;
+    acting.current = true;
+    unlockSoon();
     setHandled((count) => count + 1);
     pinNext();
     return deleteWithUndo({

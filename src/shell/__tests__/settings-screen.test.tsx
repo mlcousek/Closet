@@ -4,6 +4,7 @@ import i18n from 'i18next';
 import { Alert } from 'react-native';
 
 import SettingsScreen from '@/app/settings/index';
+import { Row } from '@/components/ui';
 import { ToastHost } from '@/shell/ToastHost';
 import { BackupError } from '@/storage/backup';
 
@@ -49,11 +50,21 @@ jest.mock('@/storage/backupActions', () => ({
     mockSteps.push('import');
   },
 }));
+/** Whether photos are being turned into items right now. */
+let mockImporting = false;
 jest.mock('@/closet/importActions', () => ({
+  isImporting: () => mockImporting,
   resumeImports: async () => void mockSteps.push('imports'),
 }));
+/** The counter screens watch to read the renders again. */
+let mockRenderVersion = 0;
 jest.mock('@/outfits/renderActions', () => ({
-  renderQueue: { resume: async () => void mockSteps.push('renders') },
+  useRenderVersion: {
+    setState: (update: (state: { version: number }) => { version: number }) => {
+      mockRenderVersion = update({ version: mockRenderVersion }).version;
+      mockSteps.push('render version');
+    },
+  },
 }));
 
 const mockUsage = {
@@ -61,6 +72,9 @@ const mockUsage = {
 };
 jest.mock('@/outfits/renders', () => ({
   usageLog: { counts: (kind: string) => mockUsage.counts(kind) },
+  renderRepository: {
+    failUnfinished: async () => void mockSteps.push('unfinished renders failed'),
+  },
 }));
 
 // The reminder itself is real; only the system notifications underneath it are replaced.
@@ -97,6 +111,11 @@ const answerAlert = (index: number) =>
     buttons?.[index].onPress?.();
   });
 
+/** The handler of a row, to call it twice before anything is drawn again. */
+const handlerOf = (testID: string) =>
+  screen.UNSAFE_getAllByType(Row).find((row) => row.props.testID === testID)!.props
+    .onPress as () => void;
+
 /** A promise that stays open until the test settles it, for looking at the busy state. */
 function deferred() {
   let resolve!: () => void;
@@ -112,6 +131,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockSettings.clear();
   mockSteps = [];
+  mockImporting = false;
+  mockRenderVersion = 0;
   mockApplication.version = '1.4.0';
   mockApplication.build = '27';
   mockNotifications.granted = true;
@@ -252,6 +273,26 @@ describe('backup export', () => {
     expect(mockBackup.exportBackup).toHaveBeenCalledTimes(2);
   });
 
+  it('starts one backup when the row is tapped twice before the screen is drawn again', async () => {
+    const running = deferred();
+    mockBackup.exportBackup.mockReturnValue(running.promise);
+    show();
+    const tap = handlerOf('export-backup');
+    act(() => {
+      tap();
+      tap();
+    });
+    expect(mockBackup.exportBackup).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('backup-working')).toBeTruthy();
+
+    await act(async () => running.resolve());
+    expect(screen.queryByTestId('backup-working')).toBeNull();
+    // The guard is released: the next tap starts a backup again.
+    fireEvent.press(screen.getByTestId('export-backup'));
+    await settle();
+    expect(mockBackup.exportBackup).toHaveBeenCalledTimes(2);
+  });
+
   it('tells the user when the backup could not be created', async () => {
     mockBackup.exportBackup.mockRejectedValue(new Error('disk full'));
     show();
@@ -312,7 +353,7 @@ describe('backup restore', () => {
     expect(screen.queryByTestId('backup-working')).toBeNull();
   });
 
-  it('restores the picked file, restarts imports and renders, and reads everything again', async () => {
+  it('restores the picked file, continues imports, starts no waiting render, and reads everything again', async () => {
     answerAlert(1);
     mockUsage.counts.mockResolvedValue({ month: 0, total: 0 });
     const client = show();
@@ -326,12 +367,50 @@ describe('backup restore', () => {
     expect(await screen.findByText('Backup restored.')).toBeTruthy();
     expect(mockBackup.importBackup).toHaveBeenCalledTimes(1);
     expect(mockBackup.importBackup).toHaveBeenCalledWith(ARCHIVE);
-    expect(mockSteps).toEqual(['import', 'imports', 'renders']);
+    // Renders that were waiting in the backup fail instead of starting: each is a paid request.
+    expect(mockSteps).toEqual(['import', 'imports', 'unfinished renders failed', 'render version']);
+    expect(mockRenderVersion).toBe(1);
     expect(reset).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('stylist-usage')).toHaveTextContent(
       'Stylist requests: 1 this month, 4 in total',
     );
     expect(screen.queryByTestId('backup-working')).toBeNull();
+  });
+
+  it('refuses to restore while photos are being imported, before any file is picked', async () => {
+    const alert = answerAlert(1);
+    mockImporting = true;
+    show();
+    fireEvent.press(screen.getByTestId('import-backup'));
+    expect(
+      await screen.findByText('Photos are still being imported. Restore once that has finished.'),
+    ).toBeTruthy();
+    await settle();
+    expect(mockBackup.pickBackupFile).not.toHaveBeenCalled();
+    expect(alert).not.toHaveBeenCalled();
+    expect(mockBackup.importBackup).not.toHaveBeenCalled();
+    expect(mockSteps).toEqual([]);
+    expect(screen.queryByTestId('backup-working')).toBeNull();
+
+    // Once the import has finished the restore goes ahead.
+    mockImporting = false;
+    fireEvent.press(screen.getByTestId('import-backup'));
+    expect(await screen.findByText('Backup restored.')).toBeTruthy();
+    expect(mockBackup.importBackup).toHaveBeenCalledWith(ARCHIVE);
+  });
+
+  it('restores once when the confirmation is answered twice at the same moment', async () => {
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+      buttons?.[1].onPress?.();
+      buttons?.[1].onPress?.();
+    });
+    show();
+    fireEvent.press(screen.getByTestId('import-backup'));
+    expect(await screen.findByText('Backup restored.')).toBeTruthy();
+    await settle();
+    expect(mockBackup.importBackup).toHaveBeenCalledTimes(1);
+    expect(mockSteps).toEqual(['import', 'imports', 'unfinished renders failed', 'render version']);
+    expect(mockRenderVersion).toBe(1);
   });
 
   it('takes over the language stored in the restored data', async () => {
@@ -380,7 +459,12 @@ describe('backup restore', () => {
       new BackupError('invalid'),
       'This file is not a Closet backup. Nothing was changed.',
     ],
-    ['any other failure', new Error('no space left'), 'Something went wrong. Please try again.'],
+    [
+      'a backup that could not be unpacked here',
+      new BackupError('unwritable'),
+      'The backup could not be unpacked on this phone, most likely for lack of free space. Restoring needs about twice the size of the backup. Nothing was changed.',
+    ],
+    ['any other failure', new Error('database locked'), 'Something went wrong. Please try again.'],
   ])('explains %s and restarts nothing', async (_case, error, message) => {
     answerAlert(1);
     mockBackup.importBackup.mockRejectedValue(error);
@@ -389,6 +473,7 @@ describe('backup restore', () => {
     fireEvent.press(screen.getByTestId('import-backup'));
     expect(await screen.findByText(message)).toBeTruthy();
     expect(mockSteps).toEqual([]);
+    expect(mockRenderVersion).toBe(0);
     expect(reset).not.toHaveBeenCalled();
     expect(screen.queryByText('Backup restored.')).toBeNull();
     expect(screen.queryByTestId('backup-working')).toBeNull();

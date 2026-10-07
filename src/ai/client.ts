@@ -37,7 +37,8 @@ export function createAnthropic(apiKey: string): Anthropic {
   return new Anthropic({
     apiKey,
     dangerouslyAllowBrowser: true,
-    maxRetries: 1,
+    // A retry sends the whole request again, photos included, and may be billed again.
+    maxRetries: 0,
     timeout: REQUEST_TIMEOUT_MS,
   });
 }
@@ -58,6 +59,8 @@ export function toUnavailable(error: unknown): AiUnavailableError {
     return new AiUnavailableError('rejectedKey');
   }
   if (error instanceof Anthropic.RateLimitError) return new AiUnavailableError('rateLimited');
+  // A request that ran out of time was sent; it must not be reported as "no connection".
+  if (error instanceof Anthropic.APIConnectionTimeoutError) return new AiUnavailableError('error');
   if (error instanceof Anthropic.APIConnectionError) return new AiUnavailableError('offline');
   return new AiUnavailableError('error');
 }

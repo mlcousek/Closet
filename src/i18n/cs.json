@@ -98,7 +98,9 @@
     "importDone": "Záloha byla obnovena.",
     "importInvalid": "Tento soubor není záloha aplikace Closet. Nic se nezměnilo.",
     "importNewer": "Tato záloha pochází z novější verze aplikace. Aktualizujte aplikaci a zkuste to znovu.",
-    "working": "Pracuji na záloze. S mnoha fotkami to může chvíli trvat."
+    "working": "Pracuji na záloze. S mnoha fotkami to může chvíli trvat.",
+    "importNoSpace": "Zálohu se na tomto telefonu nepodařilo rozbalit, nejspíš kvůli nedostatku místa. Obnovení potřebuje zhruba dvojnásobek velikosti zálohy. Nic se nezměnilo.",
+    "importWhileImporting": "Fotky se ještě importují. Zálohu obnovte, až import skončí."
   },
   "ai": {
     "title": "Klíče poskytovatelů AI",
@@ -163,7 +165,7 @@
   },
   "avatar": {
     "title": "Vaše fotka",
-    "guidance": "Postavte se rovně čelem k foťáku při dobrém světle, v přiléhavém oblečení, a ať je v záběru celá postava od hlavy po chodidla. Požádejte někoho o vyfocení nebo použijte samospoušť. Closet ponechá jen vás a dá vás na bílé pozadí.",
+    "guidance": "Postavte se rovně čelem k foťáku při dobrém světle, v přiléhavém oblečení, a ať je v záběru celá postava od hlavy po chodidla. Požádejte někoho o vyfocení nebo použijte samospoušť. Closet ponechá jen vás a umístí vás na bílé pozadí.",
     "exampleGood": "Celá postava",
     "exampleBad": "Oříznutá",
     "takePhoto": "Vyfotit",
@@ -186,7 +188,8 @@
     "replaceStudioTitle": "Nahradit vaši fotku?",
     "replaceStudioMessage": "Studiová fotka vznikla z té současné a odstraní se. Už vytvořené obrázky outfitů zůstanou.",
     "replaceStudioAction": "Nahradit",
-    "notIsolated": "Pozadí vaší fotky se nepodařilo odstranit, proto se použije tak, jak je. Nejlépe funguje fotka, na které jste sami před jednobarevnou zdí."
+    "notIsolated": "Pozadí vaší fotky se nepodařilo odstranit, proto se použije tak, jak je. Nejlépe funguje fotka, na které jste jen vy, před jednobarevnou zdí.",
+    "preparing": "Připravuji vaši fotku…"
   },
   "taxonomy": {
     "category": {
@@ -476,17 +479,18 @@
     "noAvatar": "Přidejte fotku celé postavy, abyste viděli outfity na sobě.",
     "addAvatar": "Přidat fotku",
     "disclosureTitle": "Odeslat obrázky poskytovateli?",
-    "disclosureMessage": "Aby se outfit vykreslil na vás, odešle se vaše fotka a obrázky kousků službě Google Gemini s vaším vlastním klíčem. Ptáme se jen jednou.",
+    "disclosureMessage": "Aby se outfit vykreslil na vás, odešle se vaše fotka a obrázky kousků službě Google Gemini s vaším vlastním klíčem. Od té chvíle se outfit vykreslí i při uložení nebo při přijetí návrhu; v Nastavení to můžete vypnout. Ptáme se jen jednou.",
     "disclosureAccept": "Odeslat a vykreslit",
     "failure": {
       "noAvatar": "Chybí vaše fotka, na kterou by se dalo vykreslovat. Přidejte ji v profilu.",
       "offline": "Bez připojení se nic neodeslalo a nic se neúčtovalo. Zkuste to znovu, až budete online.",
       "declined": "Poskytovatel odmítl tento outfit vykreslit. Místo toho se zobrazuje plochý náhled.",
       "rateLimited": "Poskytovatel je vytížený nebo máte vyčerpanou kvótu. Zkuste to později.",
-      "timeout": "Poskytovatel odpovídal příliš dlouho. Zkuste to znovu.",
+      "timeout": "Poskytovatel odpovídal příliš dlouho. Obrázek mohl být přesto vytvořen a naúčtován, proto před dalším pokusem zkontrolujte svou spotřebu.",
       "interrupted": "Aplikace se zavřela dřív, než se vykreslení dokončilo. Zkuste to znovu.",
       "error": "Vykreslení se tentokrát nepovedlo. Zkuste to znovu.",
-      "connectionLost": "Připojení se přerušilo během vytváření obrázku. Mohl být přesto vytvořen a naúčtován, proto před dalším pokusem zkontrolujte svou spotřebu."
+      "connectionLost": "Připojení se přerušilo během vytváření obrázku. Mohl být přesto vytvořen a naúčtován, proto před dalším pokusem zkontrolujte svou spotřebu.",
+      "rejectedKey": "Poskytovatel obrázků váš klíč nepřijal. Zkontrolujte klíč a také to, že pro něj máte zapnuté účtování a generování obrázků."
     },
     "settingsTitle": "Vykreslování outfitů",
     "autoRender": "Vykreslit při uložení outfitu",
@@ -510,9 +514,9 @@
     "openSeveral": "Vyzkoušet outfity bez obrázku zdarma ({{count}})",
     "progress": "Outfit {{current}} z {{total}}",
     "next": "Další outfit",
-    "addAll": "Přidat obrázky pro všechny najednou ({{count}})",
+    "addAll": "Přidat obrázky pro zbývající najednou ({{count}})",
     "addedSeveral": "Přidané obrázky: {{count}}",
-    "severalHint": "Rychlejší postup pro víc outfitů: každý outfit sdílejte a klepněte na Další, v druhé aplikaci vytvořte všechny obrázky a pak je přidejte najednou. Ve Fotkách je označte ve stejném pořadí, v jakém jsou outfity tady."
+    "severalHint": "Rychlejší postup pro víc outfitů: každý outfit sdílejte a klepněte na Další, v druhé aplikaci vytvořte všechny obrázky a pak je přidejte najednou. Ve Fotkách je označte ve stejném pořadí, v jakém jsou outfity tady; outfity, které už v tomto průchodu obrázek dostaly, se přeskočí."
   },
   "studio": {
     "title": "Studiová fotka",
