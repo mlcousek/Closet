@@ -581,7 +581,7 @@ describe('statistics', () => {
     renderWithQuery(<StatsScreen />);
     expect(await screen.findByTestId('stats-count')).toHaveTextContent('5 items');
     expect(screen.getByTestId('stats-outfits')).toHaveTextContent('Saved outfits: 0');
-    expect(screen.getByTestId('stats-value-CZK')).toHaveTextContent(/2,000/);
+    expect(screen.getByTestId('stats-value-CZK')).toHaveTextContent(/2.000/);
     expect(screen.getByTestId('stats-price-coverage')).toHaveTextContent(/2 of 5/);
     expect(screen.getByTestId('stats-category-tops')).toHaveTextContent(/Tops.*2/);
     expect(screen.getByTestId('stats-usage-share')).toHaveTextContent(
@@ -623,7 +623,10 @@ describe('statistics', () => {
   it('shows cost per wear on an item only when it has a price', () => {
     mockWearStats = { count: 4, lastWorn: today() };
     const { rerender } = render(<CostPerWear item={{ id: 'tee', price: 400, currency: 'CZK' }} />);
-    expect(screen.getByTestId('cost-per-wear')).toHaveTextContent(/Cost per wear: CZK.100/);
+    // Where the currency goes and how digits are grouped depends on the ICU data of the runtime.
+    expect(screen.getByTestId('cost-per-wear')).toHaveTextContent(
+      /Cost per wear: (CZK.100|100.00.CZK)/,
+    );
 
     mockWearStats = { count: 0, lastWorn: null };
     rerender(<CostPerWear item={{ id: 'jeans', price: 1600, currency: 'CZK' }} />);
