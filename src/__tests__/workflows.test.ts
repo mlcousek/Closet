@@ -200,14 +200,13 @@ describe('first week with the app', () => {
     const print = fingerprint(base!, ids(casual));
     expect(summariseRenders(await app.renders.forOutfit(casual.id), print)).toMatchObject({
       current: { imagePath: 'images/renders/1.png' },
-      outdated: false,
       pending: null,
     });
 
-    // Swapping the top makes the picture outdated, and a duplicate of the original reuses it.
+    // Swapping the top drops the picture, and a duplicate of the original reuses it.
     const edited = (await app.outfits.setPieces(casual.id, app.pieces(shirt, jeans, boots)))!;
     const newPrint = fingerprint(base!, ids(edited));
-    expect(summariseRenders(await app.renders.forOutfit(casual.id), newPrint).outdated).toBe(true);
+    expect(summariseRenders(await app.renders.forOutfit(casual.id), newPrint).current).toBeNull();
     const copy = await app.outfits.create(app.pieces(tee, jeans, boots), { name: 'Casual again' });
     expect((await queue.request({ id: copy.id, itemIds: ids(copy) }, base)).kind).toBe('reused');
     expect(calls).toHaveLength(1);

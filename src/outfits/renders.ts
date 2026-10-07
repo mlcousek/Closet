@@ -56,12 +56,19 @@ const toRender = (row: Row): Render => ({
 
 /**
  * Identifies what a render shows: the avatar image it was based on and the
- * pieces it dresses. A render is up to date exactly when its fingerprint
- * equals the outfit's current one, so replacing the avatar or removing an item
- * makes renders outdated without anything having to be flagged.
+ * pieces it dresses.
  */
 export function fingerprint(avatarBasePath: string, itemIds: string[]): string {
   return `${avatarBasePath}|${[...itemIds].sort().join(',')}`;
+}
+
+/**
+ * The part of a fingerprint that names the pieces. A picture belongs to an
+ * outfit for as long as this part matches: changing a piece drops the picture,
+ * while a new photo of the user leaves the pictures already made in place.
+ */
+export function piecesOf(print: string): string {
+  return print.slice(print.indexOf('|') + 1);
 }
 
 export function createRenderRepository(db: () => Db = getDb, now: () => number = Date.now) {
@@ -181,7 +188,7 @@ export function createRenderRepository(db: () => Db = getDb, now: () => number =
      * Forgets renders nobody can see any more: those of outfits that are gone
      * for good, those that were dropped, and finished ones older than the
      * newest `keep` of their outfit (the current picture and the one before).
-     * A picture made from what an outfit is right now is always kept.
+     * A picture of the pieces an outfit has right now is always kept.
      * Returns the image files no remaining render uses, for deletion.
      */
     async purge(
@@ -195,13 +202,14 @@ export function createRenderRepository(db: () => Db = getDb, now: () => number =
         .orderBy(desc(renders.createdAt), desc(renders.id))
         .all();
       const gone = new Set(goneOutfitIds);
+      const currentPieces = new Set([...currentFingerprints].map(piecesOf));
       const kept = new Map<string, number>();
       const remove: Row[] = [];
       const stay: Row[] = [];
       for (const row of rows) {
         let drop = gone.has(row.outfitId) || row.deletedAt !== null;
         // An outfit edited back to earlier pieces shows an older picture as current.
-        if (!drop && row.status === 'done' && !currentFingerprints.has(row.fingerprint)) {
+        if (!drop && row.status === 'done' && !currentPieces.has(piecesOf(row.fingerprint))) {
           const count = kept.get(row.outfitId) ?? 0;
           if (count >= keep) drop = true;
           else kept.set(row.outfitId, count + 1);
@@ -240,36 +248,30 @@ export type RenderSummary = {
   previous: Render | null;
   pending: Render | null;
   failed: Render | null;
-  /** True when the shown render no longer matches the avatar or the pieces. */
-  outdated: boolean;
 };
 
 /**
- * Picks what to show for an outfit from its renders (newest first):
- * - `current`: the finished render matching the outfit as it is now, otherwise the newest finished one;
- * - `previous`: the finished render before it, to step back to after a regenerate;
+ * Picks what to show for an outfit from its renders (newest first). Only
+ * pictures of the pieces the outfit has now count; one made for other pieces
+ * is not shown, and one made with an earlier photo of the user still is.
+ * - `current`: the newest finished render of these pieces;
+ * - `previous`: the finished render of these pieces before it, to step back to after a regenerate;
  * - `pending`: a render that is queued or running;
  * - `failed`: the newest attempt, when it failed and nothing newer succeeded.
  */
-export function summariseRenders(list: Render[], currentFingerprint: string | null): RenderSummary {
-  const done = list.filter((render) => render.status === 'done');
-  const matching = done.find((render) => render.fingerprint === currentFingerprint) ?? null;
-  const current = matching ?? done[0] ?? null;
+export function summariseRenders(list: Render[], currentFingerprint: string): RenderSummary {
+  const pieces = piecesOf(currentFingerprint);
+  const done = list.filter(
+    (render) => render.status === 'done' && piecesOf(render.fingerprint) === pieces,
+  );
   const newest = list[0] ?? null;
   return {
-    current,
-    previous: done.find((render) => render.id !== current?.id) ?? null,
+    current: done[0] ?? null,
+    previous: done[1] ?? null,
     pending:
       list.find((render) => render.status === 'queued' || render.status === 'running') ?? null,
-    // A failed attempt is reported only when it was for the outfit as it is now.
-    failed:
-      newest?.status === 'failed' &&
-      (currentFingerprint === null || newest.fingerprint === currentFingerprint)
-        ? newest
-        : null,
-    /** True when the shown render no longer matches the avatar or the pieces. */
-    outdated:
-      current !== null && currentFingerprint !== null && current.fingerprint !== currentFingerprint,
+    // A failed attempt is reported only when it was for the pieces the outfit has now.
+    failed: newest?.status === 'failed' && piecesOf(newest.fingerprint) === pieces ? newest : null,
   };
 }
 

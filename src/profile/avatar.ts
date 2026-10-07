@@ -40,20 +40,38 @@ export type AvatarDeps = {
   remove(path: string): Promise<void>;
   /** Writes a resized JPEG copy and returns its temporary URI. */
   resize(sourceUri: string, size: { width: number; height: number }): Promise<string>;
+  /**
+   * Makes a copy with only the person, on a white background. Null when no
+   * person can be told apart from the background.
+   */
+  isolate?(sourceUri: string): Promise<{ uri: string; width: number; height: number } | null>;
 };
 
 export type StoredAvatar = { avatarPath: string; avatarSmallPath: string };
 
-/** Stores a photo as the avatar: the original plus a downscaled copy. */
+/** What happened to a photo on its way to becoming the avatar. */
+export type AvatarOutcome = {
+  /** True when the copy used for outfit pictures shows the person alone on white. */
+  isolated: boolean;
+};
+
+/**
+ * Stores a photo as the avatar: the original, plus a downscaled copy that
+ * outfit pictures are made from. That copy shows only the person on a white
+ * background when the person can be cut out, and the photo as it is otherwise.
+ */
 export async function storeAvatar(
   photo: { uri: string; width: number; height: number },
   deps: AvatarDeps,
-): Promise<StoredAvatar> {
+): Promise<StoredAvatar & AvatarOutcome> {
   const avatarPath = await deps.save(photo.uri, 'avatar');
   try {
-    const smallUri = await deps.resize(photo.uri, smallSize(photo.width, photo.height));
+    // Cutting out is a nicety: when it fails the photo is still a usable avatar.
+    const person = deps.isolate ? await deps.isolate(photo.uri).catch(() => null) : null;
+    const base = person ?? photo;
+    const smallUri = await deps.resize(base.uri, smallSize(base.width, base.height));
     const avatarSmallPath = await deps.save(smallUri, 'avatar');
-    return { avatarPath, avatarSmallPath };
+    return { avatarPath, avatarSmallPath, isolated: person !== null };
   } catch (error) {
     // The reason the photo could not be stored is what matters, not a failed clean-up.
     await deps.remove(avatarPath).catch(() => {});
@@ -68,11 +86,11 @@ export async function storeAvatar(
 export async function storeAvatarAnd<T>(
   photo: { uri: string; width: number; height: number },
   deps: AvatarDeps,
-  persist: (stored: StoredAvatar) => Promise<T>,
+  persist: (stored: StoredAvatar, outcome: AvatarOutcome) => Promise<T>,
 ): Promise<T> {
-  const stored = await storeAvatar(photo, deps);
+  const { isolated, ...stored } = await storeAvatar(photo, deps);
   try {
-    return await persist(stored);
+    return await persist(stored, { isolated });
   } catch (error) {
     await discardAvatar(stored, deps).catch(() => {});
     throw error;

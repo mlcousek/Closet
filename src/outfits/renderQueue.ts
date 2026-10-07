@@ -1,4 +1,10 @@
-import { fingerprint, type Render, type RenderFailure, type RenderRepository } from './renders';
+import {
+  fingerprint,
+  piecesOf,
+  type Render,
+  type RenderFailure,
+  type RenderRepository,
+} from './renders';
 
 export type RenderOutcome =
   | { kind: 'reused'; render: Render }
@@ -72,9 +78,10 @@ export function createRenderQueue(options: {
   return {
     start,
     /**
-     * Asks for a render of an outfit. With the same avatar and pieces as an
-     * existing finished render, that render is reused and nothing is requested,
-     * unless `force` asks for a fresh one (regenerate).
+     * Asks for a render of an outfit. An outfit that already has a picture of
+     * its pieces keeps it, also after the user's photo changed, and a picture
+     * another outfit has of the same avatar and pieces is shared; nothing is
+     * requested in either case unless `force` asks for a fresh one (regenerate).
      */
     async request(
       outfit: { id: string; itemIds: string[] },
@@ -85,6 +92,10 @@ export function createRenderQueue(options: {
       if (outfit.itemIds.length === 0) return { kind: 'skipped', reason: 'empty' };
       const print = fingerprint(avatarBasePath, outfit.itemIds);
       if (!force) {
+        const own = (await renders.forOutfit(outfit.id)).find(
+          (render) => render.status === 'done' && piecesOf(render.fingerprint) === piecesOf(print),
+        );
+        if (own) return { kind: 'reused', render: own };
         const existing = await renders.findDone(print);
         if (existing) {
           if (existing.outfitId === outfit.id) return { kind: 'reused', render: existing };

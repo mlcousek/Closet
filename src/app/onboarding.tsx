@@ -10,6 +10,7 @@ import { avatarDeps, type PickedPhoto } from '@/profile/photo';
 import { BodyTypePicker, GenderPicker } from '@/profile/pickers';
 import type { BodyType, Gender } from '@/profile/types';
 import { useSaveProfile } from '@/profile/useProfile';
+import { useToast } from '@/shell/toast';
 import { useTheme } from '@/theme/useTheme';
 
 const STEPS = ['welcome', 'name', 'gender', 'bodyType', 'avatar'] as const;
@@ -18,6 +19,7 @@ type Step = (typeof STEPS)[number];
 /** First-run flow: collects name, gender, body type and a full-body photo. Only the name is required. */
 export default function OnboardingScreen() {
   const { t } = useTranslation();
+  const showToast = useToast((state) => state.show);
   const router = useRouter();
   const { colors, spacing } = useTheme();
   const saveProfile = useSaveProfile();
@@ -40,9 +42,10 @@ export default function OnboardingScreen() {
     const values = { name: name.trim(), gender, bodyType };
     try {
       if (withPhoto) {
-        await storeAvatarAnd(withPhoto, avatarDeps, (stored) =>
-          saveProfile.mutateAsync({ ...values, ...stored }),
-        );
+        await storeAvatarAnd(withPhoto, avatarDeps, async (stored, { isolated }) => {
+          await saveProfile.mutateAsync({ ...values, ...stored });
+          if (!isolated) showToast({ message: t('avatar.notIsolated') });
+        });
       } else {
         await saveProfile.mutateAsync(values);
       }

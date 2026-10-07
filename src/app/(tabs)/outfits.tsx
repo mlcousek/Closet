@@ -45,7 +45,7 @@ export default function OutfitsScreen() {
   const [manualRun, setManualRun] = useState<Outfit[] | null>(null);
   const withoutPicture = allOutfits.filter((outfit) => {
     const summary = summarise(outfit);
-    return !summary.pending && (summary.current === null || summary.outdated);
+    return !summary.pending && summary.current === null;
   });
 
   const toggle = (chip: FilterChip) => {

@@ -333,7 +333,7 @@ describe('what a render is based on', () => {
 
   it('has no fingerprint without an avatar', async () => {
     const { outfit } = await setup();
-    expect(currentFingerprint(outfit, null)).toBeNull();
+    expect(currentFingerprint(outfit, null)).toBe(fingerprint('none', outfitItemIds(outfit)));
   });
 
   it('changes the fingerprint with the avatar, a piece or the photo of a piece, and not with their order', async () => {
@@ -853,16 +853,20 @@ describe('asking for a render', () => {
     expect(await usageLog.counts('render')).toEqual({ month: 2, total: 2 });
   });
 
-  it('renders again after the avatar was replaced', async () => {
+  it('keeps the picture after the avatar was replaced, and makes a new one only when asked', async () => {
     const { outfit } = await setup();
     await requestRender(outfit);
     await renderQueue.start();
     await profileRepository.save({ avatarStudioPath: 'images/avatar/studio.png' });
 
-    const outcome = await requestRender(outfit);
+    const kept = await requestRender(outfit);
     await renderQueue.start();
+    expect(kept.kind).toBe('reused');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
 
-    expect(outcome.kind).toBe('queued');
+    const fresh = await requestRender(outfit, true);
+    await renderQueue.start();
+    expect(fresh.kind).toBe('queued');
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 

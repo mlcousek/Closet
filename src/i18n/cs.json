@@ -163,7 +163,7 @@
   },
   "avatar": {
     "title": "Vaše fotka",
-    "guidance": "Postavte se rovně čelem k foťáku při dobrém světle, v přiléhavém oblečení, a ať je v záběru celá postava od hlavy po chodidla. Požádejte někoho o vyfocení nebo použijte samospoušť.",
+    "guidance": "Postavte se rovně čelem k foťáku při dobrém světle, v přiléhavém oblečení, a ať je v záběru celá postava od hlavy po chodidla. Požádejte někoho o vyfocení nebo použijte samospoušť. Closet ponechá jen vás a dá vás na bílé pozadí.",
     "exampleGood": "Celá postava",
     "exampleBad": "Oříznutá",
     "takePhoto": "Vyfotit",
@@ -172,7 +172,7 @@
     "keep": "Přesto tuto fotku použít",
     "remove": "Odebrat fotku",
     "removeConfirmTitle": "Odebrat vaši fotku?",
-    "removeConfirmMessage": "Fotka se smaže z tohoto zařízení. Při vykreslování outfitů budete požádáni o novou.",
+    "removeConfirmMessage": "Fotka se z tohoto zařízení smaže. Už vytvořené obrázky outfitů zůstanou; nové si vyžádají fotku.",
     "privacy": "Vaše fotka zůstává v tomto zařízení. Poskytovateli obrázků se odešle jen tehdy, když požádáte o vykreslení outfitu.",
     "denied": "Closet nemá přístup k fotoaparátu nebo fotkám. Povolit ho můžete v nastavení systému.",
     "openSystemSettings": "Otevřít nastavení systému",
@@ -184,8 +184,9 @@
     },
     "discard": "Použít jinou fotku",
     "replaceStudioTitle": "Nahradit vaši fotku?",
-    "replaceStudioMessage": "Vaše studiová fotka vznikla ze současné fotky a bude odstraněna. Obrázky outfitů bude potřeba vytvořit znovu.",
-    "replaceStudioAction": "Nahradit"
+    "replaceStudioMessage": "Studiová fotka vznikla z té současné a odstraní se. Už vytvořené obrázky outfitů zůstanou.",
+    "replaceStudioAction": "Nahradit",
+    "notIsolated": "Pozadí vaší fotky se nepodařilo odstranit, proto se použije tak, jak je. Nejlépe funguje fotka, na které jste sami před jednobarevnou zdí."
   },
   "taxonomy": {
     "category": {
@@ -470,7 +471,6 @@
     "render": "Vyzkoušet na mně",
     "regenerate": "Vykreslit znovu",
     "inProgress": "Outfit se na vás vykresluje. Aplikaci můžete dál používat.",
-    "outdated": "Tento obrázek vznikl, než se změnila vaše fotka nebo kousky. Vykreslete ho znovu, ať je aktuální.",
     "showPrevious": "Předchozí obrázek",
     "showLatest": "Nejnovější obrázek",
     "noAvatar": "Přidejte fotku celé postavy, abyste viděli outfity na sobě.",

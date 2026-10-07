@@ -139,6 +139,7 @@ describe('avatar storage', () => {
     expect(stored).toEqual({
       avatarPath: 'images/avatar/0.jpg',
       avatarSmallPath: 'images/avatar/1.jpg',
+      isolated: false,
     });
     expect(saved).toEqual(['file:///tmp/full.jpg', 'file:///tmp/small.jpg']);
     expect(deps.resize).toHaveBeenCalledWith('file:///tmp/full.jpg', { width: 768, height: 1024 });

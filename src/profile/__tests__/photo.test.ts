@@ -33,6 +33,8 @@ jest.mock('@/storage/imageStore', () => ({
 const mockDetect = jest.fn();
 jest.mock('../../../modules/closet-vision', () => ({
   detectPeople: (...args: unknown[]) => mockDetect(...args),
+  // Nobody is cut out here; what happens when someone is has its own tests.
+  personOnWhite: async () => null,
 }));
 
 const asset = { uri: 'file:///cache/picked.jpg', width: 3000, height: 4000 };
@@ -214,6 +216,7 @@ describe('avatar storage on the device', () => {
     expect(stored).toEqual({
       avatarPath: 'images/avatar/1.png',
       avatarSmallPath: 'images/avatar/2.jpg',
+      isolated: false,
     });
     expect(mockStore.save.mock.calls).toEqual([
       ['file:///cache/full.png', 'avatar', 'png'],
@@ -291,10 +294,10 @@ describe('storing an avatar and recording it', () => {
 
     const result = await storeAvatarAnd(photo, deps, persist);
 
-    expect(persist).toHaveBeenCalledWith({
-      avatarPath: 'images/avatar/1.jpg',
-      avatarSmallPath: 'images/avatar/2.jpg',
-    });
+    expect(persist).toHaveBeenCalledWith(
+      { avatarPath: 'images/avatar/1.jpg', avatarSmallPath: 'images/avatar/2.jpg' },
+      { isolated: false },
+    );
     expect(result).toEqual({ id: 'profile-1', avatarPath: 'images/avatar/1.jpg' });
     expect(removed).toEqual([]);
   });

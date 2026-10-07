@@ -163,7 +163,7 @@
   },
   "avatar": {
     "title": "Your photo",
-    "guidance": "Stand straight facing the camera in good light, in fitted clothes, with your whole body from head to feet in the frame. Ask someone to take it or use a timer.",
+    "guidance": "Stand straight facing the camera in good light, in fitted clothes, with your whole body from head to feet in the frame. Ask someone to take it or use a timer. Closet keeps only you and puts you on a white background.",
     "exampleGood": "Whole body",
     "exampleBad": "Cut off",
     "takePhoto": "Take a photo",
@@ -172,7 +172,7 @@
     "keep": "Keep this photo anyway",
     "remove": "Remove photo",
     "removeConfirmTitle": "Remove your photo?",
-    "removeConfirmMessage": "The photo is deleted from this device. Outfit renders will ask for a new one.",
+    "removeConfirmMessage": "The photo is deleted from this device. Outfit pictures already made stay; new ones will ask for a photo.",
     "privacy": "Your photo stays on this device. It is sent to the image provider only when you ask for an outfit render.",
     "denied": "Closet has no access to the camera or your photos. You can allow it in the system settings.",
     "openSystemSettings": "Open system settings",
@@ -184,8 +184,9 @@
     },
     "discard": "Use a different photo",
     "replaceStudioTitle": "Replace your photo?",
-    "replaceStudioMessage": "Your studio photo was made from the current one and will be removed. Outfit pictures will need to be made again.",
-    "replaceStudioAction": "Replace"
+    "replaceStudioMessage": "Your studio photo was made from the current one and will be removed. Outfit pictures already made stay.",
+    "replaceStudioAction": "Replace",
+    "notIsolated": "The background of your photo could not be removed, so the photo is used as it is. A photo of you alone in front of a plain wall works best."
   },
   "taxonomy": {
     "category": {
@@ -470,7 +471,6 @@
     "render": "Try it on me",
     "regenerate": "Regenerate",
     "inProgress": "Rendering this outfit on you. You can keep using the app.",
-    "outdated": "This picture was made before your photo or the pieces changed. Regenerate to refresh it.",
     "showPrevious": "Previous picture",
     "showLatest": "Latest picture",
     "noAvatar": "Add a full-body photo to see outfits on you.",

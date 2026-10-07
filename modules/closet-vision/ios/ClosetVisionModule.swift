@@ -80,6 +80,76 @@ public class ClosetVisionModule: Module {
         "height": cutout.height
       ]
     }
+
+    // Keeps only the people in a photo and puts them on a plain white
+    // background, at the size of the photo. Writes a JPEG to the cache folder
+    // and returns its URI and size, or nil when no person is found.
+    AsyncFunction("personOnWhite") { (uri: String) -> [String: Any]? in
+      let image = try loadImage(uri)
+      let request = VNGeneratePersonSegmentationRequest()
+      request.qualityLevel = .accurate
+      request.outputPixelFormat = kCVPixelFormatType_OneComponent8
+      let handler = VNImageRequestHandler(
+        cgImage: image.cgImage,
+        orientation: image.orientation,
+        options: [:]
+      )
+      try handler.perform([request])
+      guard let maskBuffer = request.results?.first?.pixelBuffer else {
+        return nil
+      }
+      let context = CIContext()
+      let rawMask = CIImage(cvPixelBuffer: maskBuffer)
+
+      // The request always answers with a mask; an almost black one means nobody was found.
+      var average = [UInt8](repeating: 0, count: 4)
+      let averaged = rawMask.applyingFilter(
+        "CIAreaAverage",
+        parameters: [kCIInputExtentKey: CIVector(cgRect: rawMask.extent)]
+      )
+      context.render(
+        averaged,
+        toBitmap: &average,
+        rowBytes: 4,
+        bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
+        format: .RGBA8,
+        colorSpace: nil
+      )
+      if average[0] < 3 {
+        return nil
+      }
+
+      // The photo turned upright, with its corner at the origin, which is how the mask is laid out.
+      let oriented = CIImage(cgImage: image.cgImage).oriented(image.orientation)
+      let source = oriented.transformed(
+        by: CGAffineTransform(translationX: -oriented.extent.minX, y: -oriented.extent.minY)
+      )
+      let mask = rawMask.transformed(
+        by: CGAffineTransform(
+          scaleX: source.extent.width / rawMask.extent.width,
+          y: source.extent.height / rawMask.extent.height
+        )
+      )
+      let white = CIImage(color: CIColor.white).cropped(to: source.extent)
+      let blended = source.applyingFilter(
+        "CIBlendWithMask",
+        parameters: [kCIInputBackgroundImageKey: white, kCIInputMaskImageKey: mask]
+      )
+      guard
+        let result = context.createCGImage(blended, from: source.extent),
+        let data = UIImage(cgImage: result).jpegData(compressionQuality: 0.92)
+      else {
+        throw ImageWriteException()
+      }
+      let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+      let target = caches.appendingPathComponent("cutout-\(UUID().uuidString).jpg")
+      try data.write(to: target)
+      return [
+        "uri": target.absoluteString,
+        "width": result.width,
+        "height": result.height
+      ]
+    }
   }
 }
 

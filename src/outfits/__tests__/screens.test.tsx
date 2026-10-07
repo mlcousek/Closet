@@ -305,7 +305,7 @@ const answerAlert = (pick: 'confirm' | 'cancel') =>
     button?.onPress?.();
   });
 
-const noSummary = { current: null, previous: null, pending: null, failed: null, outdated: false };
+const noSummary = { current: null, previous: null, pending: null, failed: null };
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -543,7 +543,7 @@ describe('outfit image', () => {
     });
   });
 
-  it('marks in-progress, failed and outdated renders', () => {
+  it('marks in-progress and failed renders', () => {
     const pending = doneRender('r2', 'o1', { status: 'running', imagePath: null, thumbPath: null });
     const view = render(<OutfitImage items={items} summary={{ ...noSummary, pending }} />);
     expect(screen.getByTestId('render-pending')).toBeTruthy();
@@ -552,14 +552,6 @@ describe('outfit image', () => {
     const failed = doneRender('r3', 'o1', { status: 'failed', failure: 'declined' });
     view.rerender(<OutfitImage items={items} summary={{ ...noSummary, failed }} />);
     expect(screen.getByTestId('render-failed')).toBeTruthy();
-
-    view.rerender(
-      <OutfitImage
-        items={items}
-        summary={{ ...noSummary, current: doneRender('r1', 'o1'), outdated: true }}
-      />,
-    );
-    expect(screen.getByTestId('render-outdated')).toBeTruthy();
   });
 });
 

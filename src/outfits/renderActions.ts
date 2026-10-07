@@ -61,15 +61,18 @@ export function avatarBasePath(
 
 /**
  * What identifies each piece for a render: the item and the picture of it that
- * is sent. Replacing an item's photo therefore makes renders with it outdated.
+ * is sent. Replacing an item's photo therefore drops the renders made with it.
  */
 export function outfitItemIds(outfit: Pick<Outfit, 'entries'>): string[] {
   return outfit.entries.map((entry) => `${entry.item.id}@${displayPath(entry.item)}`);
 }
 
-/** The fingerprint an up-to-date render of this outfit would have, or null without an avatar. */
+/** Stands in for the avatar in a fingerprint when there is no photo of the user. */
+const NO_AVATAR = 'none';
+
+/** The fingerprint a render of this outfit made right now would have. */
 export function currentFingerprint(outfit: Pick<Outfit, 'entries'>, basePath: string | null) {
-  return basePath ? fingerprint(basePath, outfitItemIds(outfit)) : null;
+  return fingerprint(basePath ?? NO_AVATAR, outfitItemIds(outfit));
 }
 
 export const SLOT_LABEL: Record<Slot, string> = {
@@ -190,8 +193,6 @@ export const renderQueue = createRenderQueue({
 
 /** Longest side of a picture the user made elsewhere and added by hand. */
 const MANUAL_MAX = 1600;
-/** Stands in for the avatar in the fingerprint when there is no photo of the user. */
-const NO_AVATAR = 'none';
 
 /**
  * Stores a picture the user made in another app as the outfit's current
@@ -221,7 +222,7 @@ export async function saveManualRender(
   }
   await renderRepository.createDone(
     outfit.id,
-    fingerprint(avatarBasePath(profile) ?? NO_AVATAR, outfitItemIds(outfit)),
+    currentFingerprint(outfit, avatarBasePath(profile)),
     { imagePath, thumbPath, provider: 'manual' },
   );
   useRenderVersion.setState((state) => ({ version: state.version + 1 }));

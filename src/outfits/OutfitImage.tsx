@@ -62,8 +62,8 @@ export function OutfitCollage({
 
 /**
  * The picture of an outfit: its try-on render when one exists, otherwise the
- * flat preview, with a small mark while a render is in progress, after one
- * failed, or when the shown render is outdated.
+ * flat preview, with a small mark while a render is in progress or after one
+ * failed.
  */
 export function OutfitImage({
   items,
@@ -116,13 +116,6 @@ export function OutfitImage({
         ) : summary.failed ? (
           <View testID="render-failed" style={[styles.badge, { backgroundColor: colors.danger }]}>
             <Ionicons name="alert" size={14} color="#FFFFFF" />
-          </View>
-        ) : summary.outdated ? (
-          <View
-            testID="render-outdated"
-            style={[styles.badge, { backgroundColor: colors.overlay }]}
-          >
-            <Ionicons name="refresh" size={14} color="#FFFFFF" />
           </View>
         ) : null}
       </View>

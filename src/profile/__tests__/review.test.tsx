@@ -108,10 +108,10 @@ describe('storing an avatar together with the profile', () => {
     const { deps, removed } = makeDeps();
     const persist = jest.fn(async () => 'saved');
     await expect(storeAvatarAnd(photo, deps, persist)).resolves.toBe('saved');
-    expect(persist).toHaveBeenCalledWith({
-      avatarPath: 'images/avatar/0.jpg',
-      avatarSmallPath: 'images/avatar/1.jpg',
-    });
+    expect(persist).toHaveBeenCalledWith(
+      { avatarPath: 'images/avatar/0.jpg', avatarSmallPath: 'images/avatar/1.jpg' },
+      { isolated: false },
+    );
     expect(removed).toEqual([]);
   });
 

@@ -82,7 +82,6 @@ jest.mock('@/outfits/useOutfits', () => ({
       previous: null,
       pending: null,
       failed: null,
-      outdated: false,
     }),
 }));
 

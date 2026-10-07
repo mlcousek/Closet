@@ -64,9 +64,10 @@ function EditForm({ profile }: { profile: Profile }) {
     setBusy(true);
     setError(null);
     try {
-      await storeAvatarAnd(photo, avatarDeps, (stored) =>
-        saveProfile.mutateAsync({ ...stored, avatarStudioPath: null }),
-      );
+      await storeAvatarAnd(photo, avatarDeps, async (stored, { isolated }) => {
+        await saveProfile.mutateAsync({ ...stored, avatarStudioPath: null });
+        if (!isolated) showToast({ message: t('avatar.notIsolated') });
+      });
       if (profile.avatarStudioPath) await avatarDeps.remove(profile.avatarStudioPath);
       // The old files are only deleted once the profile points at the new ones.
       await discardAvatar(profile, avatarDeps);
@@ -138,7 +139,12 @@ function EditForm({ profile }: { profile: Profile }) {
           {t('avatar.title')}
         </AppText>
         <AvatarPicker
-          currentUri={profile.avatarPath ? imageStore.uri(profile.avatarPath) : null}
+          currentUri={
+            // The copy outfit pictures are made from, so what is shown is what is used.
+            (profile.avatarSmallPath ?? profile.avatarPath)
+              ? imageStore.uri((profile.avatarSmallPath ?? profile.avatarPath)!)
+              : null
+          }
           onAccept={chooseAvatar}
           showGuidance={!profile.avatarPath}
         />

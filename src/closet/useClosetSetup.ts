@@ -143,9 +143,9 @@ export function useClosetSetup(): void {
       .purgeDeleted(Date.now() - PURGE_AFTER_MS)
       .then(async (gone) => {
         const base = avatarBasePath(await profileRepository.get());
-        const current = (await outfitRepository.list())
-          .map((outfit) => currentFingerprint(outfit, base))
-          .filter((print): print is string => print !== null);
+        const current = (await outfitRepository.list()).map((outfit) =>
+          currentFingerprint(outfit, base),
+        );
         return renderRepository.purge(gone, 2, new Set(current));
       })
       .then(async (paths) => {

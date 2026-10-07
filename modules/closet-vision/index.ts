@@ -14,6 +14,7 @@ export type Cutout = { uri: string; width: number; height: number };
 type ClosetVisionNative = {
   detectPeople(uri: string): Promise<PersonBox[]>;
   removeBackground(uri: string): Promise<Cutout | null>;
+  personOnWhite?(uri: string): Promise<Cutout | null>;
 };
 
 // Optional so the JavaScript still loads in a client built before this module existed.
@@ -35,4 +36,14 @@ export async function detectPeople(uri: string): Promise<PersonBox[] | null> {
 export async function removeBackground(uri: string): Promise<Cutout | null> {
   if (!native?.removeBackground) return null;
   return native.removeBackground(uri);
+}
+
+/**
+ * The people in a photo on a plain white background, at the size of the
+ * photo, as a temporary JPEG. Null when nobody is found or the feature is not
+ * available on this build.
+ */
+export async function personOnWhite(uri: string): Promise<Cutout | null> {
+  if (!native?.personOnWhite) return null;
+  return native.personOnWhite(uri);
 }

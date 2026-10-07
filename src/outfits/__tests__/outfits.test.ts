@@ -29,7 +29,13 @@ import {
 } from '../draft';
 import { createOutfitRepository } from '../repository';
 import { RenderFailedError, RenderSupersededError, createRenderQueue } from '../renderQueue';
-import { createRenderRepository, createUsageLog, fingerprint, summariseRenders } from '../renders';
+import {
+  createRenderRepository,
+  createUsageLog,
+  fingerprint,
+  piecesOf,
+  summariseRenders,
+} from '../renders';
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => require('node:crypto').randomUUID() }));
 jest.mock('expo-sqlite', () => ({}));
@@ -388,7 +394,7 @@ describe('renders', () => {
 
     await renders.markDone(first.id, done);
     let summary = summariseRenders(await renders.forOutfit('o1'), 'fp');
-    expect(summary).toMatchObject({ pending: null, failed: null, outdated: false });
+    expect(summary).toMatchObject({ pending: null, failed: null });
     expect(summary.current?.imagePath).toBe('r1.png');
 
     // A regenerate that fails keeps the previous render on show.
@@ -406,9 +412,36 @@ describe('renders', () => {
     expect(summary.previous?.id).toBe(first.id);
     expect(summary.failed).toBeNull();
 
-    // The avatar changed, or a piece was removed: the render is kept but outdated.
-    expect(summariseRenders(await renders.forOutfit('o1'), 'other').outdated).toBe(true);
-    expect(summariseRenders(await renders.forOutfit('o1'), null).outdated).toBe(false);
+    // A piece was changed: the picture is no longer shown, nor offered to step back to.
+    expect(summariseRenders(await renders.forOutfit('o1'), 'other')).toMatchObject({
+      current: null,
+      previous: null,
+    });
+  });
+
+  it('keeps showing a picture after the photo of the user changed', async () => {
+    const { renders } = await setupDb();
+    const done = { thumbPath: 't.jpg', provider: 'gemini' };
+    const old = await renders.enqueue('o1', fingerprint('avatar/old.jpg', ['shirt', 'skirt']));
+    await renders.markDone(old.id, { ...done, imagePath: 'old.png' });
+    const now = fingerprint('avatar/new.jpg', ['skirt', 'shirt']);
+
+    let summary = summariseRenders(await renders.forOutfit('o1'), now);
+    expect(summary.current?.imagePath).toBe('old.png');
+
+    // A picture made with the new photo takes its place, with the old one to step back to.
+    const fresh = await renders.enqueue('o1', now);
+    await renders.markDone(fresh.id, { ...done, imagePath: 'new.png' });
+    summary = summariseRenders(await renders.forOutfit('o1'), now);
+    expect(summary.current?.imagePath).toBe('new.png');
+    expect(summary.previous?.imagePath).toBe('old.png');
+
+    // Without any photo the picture is still the outfit's picture.
+    expect(
+      summariseRenders(await renders.forOutfit('o1'), fingerprint('none', ['shirt', 'skirt']))
+        .current?.imagePath,
+    ).toBe('new.png');
+    expect(piecesOf(now)).toBe('shirt,skirt');
   });
 
   it('shows the render that matches the outfit after going back to an earlier combination', async () => {
@@ -421,8 +454,8 @@ describe('renders', () => {
 
     const summary = summariseRenders(await renders.forOutfit('o1'), 'shirt+skirt');
     expect(summary.current?.imagePath).toBe('first.png');
-    expect(summary.outdated).toBe(false);
-    expect(summary.previous?.imagePath).toBe('second.png');
+    // The picture of the other combination is not one of this outfit as it is now.
+    expect(summary.previous).toBeNull();
   });
 
   it('does not report a failed render that was for an earlier version of the outfit', async () => {
@@ -493,7 +526,7 @@ describe('render queue', () => {
     expect(run).toHaveBeenCalledTimes(1);
   });
 
-  it('renders again when the pieces or the avatar changed, or when forced', async () => {
+  it('renders again when the pieces changed or when forced, but not for a new avatar alone', async () => {
     const { renders } = await setupDb();
     const run = jest.fn(async () => result);
     const queue = createRenderQueue({ renders, run });
@@ -502,11 +535,11 @@ describe('render queue', () => {
 
     expect((await queue.request({ id: 'o1', itemIds: ['a'] }, 'avatar.jpg')).kind).toBe('queued');
     await queue.start();
-    expect((await queue.request(outfit, 'studio.jpg')).kind).toBe('queued');
+    expect((await queue.request(outfit, 'studio.jpg')).kind).toBe('reused');
     await queue.start();
-    expect((await queue.request(outfit, 'avatar.jpg', true)).kind).toBe('queued');
+    expect((await queue.request(outfit, 'studio.jpg', true)).kind).toBe('queued');
     await queue.start();
-    expect(run).toHaveBeenCalledTimes(4);
+    expect(run).toHaveBeenCalledTimes(3);
   });
 
   it('drops a waiting render when the outfit changes before it starts, so only one is paid', async () => {

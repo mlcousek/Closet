@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { imageStore } from '@/storage/imageStore';
 
-import { detectPeople } from '../../modules/closet-vision';
+import { detectPeople, personOnWhite } from '../../modules/closet-vision';
 import { assessAvatar, type AvatarDeps, type AvatarIssue } from './avatar';
 
 export type PickedPhoto = { uri: string; width: number; height: number };
@@ -79,4 +79,5 @@ export const avatarDeps: AvatarDeps = {
     });
     return result.uri;
   },
+  isolate: (sourceUri) => personOnWhite(sourceUri),
 };

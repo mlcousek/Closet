@@ -98,10 +98,6 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
             {t(`tryOn.failure.${failure}`)}
           </AppText>
         )
-      ) : summary.outdated ? (
-        <AppText testID="render-status" muted>
-          {t('tryOn.outdated')}
-        </AppText>
       ) : null}
 
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
