@@ -7,7 +7,9 @@ import type { Db } from '@/db/client';
 import { createTestDb } from '@/db/testing';
 import { profileRepository } from '@/profile/repository';
 
+import { manualPrompt, pieceColumns } from '../manualSheet';
 import {
+  SLOT_LABEL,
   avatarBasePath,
   createStudioAvatar,
   currentFingerprint,
@@ -19,6 +21,7 @@ import {
   renderQueue,
   requestRender,
   runRender,
+  saveManualRender,
   setAutoRender,
   setDisclosed,
   setStudioCandidate,
@@ -986,5 +989,93 @@ describe('creating a studio avatar', () => {
 
     expect(mockStore.saved).toEqual([]);
     expect(await usageLog.counts('studio')).toEqual({ month: 0, total: 0 });
+  });
+});
+
+describe('a picture made in another app', () => {
+  it('becomes the current render without a key, a request or a usage count', async () => {
+    const { outfit, basePath } = await setup();
+    mockKeys.image = null;
+
+    await saveManualRender(outfit, { uri: 'file:///picked/me.heic', width: 3000, height: 4000 });
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockKeys.asked).toEqual([]);
+    expect(await usageLog.counts('render')).toEqual({ month: 0, total: 0 });
+    expect(mockManipulate.mock.calls).toEqual([
+      ['file:///picked/me.heic', [{ resize: { height: 1600 } }], { compress: 0.9, format: 'jpeg' }],
+      [
+        resized('file:///picked/me.heic', 'jpeg'),
+        [{ resize: { width: 400 } }],
+        { compress: 0.85, format: 'jpeg' },
+      ],
+    ]);
+    const [render] = await renderRepository.forOutfit(outfit.id);
+    expect(render).toMatchObject({
+      status: 'done',
+      provider: 'manual',
+      fingerprint: currentFingerprint(outfit, basePath),
+      imagePath: 'images/renders/1.jpg',
+      thumbPath: 'images/renders/2.jpg',
+    });
+    expect(useRenderVersion.getState().version).toBe(1);
+  });
+
+  it('is kept at its size when small, and shown in full when no thumbnail can be made', async () => {
+    const { outfit } = await setup({ profile: 'none' });
+    mockManipulate
+      .mockImplementationOnce(async (uri: string) => ({ uri: resized(uri, 'jpeg') }))
+      .mockRejectedValueOnce(new Error('out of memory'));
+
+    await saveManualRender(outfit, { uri: 'file:///picked/small.png', width: 900, height: 1200 });
+
+    expect(mockManipulate.mock.calls[0][1]).toEqual([]);
+    const [render] = await renderRepository.forOutfit(outfit.id);
+    expect(render.thumbPath).toBe(render.imagePath);
+    // Without a photo of the user there is nothing to judge the picture against.
+    expect(render.fingerprint).toBe(fingerprint('none', outfitItemIds(outfit)));
+  });
+
+  it('adds nothing when the picture cannot be stored', async () => {
+    const { outfit } = await setup();
+    mockStore.fails = () => true;
+
+    await expect(
+      saveManualRender(outfit, { uri: 'file:///picked/me.jpg', width: 900, height: 1200 }),
+    ).rejects.toThrow();
+    expect(await renderRepository.forOutfit(outfit.id)).toEqual([]);
+    expect(useRenderVersion.getState().version).toBe(0);
+  });
+});
+
+describe('the request for the other app', () => {
+  it('numbers the pieces in the order of the sheet and says where the photo is', async () => {
+    const { outfit } = await setup();
+    const text = manualPrompt(outfit, true);
+
+    expect(text).toContain(
+      'On the left is a photo of me. On the right are 3 numbered clothing pieces',
+    );
+    outfit.entries.forEach((entry, index) => {
+      expect(text).toContain(
+        `${index + 1}. ${SLOT_LABEL[entry.slot]}: ${describeItem(entry.item)}`,
+      );
+    });
+    expect(text).toContain('all of these pieces together');
+  });
+
+  it('asks for the photo to be attached when the sheet has none, and reads well for one piece', async () => {
+    const { outfit } = await setup();
+    const one = { entries: outfit.entries.slice(0, 1) };
+
+    expect(manualPrompt(one, false)).toContain(
+      'shows 1 numbered clothing piece. I am also attaching',
+    );
+    expect(manualPrompt(one, true)).toContain('On the right is 1 numbered clothing piece:');
+    expect(manualPrompt(one, true)).toContain('wearing this piece.');
+  });
+
+  it('keeps pieces large on the sheet', () => {
+    expect([1, 2, 3, 6, 7, 12].map(pieceColumns)).toEqual([1, 1, 2, 2, 3, 3]);
   });
 });

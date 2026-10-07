@@ -495,6 +495,19 @@
     "textModel": "Model pro text",
     "modelHint": "Nechte prázdné pro výchozí model."
   },
+  "manualTryOn": {
+    "open": "Vyzkoušet v jiné aplikaci, zdarma",
+    "title": "Vyzkoušet v jiné aplikaci",
+    "explain": "Obrázek vytvoříte v asistentovi, kterého už máte, třeba v aplikaci Gemini nebo ChatGPT. Closet sám nic neodesílá a není potřeba žádný klíč.",
+    "step1": "1. Sdílejte obrázek níže do aplikace asistenta. Zadání se vám zkopíruje.",
+    "step2": "2. V té aplikaci vložte zadání, odešlete ho a vytvořený obrázek uložte do Fotek.",
+    "step3": "3. Vraťte se sem a hotový obrázek přidejte.",
+    "share": "Zkopírovat zadání a sdílet obrázek",
+    "add": "Přidat hotový obrázek z Fotek",
+    "copied": "Zadání je zkopírované. V druhé aplikaci ho vložte k obrázku.",
+    "added": "Obrázek se teď zobrazuje u tohoto outfitu.",
+    "noPhoto": "V profilu nemáte svou fotku, proto jsou na obrázku jen kousky. V druhé aplikaci přiložte i fotku celé své postavy."
+  },
   "studio": {
     "title": "Studiová fotka",
     "explain": "Studiová verze vaší fotky, na jednobarevném pozadí a v neutrálním postoji, dělá vykreslené outfity jednotnější. Její vytvoření je jeden placený požadavek.",

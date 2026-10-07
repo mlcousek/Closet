@@ -495,6 +495,19 @@
     "textModel": "Text model",
     "modelHint": "Leave empty to use the default."
   },
+  "manualTryOn": {
+    "open": "Try on in another app, free",
+    "title": "Try on in another app",
+    "explain": "Use an assistant app you already have, such as Gemini or ChatGPT, to make the picture. Nothing is sent by Closet itself and no key is needed.",
+    "step1": "1. Share the picture below to the assistant app. The request for it is copied for you.",
+    "step2": "2. In that app, paste the request, send it, and save the picture it makes to Photos.",
+    "step3": "3. Come back here and add the finished picture.",
+    "share": "Copy request and share picture",
+    "add": "Add finished picture from Photos",
+    "copied": "The request is copied. Paste it next to the picture in the other app.",
+    "added": "The picture is now shown for this outfit.",
+    "noPhoto": "You have no photo of yourself in your profile, so only the pieces are on the picture. Attach a full-body photo of you in the other app as well."
+  },
   "studio": {
     "title": "Studio photo",
     "explain": "A studio version of your photo, on a plain background in a neutral pose, makes outfit renders more consistent. Creating one is a single paid request.",

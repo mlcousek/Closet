@@ -169,6 +169,10 @@ jest.mock('@/lookbooks/LookbookPicker', () => {
   const { Text } = require('react-native');
   return { LookbookPicker: () => <Text testID="lookbook-picker">picker</Text> };
 });
+jest.mock('../ManualTryOn', () => {
+  const { Text } = require('react-native');
+  return { ManualTryOn: () => <Text testID="manual-try-on">manual</Text> };
+});
 jest.mock('@/sharing/ShareSheet', () => {
   const { Text } = require('react-native');
   return { ShareSheet: () => <Text testID="share-sheet">share</Text> };
@@ -767,6 +771,14 @@ describe('outfit detail', () => {
     expect(screen.getByTestId('share-sheet')).toBeTruthy();
     fireEvent.press(screen.getByTestId('outfit-lookbooks'));
     expect(screen.getByTestId('lookbook-picker')).toBeTruthy();
+  });
+
+  it('offers the free try-on in another app without asking for a render', async () => {
+    open(outfitOf('o1'));
+    expect(screen.queryByTestId('manual-try-on')).toBeNull();
+    fireEvent.press(await screen.findByTestId('outfit-manual-try-on'));
+    expect(screen.getByTestId('manual-try-on')).toBeTruthy();
+    expect(mockRequestRender).not.toHaveBeenCalled();
   });
 
   it('duplicates into the editor', async () => {

@@ -10,6 +10,7 @@ import { OCCASIONS, SEASONS } from '@/closet/taxonomy';
 import { AppText, Button, EmptyState, Field, Screen } from '@/components/ui';
 import { KeyNeededPrompt } from '@/ai/KeyNeededPrompt';
 import { LookbookPicker } from '@/lookbooks/LookbookPicker';
+import { ManualTryOn } from '@/outfits/ManualTryOn';
 import { OutfitImage } from '@/outfits/OutfitImage';
 import { hasWishlistItem, outfitRepository, type Outfit } from '@/outfits/repository';
 import { useInvalidateOutfits, useOutfit, useRenderSummary } from '@/outfits/useOutfits';
@@ -38,6 +39,7 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
   const showToast = useToast((state) => state.show);
   const planDays = Array.from({ length: 14 }, (_, index) => addDays(today(), index));
   const [pickingLookbook, setPickingLookbook] = useState(false);
+  const [manual, setManual] = useState(false);
 
   const update = async (info: Parameters<typeof outfitRepository.updateInfo>[1]) => {
     await outfitRepository.updateInfo(outfit.id, info);
@@ -128,6 +130,14 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
           </View>
         ) : null}
       </View>
+
+      <Button
+        testID="outfit-manual-try-on"
+        kind="secondary"
+        icon="swap-horizontal-outline"
+        label={t('manualTryOn.open')}
+        onPress={() => setManual(true)}
+      />
 
       <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end' }}>
         <View style={{ flex: 1 }}>
@@ -328,6 +338,15 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
             },
           ]}
           onClose={() => setSharing(false)}
+        />
+      ) : null}
+      {manual ? (
+        <ManualTryOn
+          outfit={outfit}
+          onClose={() => {
+            setManual(false);
+            setShowPrevious(false);
+          }}
         />
       ) : null}
       {pickingLookbook ? (

@@ -55,8 +55,14 @@ export async function captureCard(card: RefObject<View | null>, format: ShareFor
 }
 
 /** Opens the system share sheet for an image. Nothing is sent unless the user picks a destination. */
-export async function shareImage(uri: string): Promise<void> {
-  await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png' });
+export async function shareImage(
+  uri: string,
+  mimeType: 'image/png' | 'image/jpeg' = 'image/png',
+): Promise<void> {
+  await Sharing.shareAsync(uri, {
+    mimeType,
+    UTI: mimeType === 'image/png' ? 'public.png' : 'public.jpeg',
+  });
 }
 
 /** Saves an image to the photo library. Returns false when the user has not allowed adding photos. */

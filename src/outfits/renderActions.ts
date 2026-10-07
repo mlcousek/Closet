@@ -72,7 +72,7 @@ export function currentFingerprint(outfit: Pick<Outfit, 'entries'>, basePath: st
   return basePath ? fingerprint(basePath, outfitItemIds(outfit)) : null;
 }
 
-const SLOT_LABEL: Record<Slot, string> = {
+export const SLOT_LABEL: Record<Slot, string> = {
   outer: 'outer layer, worn over the other pieces',
   top: 'top',
   bottom: 'bottom',
@@ -187,6 +187,45 @@ export const renderQueue = createRenderQueue({
   run: (render) => runRender(render),
   onChange: () => useRenderVersion.setState((state) => ({ version: state.version + 1 })),
 });
+
+/** Longest side of a picture the user made elsewhere and added by hand. */
+const MANUAL_MAX = 1600;
+/** Stands in for the avatar in the fingerprint when there is no photo of the user. */
+const NO_AVATAR = 'none';
+
+/**
+ * Stores a picture the user made in another app as the outfit's current
+ * render. Nothing is sent anywhere and nothing is counted as paid usage.
+ */
+export async function saveManualRender(
+  outfit: Outfit,
+  photo: { uri: string; width: number; height: number },
+): Promise<void> {
+  const profile = await profileRepository.get();
+  const resize = fitWithin(photo, MANUAL_MAX);
+  const full = await ImageManipulator.manipulateAsync(photo.uri, resize ? [{ resize }] : [], {
+    compress: 0.9,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+  const imagePath = await imageStore.save(full.uri, 'renders', 'jpg');
+  let thumbPath = imagePath;
+  try {
+    const thumb = await ImageManipulator.manipulateAsync(
+      full.uri,
+      [{ resize: { width: RENDER_THUMB_WIDTH } }],
+      { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    thumbPath = await imageStore.save(thumb.uri, 'renders', 'jpg');
+  } catch {
+    // Without a thumbnail the full picture is shown in its place.
+  }
+  await renderRepository.createDone(
+    outfit.id,
+    fingerprint(avatarBasePath(profile) ?? NO_AVATAR, outfitItemIds(outfit)),
+    { imagePath, thumbPath, provider: 'manual' },
+  );
+  useRenderVersion.setState((state) => ({ version: state.version + 1 }));
+}
 
 /** Asks for a render of an outfit against the current avatar. `force` makes a fresh one (regenerate). */
 export async function requestRender(outfit: Outfit, force = false) {
