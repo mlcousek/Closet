@@ -1,10 +1,10 @@
 # Implementation and verification status
 
-Updated 8 October 2026.
+Updated 13 October 2026.
 
-## How to read the original OpenSpec tasks
+## Where the open checks are
 
-A checked task records implementation and its stated verification; an unchecked task may combine already implemented code with outstanding device validation. An unchecked task is not proof that the feature is absent. Device checks remain open until their results are recorded; automated tests cannot complete them.
+The seven original OpenSpec changes are archived under `openspec/changes/archive/`, and their requirements are the main specs in `openspec/specs/`. The tasks still open when they were archived, nearly all checks on the phone, are in the [device checklist](device-checklist.md). Device checks remain open until their results are recorded; automated tests cannot complete them.
 
 | Area                  | Implemented                                                                                                                   | Remaining verification or deliberate differences                                                                                                  |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ A checked task records implementation and its stated verification; an unchecked 
 | Profile               | Name-only onboarding; optional gender, body type, sizes and avatar in Profile                                                 | Original multi-step onboarding is superseded. Native photo/person detection verification remains open.                                            |
 | Wardrobe              | Imports, cutout wrapper, review, filters, wishlist and shop-page parser                                                       | Vision quality, large-library device performance, real shop compatibility. Review now uses explicit next-item acknowledgement instead of a timer. |
 | Outfits               | Multiple pieces per layering slot; two labeled top rows by default; outerwear separately; saved outfits; AI and manual try-on | Provider quality comparison and native image composition verification. Shuffle preserves layer rows. No database migration is needed.             |
-| Lookbooks and sharing | Lookbooks, wishlist purchases, outfit sharing and contact sheets                                                              | Native sharing and image capture verification; check original unchecked tasks against their exact acceptance criteria.                            |
+| Lookbooks and sharing | Lookbooks, wishlist purchases, outfit sharing and contact sheets                                                              | Native sharing and image capture verification; see the device checklist.                                                                          |
 | Planning              | Weather, suggestions, calendar, per-item wear logging and local reminders                                                     | Device permissions and reminders; suggestion quality. Layered wear logging records every saved piece.                                             |
 | Smart features        | Stylist, statistics, trips and display mode                                                                                   | Native display behavior and live AI verification. Charts use plain views; typical trip weather uses the previous year.                            |
 
@@ -26,9 +26,14 @@ A checked task records implementation and its stated verification; an unchecked 
 
 ## Next engineering work
 
-1. Compare provider models with fixed garment/avatar photos using the [provider validation protocol](provider-validation.md). Settings capability checks and actionable model errors are implemented; live output quality is still unverified.
+1. Work through the [device checklist](device-checklist.md).
+2. Compare provider models with fixed garment/avatar photos using the [provider validation protocol](provider-validation.md). Settings capability checks and actionable model errors are implemented; live output quality is still unverified.
 
-These are engineering tasks; device validation remains separate and is not assigned by this document.
+## Snapshots and real shop pages: 13 October 2026
+
+- Snapshot tests cover the shared image in portrait, story and square, from a render and from the pieces with the item strip; lookbook contact sheets of five outfits and of thirty paged into twelve, twelve and six; the flat preview with two, four and six pieces; and the labelled try-on sheet. Snapshots hold the native views and their layout only (`src/testing/layoutTree.ts`).
+- The product page reader is tested against pages saved from six real shops. That found and fixed four gaps: prices only on size variants, videos among the pictures, one picture at several sizes or over http, and thumbnail-only pictures. H&M, Uniqlo, Mango and Decathlon refuse the app’s request; see [decisions](decisions.md).
+- Lookbook reordering stays with the Arrange buttons rather than drag; see [decisions](decisions.md).
 
 ## Own outfit photo: 13 October 2026
 

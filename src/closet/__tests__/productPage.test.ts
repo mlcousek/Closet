@@ -169,6 +169,61 @@ describe('product page reader', () => {
   });
 });
 
+describe('pictures offered from a product page', () => {
+  const images = (image: unknown, extra = '') =>
+    parseProductPage(
+      page(`${ld({ '@type': 'Product', name: 'Coat', image })}${extra}`),
+      'https://shop.example/p/1',
+    )?.images;
+
+  it('offers one picture listed at several sizes once, at the largest', () => {
+    expect(
+      images([
+        'https://cdn.example/coat.jpg?v=1&width=100',
+        'https://cdn.example/coat.jpg?v=1&width=900',
+        'https://cdn.example/coat.jpg?v=1&width=300',
+        'https://cdn.example/other.jpg?v=1&width=900',
+      ]),
+    ).toEqual([
+      'https://cdn.example/coat.jpg?v=1&width=900',
+      'https://cdn.example/other.jpg?v=1&width=900',
+    ]);
+  });
+
+  it('prefers the original without a size, and asks for a thumbnail at a useful width', () => {
+    expect(
+      images(
+        ['https://cdn.example/coat.jpg?width=200', 'https://cdn.example/back.jpg?imwidth=150'],
+        '<meta property="og:image" content="http://cdn.example/coat.jpg">',
+      ),
+    ).toEqual(['https://cdn.example/coat.jpg', 'https://cdn.example/back.jpg?imwidth=1200']);
+  });
+
+  it('leaves out videos', () => {
+    expect(
+      images([{ contentUrl: 'https://cdn.example/coat.mp4' }, 'https://cdn.example/coat.avif']),
+    ).toEqual(['https://cdn.example/coat.avif']);
+  });
+
+  it('takes the price of a product group from its first priced variant', () => {
+    const product = parseProductPage(
+      page(
+        ld({
+          '@type': 'ProductGroup',
+          name: 'Dress',
+          image: 'https://cdn.example/dress.jpg',
+          hasVariant: [
+            { '@type': 'Product', size: 'XS' },
+            { '@type': 'Product', offers: { price: '1140', priceCurrency: 'CZK' } },
+          ],
+        }),
+      ),
+      'https://shop.example/p/2',
+    );
+    expect(product).toMatchObject({ price: 1140, currency: 'CZK' });
+  });
+});
+
 describe('web links', () => {
   it('accepts web links and adds a missing scheme', () => {
     expect(parseWebUrl(' https://shop.example/p/1?x=1 ')).toBe('https://shop.example/p/1?x=1');

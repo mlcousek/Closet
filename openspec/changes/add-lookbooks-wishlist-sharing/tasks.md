@@ -4,7 +4,7 @@
 
 - [x] 1.1 Add lookbooks and lookbook-outfits tables with migrations and a repository (create, rename, delete, add, remove, reorder, cover); verify repository unit tests including that deleting a lookbook keeps its outfits
 - [x] 1.2 Add the lookbooks row with an "Add lookbook" control at the top of the Outfits section; verify a component test for empty and filled states
-- [ ] 1.3 Build the lookbook screen with grid, drag to reorder, set cover, rename and delete; verify component tests
+- [x] 1.3 Build the lookbook screen with grid, drag to reorder, set cover, rename and delete; verify component tests
 - [x] 1.4 Add "add to lookbook" on outfit detail and as a multi-select action in the outfits grid; verify component tests for one and several outfits
 - [x] 1.5 Include lookbooks in backup export and import; verify a round-trip unit test
 
@@ -19,10 +19,10 @@
 
 ## 3. Sharing
 
-- [ ] 3.1 Build the share composer producing portrait, story and square images from render or collage, with optional item strip; verify snapshot tests for each format
+- [x] 3.1 Build the share composer producing portrait, story and square images from render or collage, with optional item strip; verify snapshot tests for each format
 - [ ] 3.2 Build the share options sheet and connect it to the system share sheet; verify on device by sharing to Messages
 - [ ] 3.3 Add save to the photo library with the permission explanation and denied state; verify on device
-- [ ] 3.4 Build the lookbook contact sheet composer with paging for large lookbooks; verify snapshot tests for five and thirty outfits
+- [x] 3.4 Build the lookbook contact sheet composer with paging for large lookbooks; verify snapshot tests for five and thirty outfits
 
 ## 4. Wrap-up
 

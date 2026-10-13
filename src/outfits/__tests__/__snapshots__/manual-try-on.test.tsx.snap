@@ -1,0 +1,163 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`try-on in another app composes the labelled sheet of the photo and the numbered pieces 1`] = `
+{
+  "children": [
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/avatar/me.jpg",
+        },
+        "style": {
+          "flex": 9,
+        },
+        "testID": "manual-sheet-photo",
+      },
+      "type": "View",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/shirt.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    "1",
+                  ],
+                  "props": {
+                    "style": {
+                      "color": "#FFFFFF",
+                      "fontSize": 26,
+                      "fontWeight": "400",
+                      "lineHeight": 36,
+                    },
+                  },
+                  "type": "Text",
+                },
+              ],
+              "props": {
+                "style": {
+                  "alignItems": "center",
+                  "backgroundColor": "#1B1622",
+                  "borderRadius": 21,
+                  "height": 42,
+                  "justifyContent": "center",
+                  "left": 6,
+                  "minWidth": 42,
+                  "position": "absolute",
+                  "top": 6,
+                },
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 6,
+              "width": "100%",
+            },
+            "testID": "manual-sheet-piece-shirt",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/skirt.jpg",
+                },
+                "style": {
+                  "flex": 1,
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    "2",
+                  ],
+                  "props": {
+                    "style": {
+                      "color": "#FFFFFF",
+                      "fontSize": 26,
+                      "fontWeight": "400",
+                      "lineHeight": 36,
+                    },
+                  },
+                  "type": "Text",
+                },
+              ],
+              "props": {
+                "style": {
+                  "alignItems": "center",
+                  "backgroundColor": "#1B1622",
+                  "borderRadius": 21,
+                  "height": 42,
+                  "justifyContent": "center",
+                  "left": 6,
+                  "minWidth": 42,
+                  "position": "absolute",
+                  "top": 6,
+                },
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 6,
+              "width": "100%",
+            },
+            "testID": "manual-sheet-piece-skirt",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 11,
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+        },
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "backgroundColor": "#FFFFFF",
+      "flexDirection": "row",
+      "gap": 16,
+      "height": 600,
+      "padding": 16,
+      "width": 800,
+    },
+    "testID": "manual-sheet",
+  },
+  "type": "View",
+}
+`;

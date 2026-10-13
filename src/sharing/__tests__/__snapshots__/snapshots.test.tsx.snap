@@ -1,0 +1,3168 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`flat preview collage lays out 2 pieces from head to feet 1`] = `
+{
+  "children": [
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/hat-t.jpg",
+        },
+        "style": {
+          "height": "48%",
+          "left": "20%",
+          "position": "absolute",
+          "top": "2%",
+          "width": "48%",
+        },
+        "testID": "collage-piece-hat",
+      },
+      "type": "View",
+    },
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/shirt-t.jpg",
+        },
+        "style": {
+          "height": "48%",
+          "left": "20%",
+          "position": "absolute",
+          "top": "50%",
+          "width": "48%",
+        },
+        "testID": "collage-piece-shirt",
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "style": {
+      "flex": 1,
+    },
+    "testID": "outfit-collage",
+  },
+  "type": "View",
+}
+`;
+
+exports[`flat preview collage lays out 4 pieces from head to feet 1`] = `
+{
+  "children": [
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/hat-t.jpg",
+        },
+        "style": {
+          "height": "48%",
+          "left": "1%",
+          "position": "absolute",
+          "top": "1%",
+          "width": "48%",
+        },
+        "testID": "collage-piece-hat",
+      },
+      "type": "View",
+    },
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/shirt-t.jpg",
+        },
+        "style": {
+          "height": "48%",
+          "left": "51%",
+          "position": "absolute",
+          "top": "1%",
+          "width": "48%",
+        },
+        "testID": "collage-piece-shirt",
+      },
+      "type": "View",
+    },
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/jumper-t.jpg",
+        },
+        "style": {
+          "height": "48%",
+          "left": "1%",
+          "position": "absolute",
+          "top": "51%",
+          "width": "48%",
+        },
+        "testID": "collage-piece-jumper",
+      },
+      "type": "View",
+    },
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/skirt-t.jpg",
+        },
+        "style": {
+          "height": "48%",
+          "left": "51%",
+          "position": "absolute",
+          "top": "51%",
+          "width": "48%",
+        },
+        "testID": "collage-piece-skirt",
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "style": {
+      "flex": 1,
+    },
+    "testID": "outfit-collage",
+  },
+  "type": "View",
+}
+`;
+
+exports[`flat preview collage lays out 6 pieces from head to feet 1`] = `
+{
+  "children": [
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/hat-t.jpg",
+        },
+        "style": {
+          "height": "32%",
+          "left": "9%",
+          "position": "absolute",
+          "top": "0.6666666666666679%",
+          "width": "32%",
+        },
+        "testID": "collage-piece-hat",
+      },
+      "type": "View",
+    },
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/shirt-t.jpg",
+        },
+        "style": {
+          "height": "32%",
+          "left": "59%",
+          "position": "absolute",
+          "top": "0.6666666666666679%",
+          "width": "32%",
+        },
+        "testID": "collage-piece-shirt",
+      },
+      "type": "View",
+    },
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/jumper-t.jpg",
+        },
+        "style": {
+          "height": "32%",
+          "left": "9%",
+          "position": "absolute",
+          "top": "34%",
+          "width": "32%",
+        },
+        "testID": "collage-piece-jumper",
+      },
+      "type": "View",
+    },
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/skirt-t.jpg",
+        },
+        "style": {
+          "height": "32%",
+          "left": "59%",
+          "position": "absolute",
+          "top": "34%",
+          "width": "32%",
+        },
+        "testID": "collage-piece-skirt",
+      },
+      "type": "View",
+    },
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/bag-t.jpg",
+        },
+        "style": {
+          "height": "32%",
+          "left": "9%",
+          "position": "absolute",
+          "top": "67.33333333333334%",
+          "width": "32%",
+        },
+        "testID": "collage-piece-bag",
+      },
+      "type": "View",
+    },
+    {
+      "children": [],
+      "props": {
+        "contentFit": "contain",
+        "source": {
+          "uri": "file:///documents/images/items/boots-t.jpg",
+        },
+        "style": {
+          "height": "32%",
+          "left": "59%",
+          "position": "absolute",
+          "top": "67.33333333333334%",
+          "width": "32%",
+        },
+        "testID": "collage-piece-boots",
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "style": {
+      "flex": 1,
+    },
+    "testID": "outfit-collage",
+  },
+  "type": "View",
+}
+`;
+
+exports[`lookbook contact sheet lays out five outfits on one image 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        "Summer",
+      ],
+      "props": {
+        "numberOfLines": 1,
+        "style": {
+          "color": "#1B1622",
+          "fontSize": 14,
+          "fontWeight": "500",
+        },
+        "testID": "share-card-title",
+      },
+      "type": "Text",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r1.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o1",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o2",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r3.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o3",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o4",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r5.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o5",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 1,
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+        },
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "alignSelf": "center",
+      "backgroundColor": "#FFFFFF",
+      "gap": 8,
+      "height": 325,
+      "padding": 12,
+      "width": 260,
+    },
+    "testID": "share-card",
+  },
+  "type": "View",
+}
+`;
+
+exports[`lookbook contact sheet pages thirty outfits into images of twelve, twelve and six: page 1 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        "Summer (1/3)",
+      ],
+      "props": {
+        "numberOfLines": 1,
+        "style": {
+          "color": "#1B1622",
+          "fontSize": 14,
+          "fontWeight": "500",
+        },
+        "testID": "share-card-title",
+      },
+      "type": "Text",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r1.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o1",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o2",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r3.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o3",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o4",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r5.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o5",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o6",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r7.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o7",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o8",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r9.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o9",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o10",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r11.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o11",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o12",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 1,
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+        },
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "alignSelf": "center",
+      "backgroundColor": "#FFFFFF",
+      "gap": 8,
+      "height": 325,
+      "padding": 12,
+      "width": 260,
+    },
+    "testID": "share-card",
+  },
+  "type": "View",
+}
+`;
+
+exports[`lookbook contact sheet pages thirty outfits into images of twelve, twelve and six: page 2 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        "Summer (2/3)",
+      ],
+      "props": {
+        "numberOfLines": 1,
+        "style": {
+          "color": "#1B1622",
+          "fontSize": 14,
+          "fontWeight": "500",
+        },
+        "testID": "share-card-title",
+      },
+      "type": "Text",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r13.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o13",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o14",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r15.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o15",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o16",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r17.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o17",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o18",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r19.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o19",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o20",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r21.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o21",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o22",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r23.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o23",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "25%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o24",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 1,
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+        },
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "alignSelf": "center",
+      "backgroundColor": "#FFFFFF",
+      "gap": 8,
+      "height": 325,
+      "padding": 12,
+      "width": 260,
+    },
+    "testID": "share-card",
+  },
+  "type": "View",
+}
+`;
+
+exports[`lookbook contact sheet pages thirty outfits into images of twelve, twelve and six: page 3 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        "Summer (3/3)",
+      ],
+      "props": {
+        "numberOfLines": 1,
+        "style": {
+          "color": "#1B1622",
+          "fontSize": 14,
+          "fontWeight": "500",
+        },
+        "testID": "share-card-title",
+      },
+      "type": "Text",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r25.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o25",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o26",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r27.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o27",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o28",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/renders/r29.png",
+                },
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-render",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o29",
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/shirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-shirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/skirt-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "51%",
+                      "position": "absolute",
+                      "top": "1%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-skirt",
+                  },
+                  "type": "View",
+                },
+                {
+                  "children": [],
+                  "props": {
+                    "contentFit": "contain",
+                    "source": {
+                      "uri": "file:///documents/images/items/boots-t.jpg",
+                    },
+                    "style": {
+                      "height": "48%",
+                      "left": "1%",
+                      "position": "absolute",
+                      "top": "51%",
+                      "width": "48%",
+                    },
+                    "testID": "collage-piece-boots",
+                  },
+                  "type": "View",
+                },
+              ],
+              "props": {
+                "style": {
+                  "flex": 1,
+                },
+                "testID": "share-collage",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "height": "50%",
+              "padding": 3,
+              "width": "33.333333333333336%",
+            },
+            "testID": "share-tile-o30",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 1,
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+        },
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "alignSelf": "center",
+      "backgroundColor": "#FFFFFF",
+      "gap": 8,
+      "height": 325,
+      "padding": 12,
+      "width": 260,
+    },
+    "testID": "share-card",
+  },
+  "type": "View",
+}
+`;
+
+exports[`share composer composes the portrait format from the pieces, with the item strip 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        "Friday",
+      ],
+      "props": {
+        "numberOfLines": 1,
+        "style": {
+          "color": "#1B1622",
+          "fontSize": 14,
+          "fontWeight": "500",
+        },
+        "testID": "share-card-title",
+      },
+      "type": "Text",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/shirt-t.jpg",
+                },
+                "style": {
+                  "height": "48%",
+                  "left": "1%",
+                  "position": "absolute",
+                  "top": "1%",
+                  "width": "48%",
+                },
+                "testID": "collage-piece-shirt",
+              },
+              "type": "View",
+            },
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/skirt-t.jpg",
+                },
+                "style": {
+                  "height": "48%",
+                  "left": "51%",
+                  "position": "absolute",
+                  "top": "1%",
+                  "width": "48%",
+                },
+                "testID": "collage-piece-skirt",
+              },
+              "type": "View",
+            },
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/boots-t.jpg",
+                },
+                "style": {
+                  "height": "48%",
+                  "left": "1%",
+                  "position": "absolute",
+                  "top": "51%",
+                  "width": "48%",
+                },
+                "testID": "collage-piece-boots",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "flex": 1,
+            },
+            "testID": "share-collage",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 1,
+        },
+      },
+      "type": "View",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/shirt-t.jpg",
+                },
+                "style": {
+                  "aspectRatio": 1,
+                  "width": "100%",
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                "Arket",
+              ],
+              "props": {
+                "numberOfLines": 1,
+                "style": {
+                  "color": "#6D6478",
+                  "fontSize": 7,
+                  "fontWeight": "400",
+                },
+              },
+              "type": "Text",
+            },
+          ],
+          "props": {
+            "style": {
+              "alignItems": "center",
+              "gap": 2,
+              "width": 40,
+            },
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/skirt-t.jpg",
+                },
+                "style": {
+                  "aspectRatio": 1,
+                  "width": "100%",
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                "skirt",
+              ],
+              "props": {
+                "numberOfLines": 1,
+                "style": {
+                  "color": "#6D6478",
+                  "fontSize": 7,
+                  "fontWeight": "400",
+                },
+              },
+              "type": "Text",
+            },
+          ],
+          "props": {
+            "style": {
+              "alignItems": "center",
+              "gap": 2,
+              "width": 40,
+            },
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/boots-t.jpg",
+                },
+                "style": {
+                  "aspectRatio": 1,
+                  "width": "100%",
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                "boots",
+              ],
+              "props": {
+                "numberOfLines": 1,
+                "style": {
+                  "color": "#6D6478",
+                  "fontSize": 7,
+                  "fontWeight": "400",
+                },
+              },
+              "type": "Text",
+            },
+          ],
+          "props": {
+            "style": {
+              "alignItems": "center",
+              "gap": 2,
+              "width": 40,
+            },
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+          "gap": 6,
+          "justifyContent": "center",
+        },
+        "testID": "share-item-list",
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "alignSelf": "center",
+      "backgroundColor": "#FFFFFF",
+      "gap": 8,
+      "height": 325,
+      "padding": 12,
+      "width": 260,
+    },
+    "testID": "share-card",
+  },
+  "type": "View",
+}
+`;
+
+exports[`share composer composes the portrait format from the render 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        "Friday",
+      ],
+      "props": {
+        "numberOfLines": 1,
+        "style": {
+          "color": "#1B1622",
+          "fontSize": 14,
+          "fontWeight": "500",
+        },
+        "testID": "share-card-title",
+      },
+      "type": "Text",
+    },
+    {
+      "children": [
+        {
+          "children": [],
+          "props": {
+            "contentFit": "contain",
+            "source": {
+              "uri": "file:///documents/images/renders/r1.png",
+            },
+            "style": {
+              "flex": 1,
+            },
+            "testID": "share-render",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 1,
+        },
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "alignSelf": "center",
+      "backgroundColor": "#FFFFFF",
+      "gap": 8,
+      "height": 325,
+      "padding": 12,
+      "width": 260,
+    },
+    "testID": "share-card",
+  },
+  "type": "View",
+}
+`;
+
+exports[`share composer composes the square format from the pieces, with the item strip 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        "Friday",
+      ],
+      "props": {
+        "numberOfLines": 1,
+        "style": {
+          "color": "#1B1622",
+          "fontSize": 14,
+          "fontWeight": "500",
+        },
+        "testID": "share-card-title",
+      },
+      "type": "Text",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/shirt-t.jpg",
+                },
+                "style": {
+                  "height": "48%",
+                  "left": "1%",
+                  "position": "absolute",
+                  "top": "1%",
+                  "width": "48%",
+                },
+                "testID": "collage-piece-shirt",
+              },
+              "type": "View",
+            },
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/skirt-t.jpg",
+                },
+                "style": {
+                  "height": "48%",
+                  "left": "51%",
+                  "position": "absolute",
+                  "top": "1%",
+                  "width": "48%",
+                },
+                "testID": "collage-piece-skirt",
+              },
+              "type": "View",
+            },
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/boots-t.jpg",
+                },
+                "style": {
+                  "height": "48%",
+                  "left": "1%",
+                  "position": "absolute",
+                  "top": "51%",
+                  "width": "48%",
+                },
+                "testID": "collage-piece-boots",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "flex": 1,
+            },
+            "testID": "share-collage",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 1,
+        },
+      },
+      "type": "View",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/shirt-t.jpg",
+                },
+                "style": {
+                  "aspectRatio": 1,
+                  "width": "100%",
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                "Arket",
+              ],
+              "props": {
+                "numberOfLines": 1,
+                "style": {
+                  "color": "#6D6478",
+                  "fontSize": 7,
+                  "fontWeight": "400",
+                },
+              },
+              "type": "Text",
+            },
+          ],
+          "props": {
+            "style": {
+              "alignItems": "center",
+              "gap": 2,
+              "width": 40,
+            },
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/skirt-t.jpg",
+                },
+                "style": {
+                  "aspectRatio": 1,
+                  "width": "100%",
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                "skirt",
+              ],
+              "props": {
+                "numberOfLines": 1,
+                "style": {
+                  "color": "#6D6478",
+                  "fontSize": 7,
+                  "fontWeight": "400",
+                },
+              },
+              "type": "Text",
+            },
+          ],
+          "props": {
+            "style": {
+              "alignItems": "center",
+              "gap": 2,
+              "width": 40,
+            },
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/boots-t.jpg",
+                },
+                "style": {
+                  "aspectRatio": 1,
+                  "width": "100%",
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                "boots",
+              ],
+              "props": {
+                "numberOfLines": 1,
+                "style": {
+                  "color": "#6D6478",
+                  "fontSize": 7,
+                  "fontWeight": "400",
+                },
+              },
+              "type": "Text",
+            },
+          ],
+          "props": {
+            "style": {
+              "alignItems": "center",
+              "gap": 2,
+              "width": 40,
+            },
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+          "gap": 6,
+          "justifyContent": "center",
+        },
+        "testID": "share-item-list",
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "alignSelf": "center",
+      "backgroundColor": "#FFFFFF",
+      "gap": 8,
+      "height": 260,
+      "padding": 12,
+      "width": 260,
+    },
+    "testID": "share-card",
+  },
+  "type": "View",
+}
+`;
+
+exports[`share composer composes the square format from the render 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        "Friday",
+      ],
+      "props": {
+        "numberOfLines": 1,
+        "style": {
+          "color": "#1B1622",
+          "fontSize": 14,
+          "fontWeight": "500",
+        },
+        "testID": "share-card-title",
+      },
+      "type": "Text",
+    },
+    {
+      "children": [
+        {
+          "children": [],
+          "props": {
+            "contentFit": "contain",
+            "source": {
+              "uri": "file:///documents/images/renders/r1.png",
+            },
+            "style": {
+              "flex": 1,
+            },
+            "testID": "share-render",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 1,
+        },
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "alignSelf": "center",
+      "backgroundColor": "#FFFFFF",
+      "gap": 8,
+      "height": 260,
+      "padding": 12,
+      "width": 260,
+    },
+    "testID": "share-card",
+  },
+  "type": "View",
+}
+`;
+
+exports[`share composer composes the story format from the pieces, with the item strip 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        "Friday",
+      ],
+      "props": {
+        "numberOfLines": 1,
+        "style": {
+          "color": "#1B1622",
+          "fontSize": 14,
+          "fontWeight": "500",
+        },
+        "testID": "share-card-title",
+      },
+      "type": "Text",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/shirt-t.jpg",
+                },
+                "style": {
+                  "height": "48%",
+                  "left": "1%",
+                  "position": "absolute",
+                  "top": "1%",
+                  "width": "48%",
+                },
+                "testID": "collage-piece-shirt",
+              },
+              "type": "View",
+            },
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/skirt-t.jpg",
+                },
+                "style": {
+                  "height": "48%",
+                  "left": "51%",
+                  "position": "absolute",
+                  "top": "1%",
+                  "width": "48%",
+                },
+                "testID": "collage-piece-skirt",
+              },
+              "type": "View",
+            },
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/boots-t.jpg",
+                },
+                "style": {
+                  "height": "48%",
+                  "left": "1%",
+                  "position": "absolute",
+                  "top": "51%",
+                  "width": "48%",
+                },
+                "testID": "collage-piece-boots",
+              },
+              "type": "View",
+            },
+          ],
+          "props": {
+            "style": {
+              "flex": 1,
+            },
+            "testID": "share-collage",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 1,
+        },
+      },
+      "type": "View",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/shirt-t.jpg",
+                },
+                "style": {
+                  "aspectRatio": 1,
+                  "width": "100%",
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                "Arket",
+              ],
+              "props": {
+                "numberOfLines": 1,
+                "style": {
+                  "color": "#6D6478",
+                  "fontSize": 7,
+                  "fontWeight": "400",
+                },
+              },
+              "type": "Text",
+            },
+          ],
+          "props": {
+            "style": {
+              "alignItems": "center",
+              "gap": 2,
+              "width": 40,
+            },
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/skirt-t.jpg",
+                },
+                "style": {
+                  "aspectRatio": 1,
+                  "width": "100%",
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                "skirt",
+              ],
+              "props": {
+                "numberOfLines": 1,
+                "style": {
+                  "color": "#6D6478",
+                  "fontSize": 7,
+                  "fontWeight": "400",
+                },
+              },
+              "type": "Text",
+            },
+          ],
+          "props": {
+            "style": {
+              "alignItems": "center",
+              "gap": 2,
+              "width": 40,
+            },
+          },
+          "type": "View",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "props": {
+                "contentFit": "contain",
+                "source": {
+                  "uri": "file:///documents/images/items/boots-t.jpg",
+                },
+                "style": {
+                  "aspectRatio": 1,
+                  "width": "100%",
+                },
+              },
+              "type": "View",
+            },
+            {
+              "children": [
+                "boots",
+              ],
+              "props": {
+                "numberOfLines": 1,
+                "style": {
+                  "color": "#6D6478",
+                  "fontSize": 7,
+                  "fontWeight": "400",
+                },
+              },
+              "type": "Text",
+            },
+          ],
+          "props": {
+            "style": {
+              "alignItems": "center",
+              "gap": 2,
+              "width": 40,
+            },
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+          "gap": 6,
+          "justifyContent": "center",
+        },
+        "testID": "share-item-list",
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "alignSelf": "center",
+      "backgroundColor": "#FFFFFF",
+      "gap": 8,
+      "height": 462.22222222222223,
+      "padding": 12,
+      "width": 260,
+    },
+    "testID": "share-card",
+  },
+  "type": "View",
+}
+`;
+
+exports[`share composer composes the story format from the render 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        "Friday",
+      ],
+      "props": {
+        "numberOfLines": 1,
+        "style": {
+          "color": "#1B1622",
+          "fontSize": 14,
+          "fontWeight": "500",
+        },
+        "testID": "share-card-title",
+      },
+      "type": "Text",
+    },
+    {
+      "children": [
+        {
+          "children": [],
+          "props": {
+            "contentFit": "contain",
+            "source": {
+              "uri": "file:///documents/images/renders/r1.png",
+            },
+            "style": {
+              "flex": 1,
+            },
+            "testID": "share-render",
+          },
+          "type": "View",
+        },
+      ],
+      "props": {
+        "style": {
+          "flex": 1,
+        },
+      },
+      "type": "View",
+    },
+  ],
+  "props": {
+    "collapsable": false,
+    "style": {
+      "alignSelf": "center",
+      "backgroundColor": "#FFFFFF",
+      "gap": 8,
+      "height": 462.22222222222223,
+      "padding": 12,
+      "width": 260,
+    },
+    "testID": "share-card",
+  },
+  "type": "View",
+}
+`;

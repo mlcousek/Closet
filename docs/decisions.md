@@ -69,7 +69,7 @@ The spec lets the user filter the items offered in a row. The editor has one sea
 
 ## Try-on pictures: decided with the owner on 2026-10-07
 
-These replace what the try-on spec in `openspec/changes/add-outfits-try-on` says about outdated renders.
+These replace what the try-on spec in `add-outfits-try-on` (now `openspec/specs/virtual-try-on`) says about outdated renders.
 
 - **A picture belongs to an outfit while its pieces stay the same.** Changing a piece, or the photo of a piece, drops the picture from view and the outfit shows the flat preview again. Going back to the earlier pieces shows their picture again. There is no "outdated" state any more.
 - **A new photo of the user leaves existing pictures as they are.** Nothing is rendered again unless the user taps Regenerate.
@@ -125,3 +125,10 @@ Schema version 8 stores the fingerprint with the item. Older owned/wishlist orig
 Same-fingerprint bulk jobs are serialized through a short-lived reservation until the item is committed or the attempt fails. Duplicates remain failed jobs with their source photo available for inspection; they can be discarded or checked again if the original item was removed. They never silently add another item or send another tagging request. Single-photo adds offer an explicit override for cases where one photo intentionally represents multiple items.
 
 New failure records contain safe reason codes. The interface also understands older interruption/AI errors without displaying raw error text. Initial copy failures have no durable source, so they offer reselecting a photo instead of an automatic retry. Per-photo retry and discard act only on failed jobs; processing jobs cannot be requeued or removed by repeated taps.
+
+## Lookbook order, shop links and the archived plan: 13 October 2026
+
+- **Arrange buttons instead of drag.** The lookbook spec asks for drag to reorder. The screen has an Arrange mode with move earlier and move later on each outfit, next to set cover and remove. A two-column drag grid would need custom gesture code that cannot be tried without a phone, while the buttons are covered by component tests and work with VoiceOver. Drag can be added on top if the buttons prove slow for long lookbooks.
+- **Shop links were tried against real pages.** Product pages saved from Allbirds, Answear, ASOS, Kith, Taylor Stitch and Zalando are kept in `src/closet/__tests__/shops/`, cut down to their structured data and meta tags. They showed four gaps, now handled: a product group with its price only on the size variants (Zalando), product videos among the pictures (Answear), the same picture listed at several sizes and over plain http (Shopify shops), and pictures listed only as 100–200 px thumbnails. Image links are upgraded to https, each picture is offered once at the largest size listed, and a `width`/`imwidth` below 600 is raised to 1200; both image servers were checked to serve the larger size. ASOS publishes no price in the page, so none is filled in.
+- **Shops that refuse the app.** H&M, Uniqlo, Mango and Decathlon answered the app's request with 403 Forbidden, so a link from them cannot be imported; a photo of the item works instead. Zara served a page without product links to a plain request. This may differ on the phone's own connection.
+- **The seven original OpenSpec changes are archived.** Their requirements are now the main specs under `openspec/specs/`. Tasks still open at that point, almost all checks on the phone, moved to `docs/device-checklist.md`.

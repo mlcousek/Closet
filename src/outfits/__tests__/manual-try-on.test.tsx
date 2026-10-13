@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
+import { layoutTree } from '@/testing/layoutTree';
 import type { Item } from '@/closet/types';
 import { Button } from '@/components/ui';
 import type { Profile } from '@/profile/types';
@@ -79,6 +80,11 @@ describe('try-on in another app', () => {
     expect(screen.getByTestId('manual-sheet-piece-shirt')).toBeTruthy();
     expect(screen.getByTestId('manual-sheet-piece-skirt')).toBeTruthy();
     expect(screen.queryByTestId('manual-no-photo')).toBeNull();
+  });
+
+  it('composes the labelled sheet of the photo and the numbered pieces', () => {
+    open();
+    expect(layoutTree(screen.getByTestId('manual-sheet'))).toMatchSnapshot();
   });
 
   it('copies the request, then shares the sheet as one picture', async () => {

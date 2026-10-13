@@ -43,7 +43,7 @@
 
 ## 7. Link import
 
-- [ ] 7.1 Implement the product page reader (JSON-LD, then Open Graph) returning name, brand, price and images; verify unit tests against saved sample pages from five shops
+- [x] 7.1 Implement the product page reader (JSON-LD, then Open Graph) returning name, brand, price and images; verify unit tests against saved sample pages from five shops
 - [x] 7.2 Build the link import screen with clipboard offer, image picker and the unreadable-page fallback; verify component tests for the three scenarios
 - [ ] 7.3 Store the source link and show it in item detail; verify on device that it opens the browser
 

@@ -14,8 +14,8 @@
 
 ## 3. Collage
 
-- [ ] 3.1 Implement the local collage composer laying out cutouts by slot; verify snapshot tests for two, four and six pieces
-- [ ] 3.2 Implement the labelled outfit sheet composer used as provider input; verify a snapshot test
+- [x] 3.1 Implement the local collage composer laying out cutouts by slot; verify snapshot tests for two, four and six pieces
+- [x] 3.2 Implement the labelled outfit sheet composer used as provider input; verify a snapshot test
 
 ## 4. Outfit editor
 

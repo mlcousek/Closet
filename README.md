@@ -27,7 +27,7 @@ See [building and installing](docs/building.md) for the Windows / GitHub Actions
 
 ## Current engineering status
 
-All seven original feature areas have implementations. The OpenSpec folders are the original implementation and verification checklist, not a list of wholly unbuilt features. Read [current status](docs/status.md) for the distinction between implemented behavior, design changes and outstanding validation, and [decisions](docs/decisions.md) for tradeoffs.
+All seven original feature areas have implementations. Their requirements are the specs in `openspec/specs/`; the original change folders are archived. What still needs checking on the phone is in the [device checklist](docs/device-checklist.md). Read [current status](docs/status.md) for what was built and [decisions](docs/decisions.md) for tradeoffs.
 
 Startup waits for database recovery before mounting wardrobe screens. A failed recovery shows a retry screen. Bulk-import review explicitly enables review of the next item, so repeated Confirm or Discard taps cannot act on an unseen item.
 

@@ -80,11 +80,17 @@ function absolute(candidate: unknown, baseUrl: string): string | null {
   if (!text) return null;
   try {
     const url = new URL(text, baseUrl);
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null;
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    // The phone refuses plain web links, and shops serve the same file over https.
+    url.protocol = 'https:';
+    return url.toString();
   } catch {
     return null;
   }
 }
+
+/** Shops list product videos next to the photos; only pictures can become an item. */
+const VIDEO = /\.(mp4|m4v|mov|webm|m3u8)$/i;
 
 function imageUrls(value: unknown, baseUrl: string): string[] {
   if (Array.isArray(value)) return value.flatMap((entry) => imageUrls(entry, baseUrl));
@@ -93,7 +99,37 @@ function imageUrls(value: unknown, baseUrl: string): string[] {
     return imageUrls(object.url ?? object.contentUrl, baseUrl);
   }
   const url = absolute(value, baseUrl);
-  return url ? [url] : [];
+  return url && !VIDEO.test(new URL(url).pathname) ? [url] : [];
+}
+
+/** Query parameters with which image servers scale a picture down to the given width. */
+const SIZE_PARAMS = ['width', 'imwidth'];
+/** Widths below this are thumbnails; asking for `LARGE_WIDTH` gives a picture worth importing. */
+const SMALL_WIDTH = 600;
+const LARGE_WIDTH = 1200;
+
+/**
+ * The pictures to offer, best first. Shops list one picture at several sizes
+ * and sometimes only as a thumbnail: each picture is offered once, at the
+ * largest size listed (no size at all is the original), and a thumbnail is
+ * asked for at a useful width instead.
+ */
+function bestImages(urls: string[]): string[] {
+  const best = new Map<string, { url: URL; width: number }>();
+  for (const text of urls) {
+    const url = new URL(text);
+    const param = SIZE_PARAMS.find((name) => url.searchParams.has(name));
+    const width = param ? Number(url.searchParams.get(param)) || 0 : Infinity;
+    const key = new URL(text);
+    for (const name of SIZE_PARAMS) key.searchParams.delete(name);
+    const known = best.get(key.toString());
+    if (!known || width > known.width) best.set(key.toString(), { url, width });
+  }
+  return [...best.values()].map(({ url, width }) => {
+    const param = SIZE_PARAMS.find((name) => url.searchParams.has(name));
+    if (param && width < SMALL_WIDTH) url.searchParams.set(param, String(LARGE_WIDTH));
+    return url.toString();
+  });
 }
 
 function hasType(node: Record<string, unknown>, type: string): boolean {
@@ -116,6 +152,27 @@ function findProduct(node: unknown, depth = 0): Record<string, unknown> | null {
   return findProduct(object['@graph'], depth + 1) ?? findProduct(object.mainEntity, depth + 1);
 }
 
+const firstOffer = (product: Record<string, unknown>) => {
+  const offers = product.offers;
+  return (Array.isArray(offers) ? offers[0] : offers) as Record<string, unknown> | undefined;
+};
+const hasPrice = (offer: Record<string, unknown> | undefined) =>
+  offer?.price !== undefined || offer?.lowPrice !== undefined;
+
+/**
+ * The offer that carries the price. A product group (one product in several
+ * sizes) can leave the price to its variants; they share it, so the first is used.
+ */
+function offerOf(product: Record<string, unknown>): Record<string, unknown> | undefined {
+  const own = firstOffer(product);
+  if (hasPrice(own) || !Array.isArray(product.hasVariant)) return own;
+  const variant = product.hasVariant.find(
+    (entry): entry is Record<string, unknown> =>
+      !!entry && typeof entry === 'object' && hasPrice(firstOffer(entry)),
+  );
+  return variant ? firstOffer(variant) : own;
+}
+
 function fromJsonLd(html: string, baseUrl: string): ProductInfo | null {
   const blocks = html.matchAll(
     /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
@@ -128,9 +185,7 @@ function fromJsonLd(html: string, baseUrl: string): ProductInfo | null {
       continue;
     }
     if (!product) continue;
-    const offersValue = product.offers;
-    const offer = (Array.isArray(offersValue) ? offersValue[0] : offersValue) as
-      Record<string, unknown> | undefined;
+    const offer = offerOf(product);
     const brandValue = product.brand;
     return {
       name: clean(product.name),
@@ -184,7 +239,7 @@ export function parseProductPage(html: string, baseUrl: string): ProductInfo | n
   const structured = fromJsonLd(html, baseUrl);
   const openGraph = fromOpenGraph(html, baseUrl);
   if (!structured && !openGraph) return null;
-  const images = [...new Set([...(structured?.images ?? []), ...(openGraph?.images ?? [])])];
+  const images = bestImages([...(structured?.images ?? []), ...(openGraph?.images ?? [])]);
   if (images.length === 0) return null;
   return {
     name: structured?.name ?? openGraph?.name ?? null,
