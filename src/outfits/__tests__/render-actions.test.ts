@@ -1140,6 +1140,26 @@ describe('a picture made in another app', () => {
     expect(useRenderVersion.getState().version).toBe(0);
   });
 
+  it('is recorded as the user’s own photo and drops a render still waiting for the outfit', async () => {
+    const { outfit, basePath } = await setup();
+    const waiting = await queued(outfit, basePath);
+
+    await saveManualRender(
+      outfit,
+      { uri: 'file:///camera/me.jpg', width: 900, height: 1200 },
+      'photo',
+    );
+
+    const list = await renderRepository.forOutfit(outfit.id);
+    expect(list.map((render) => render.id)).not.toContain(waiting.id);
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ status: 'done', provider: 'photo' });
+    // Nothing is left for the queue to pay for and put over the photo.
+    expect(await renderRepository.claimNext()).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(await usageLog.counts('render')).toEqual({ month: 0, total: 0 });
+  });
+
   it('adds nothing when the picture cannot be stored', async () => {
     const { outfit } = await setup();
     mockStore.fails = () => true;

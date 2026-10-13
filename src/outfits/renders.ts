@@ -116,6 +116,15 @@ export function createRenderRepository(db: () => Db = getDb, now: () => number =
         )
         .run();
     },
+    /** Queued renders of an outfit are dropped unpaid, whatever they were made for. */
+    async dropQueued(outfitId: string): Promise<void> {
+      const timestamp = now();
+      db()
+        .update(renders)
+        .set({ deletedAt: timestamp, updatedAt: timestamp })
+        .where(and(active, eq(renders.outfitId, outfitId), eq(renders.status, 'queued')))
+        .run();
+    },
     async get(id: string): Promise<Render | null> {
       const row = await base.getById(id);
       return row ? toRender(row) : null;

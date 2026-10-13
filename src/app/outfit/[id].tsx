@@ -12,6 +12,7 @@ import { KeyNeededPrompt } from '@/ai/KeyNeededPrompt';
 import { LookbookPicker } from '@/lookbooks/LookbookPicker';
 import { ManualTryOn } from '@/outfits/ManualTryOn';
 import { OutfitImage } from '@/outfits/OutfitImage';
+import { OwnOutfitPhoto } from '@/outfits/OwnOutfitPhoto';
 import { hasWishlistItem, outfitRepository, type Outfit } from '@/outfits/repository';
 import { useInvalidateOutfits, useOutfit, useRenderSummary } from '@/outfits/useOutfits';
 import { useRenderRequest } from '@/outfits/useRenderRequest';
@@ -78,6 +79,9 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
 
   const previousPath = showPrevious ? (summary.previous?.imagePath ?? null) : null;
   const failure = summary.failed?.failure ?? null;
+  const shown = showPrevious ? summary.previous : summary.current;
+  // The user's own photo is not a render, so making one is a first try-on, not a regenerate.
+  const ownPhoto = summary.current?.provider === 'photo';
 
   return (
     <Screen scroll edges={[]} style={{ gap: spacing.lg, paddingTop: spacing.lg }}>
@@ -88,6 +92,11 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
         renderPath={previousPath}
         wishlist={hasWishlistItem(outfit)}
       />
+      {shown?.provider === 'photo' ? (
+        <AppText testID="outfit-own-photo-caption" variant="caption" muted>
+          {t('outfitPhoto.own')}
+        </AppText>
+      ) : null}
 
       {summary.pending ? (
         <AppText testID="render-status" muted>
@@ -109,7 +118,11 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
             testID="outfit-render-button"
             icon="sparkles-outline"
             label={t(
-              summary.current ? 'tryOn.regenerate' : failure ? 'common.retry' : 'tryOn.render',
+              summary.current && !ownPhoto
+                ? 'tryOn.regenerate'
+                : failure
+                  ? 'common.retry'
+                  : 'tryOn.render',
             )}
             disabled={!!summary.pending}
             onPress={() => {
@@ -137,6 +150,8 @@ function OutfitView({ outfit }: { outfit: Outfit }) {
         label={t('manualTryOn.open')}
         onPress={() => setManual(true)}
       />
+
+      <OwnOutfitPhoto outfit={outfit} onAdded={() => setShowPrevious(false)} />
 
       <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end' }}>
         <View style={{ flex: 1 }}>

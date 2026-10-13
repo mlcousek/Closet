@@ -198,12 +198,21 @@ export const renderQueue = createRenderQueue({
 const MANUAL_MAX = 1600;
 
 /**
- * Stores a picture the user made in another app as the outfit's current
- * render. Nothing is sent anywhere and nothing is counted as paid usage.
+ * Where a picture added by hand came from: `manual` was made in another app
+ * from the try-on sheet, `photo` is the user's own photo of the outfit.
+ */
+export type ManualSource = 'manual' | 'photo';
+
+/**
+ * Stores a picture the user made in another app, or their own photo of the
+ * outfit, as the outfit's current render. Nothing is sent anywhere and
+ * nothing is counted as paid usage. A render still waiting for this outfit is
+ * dropped, so it does not replace the picture the user has just chosen.
  */
 export async function saveManualRender(
   target: Pick<Outfit, 'id'>,
   photo: { uri: string; width: number; height: number },
+  source: ManualSource = 'manual',
 ): Promise<void> {
   // Read now, not when the screen opened: the picture belongs to the pieces as they are.
   const [outfit, profile] = await Promise.all([
@@ -228,10 +237,11 @@ export async function saveManualRender(
   } catch {
     // Without a thumbnail the full picture is shown in its place.
   }
+  await renderRepository.dropQueued(outfit.id);
   await renderRepository.createDone(
     outfit.id,
     currentFingerprint(outfit, avatarBasePath(profile)),
-    { imagePath, thumbPath, provider: 'manual' },
+    { imagePath, thumbPath, provider: source },
   );
   useRenderVersion.setState((state) => ({ version: state.version + 1 }));
 }

@@ -173,6 +173,10 @@ jest.mock('../ManualTryOn', () => {
   const { Text } = require('react-native');
   return { ManualTryOn: () => <Text testID="manual-try-on">manual</Text> };
 });
+jest.mock('../OwnOutfitPhoto', () => {
+  const { Text } = require('react-native');
+  return { OwnOutfitPhoto: () => <Text testID="own-outfit-photo">own photo</Text> };
+});
 jest.mock('@/sharing/ShareSheet', () => {
   const { Text } = require('react-native');
   return { ShareSheet: () => <Text testID="share-sheet">share</Text> };
@@ -788,6 +792,21 @@ describe('outfit detail', () => {
     fireEvent.press(await screen.findByTestId('outfit-manual-try-on'));
     expect(screen.getByTestId('manual-try-on')).toBeTruthy();
     expect(mockRequestRender).not.toHaveBeenCalled();
+  });
+
+  it('offers to use the user’s own photo of the outfit', async () => {
+    open(outfitOf('o1'));
+    expect(await screen.findByTestId('own-outfit-photo')).toBeTruthy();
+    expect(screen.queryByTestId('outfit-own-photo-caption')).toBeNull();
+  });
+
+  it('marks the user’s own photo and asks for a first try-on, not a regenerate', async () => {
+    mockRenders = [doneRender('r1', 'o1', { provider: 'photo' })];
+    open(outfitOf('o1'));
+    expect(await screen.findByTestId('outfit-own-photo-caption')).toHaveTextContent(
+      'Your own photo',
+    );
+    expect(screen.getByTestId('outfit-render-button')).toHaveTextContent(/Try it on me/);
   });
 
   it('duplicates into the editor', async () => {

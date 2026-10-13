@@ -30,6 +30,13 @@ A checked task records implementation and its stated verification; an unchecked 
 
 These are engineering tasks; device validation remains separate and is not assigned by this document.
 
+## Own outfit photo: 13 October 2026
+
+- The outfit screen offers Take a photo and Choose from Photos, so a good existing photo of the outfit can be its picture instead of a generated one. Nothing is sent anywhere, no key is needed and no usage is counted.
+- The photo is stored like a hand-added try-on picture, resized to 1600 px with a thumbnail, and recorded with provider `photo`. It is shown in lists and shared images like any render, labelled Your own photo on the outfit screen.
+- A render still queued for the outfit is dropped when the photo is saved, so a paid render cannot replace it. With an own photo shown, the render button offers Try it on me rather than Regenerate; the photo stays available as the previous picture.
+- No database migration is needed. A camera permission denial explains how to allow it. Camera and library picking still need device verification.
+
 ## Date pickers: 8 October 2026
 
 - Trip start/end and item purchase dates use native date controls. iPhone uses a sheet with Cancel and Done; Android uses its date dialog. Purchase dates can be cleared, and the web preview uses a browser calendar input.

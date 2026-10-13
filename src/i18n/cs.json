@@ -544,6 +544,14 @@
     "textModel": "Model pro text",
     "modelHint": "Nechte prázdné pro výchozí model."
   },
+  "outfitPhoto": {
+    "explain": "Máte už dobrou fotku tohoto outfitu? Použijte ji jako jeho obrázek a nemusíte ho vytvářet.",
+    "take": "Vyfotit",
+    "choose": "Vybrat z Fotek",
+    "own": "Vaše vlastní fotka",
+    "added": "U outfitu se teď zobrazuje vaše fotka.",
+    "denied": "Closet nemá přístup k fotoaparátu. Povolit ho můžete v nastavení systému."
+  },
   "manualTryOn": {
     "open": "Vyzkoušet v jiné aplikaci, zdarma",
     "title": "Vyzkoušet v jiné aplikaci",

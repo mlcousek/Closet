@@ -544,6 +544,14 @@
     "textModel": "Text model",
     "modelHint": "Leave empty to use the default."
   },
+  "outfitPhoto": {
+    "explain": "Already have a good photo of this outfit? Use it as its picture instead of making one.",
+    "take": "Take a photo",
+    "choose": "Choose from Photos",
+    "own": "Your own photo",
+    "added": "Your photo is now shown for this outfit.",
+    "denied": "Closet has no access to the camera. You can allow it in the system settings."
+  },
   "manualTryOn": {
     "open": "Try on in another app, free",
     "title": "Try on in another app",
