@@ -72,6 +72,11 @@ async function openImage(uri: string): Promise<OpenImage> {
 
 /** The real implementations of the image steps, using the device. */
 export const itemImageDeps: ItemImageDeps = {
+  fingerprint: async (uri) => {
+    const info = await FileSystem.getInfoAsync(uri, { md5: true });
+    if (!info.exists || !info.md5) throw new Error('Cannot read photo');
+    return `md5:${info.md5}`;
+  },
   reduce: (photo) => reducePhoto(photo, openImage),
   discard: (uri) => FileSystem.deleteAsync(uri, { idempotent: true }),
   save: (sourceUri, folder, extension) => imageStore.save(sourceUri, folder, extension),

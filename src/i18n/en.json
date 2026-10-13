@@ -128,7 +128,23 @@
     "keyNeededTitle": "A provider key is needed",
     "keyNeededMessage": "This feature uses {{provider}}. Add your key in Settings to use it.",
     "openKeySettings": "Open key settings",
-    "taggingUsage": "Tagging requests: {{month}} this month, {{total}} in total"
+    "taggingUsage": "Tagging requests: {{month}} this month, {{total}} in total",
+    "modelCheck": {
+      "check": "Check model",
+      "supported": "The model supports photo input and structured responses for tagging and styling.",
+      "available": {
+        "anthropic": "The model is available, but its capabilities were not confirmed. Tagging and styling may still fail.",
+        "image": "The model is available for generation. Image output is not confirmed by this check; try-on may still fail."
+      },
+      "modelUnavailable": "The selected model is unavailable for this key. Open Settings, AI provider keys, and choose a model your provider offers.",
+      "unsupportedModel": "The selected model does not support this feature. Change the model in Settings, AI provider keys.",
+      "noKey": "Save a key for this provider before checking its model.",
+      "rejectedKey": "The provider rejected the key. Check it above.",
+      "rateLimited": "The provider is busy or the quota is exhausted. Try again later.",
+      "unreachable": "The provider could not be reached. Check your connection and try again.",
+      "error": "The model could not be checked. Try again."
+    },
+    "modelCheckHint": "Model checks read provider information without sending photos or generating content."
   },
   "greeting": {
     "morning": "Good morning, {{name}}",
@@ -162,7 +178,9 @@
     "bodyTypeMessage": "Used only as a hint when rendering outfits on you.",
     "avatarTitle": "Add a full-body photo",
     "finish": "Finish",
-    "saveFailed": "Your profile could not be saved. Please try again."
+    "saveFailed": "Your profile could not be saved. Please try again.",
+    "quickStart": "Add a few clothes and save your first outfit. You can add a photo and try-on details later in Profile.",
+    "addClothes": "Add my clothes"
   },
   "avatar": {
     "title": "Your photo",
@@ -348,7 +366,9 @@
       "offline": "No connection, so there are no automatic suggestions. You can fill in the details yourself.",
       "rejectedKey": "The Anthropic key was rejected, so there are no automatic suggestions. You can fill in the details yourself.",
       "rateLimited": "The provider is busy right now, so there are no automatic suggestions. You can fill in the details yourself.",
-      "error": "Automatic suggestions did not work this time. You can fill in the details yourself."
+      "error": "Automatic suggestions did not work this time. You can fill in the details yourself.",
+      "modelUnavailable": "The selected model is unavailable for this key. Open Settings, AI provider keys, and choose a model your provider offers.",
+      "unsupportedModel": "The selected model does not support this feature. Change the model in Settings, AI provider keys."
     },
     "denied": "Closet has no access to the camera. You can allow it in the system settings.",
     "saveFailed": "The item could not be saved. Please try again.",
@@ -410,7 +430,26 @@
     "discard": "Discard",
     "reviewDone": "Everything is reviewed.",
     "retryAll": "Retry all",
-    "unreadable": "{{count}} photos could not be read and were left out."
+    "unreadable": "{{count}} photos could not be read and were left out.",
+    "nextItem": "Review this item",
+    "photo": "Photo {{number}}",
+    "viewExisting": "View existing item",
+    "checkAgain": "Check again",
+    "discardPhoto": "Discard this photo",
+    "importAnyway": "Add another item anyway",
+    "reasons": {
+      "readPhoto": "This photo could not be read. Choose another copy or discard it.",
+      "savePhoto": "The photo or item could not be saved. Check available storage, then retry.",
+      "duplicate": "This photo is already used by an item in your closet or wishlist. No additional item was added.",
+      "interrupted": "The app closed while importing this photo. Retry it or choose a smaller photo if this happens again.",
+      "offline": "Tagging could not connect. Retry when you are online.",
+      "rateLimited": "The AI provider is busy or its quota is exhausted. Retry later.",
+      "modelUnavailable": "The selected tagging model is unavailable. Change it in Settings, AI provider keys, then retry.",
+      "unsupportedModel": "The selected tagging model cannot handle this request. Change it in Settings, AI provider keys, then retry.",
+      "tagging": "Automatic tagging did not complete. Retry this photo.",
+      "error": "This photo could not be imported. Retry it or discard it.",
+      "copyPhoto": "This photo could not be copied into the app. Choose it again from Photos or discard this failure."
+    }
   },
   "linkImport": {
     "title": "Add from a link",
@@ -450,7 +489,9 @@
     "discardTitle": "Discard changes?",
     "discardMessage": "This outfit has changes that are not saved.",
     "discard": "Discard",
-    "keepEditing": "Keep editing"
+    "keepEditing": "Keep editing",
+    "baseTop": "Top 1 · base layer (T-shirt, shirt)",
+    "layerTop": "Top {{number}} · over the base (hoodie, sweater)"
   },
   "outfits": {
     "title": "Outfit",
@@ -491,7 +532,9 @@
       "interrupted": "The app was closed before this render finished. Try again.",
       "error": "The render did not work this time. Try again.",
       "connectionLost": "The connection was lost while the picture was being made. It may have been made and charged anyway, so check your usage before trying again.",
-      "rejectedKey": "The image provider did not accept your key. Check the key, and that billing and image generation are enabled for it."
+      "rejectedKey": "The image provider did not accept your key. Check the key, and that billing and image generation are enabled for it.",
+      "modelUnavailable": "The selected model is unavailable for this key. Open Settings, AI provider keys, and choose a model your provider offers.",
+      "unsupportedModel": "The selected model does not support this feature. Change the model in Settings, AI provider keys."
     },
     "settingsTitle": "Outfit renders",
     "autoRender": "Render when I save an outfit",
@@ -693,7 +736,9 @@
       "offline": "No connection. The stylist needs the internet.",
       "rejectedKey": "Anthropic rejected your key. Check it in Settings.",
       "rateLimited": "Too many requests right now. Try again in a moment.",
-      "error": "The stylist could not answer. Please try again."
+      "error": "The stylist could not answer. Please try again.",
+      "modelUnavailable": "The selected model is unavailable for this key. Open Settings, AI provider keys, and choose a model your provider offers.",
+      "unsupportedModel": "The selected model does not support this feature. Change the model in Settings, AI provider keys."
     },
     "wishlistPiece": "Contains a piece from your wishlist."
   },
@@ -789,5 +834,10 @@
       "light": "Light",
       "warm": "Warm"
     }
+  },
+  "startup": {
+    "title": "Your wardrobe could not be opened",
+    "message": "Recovery did not finish. Try again to safely open your saved wardrobe.",
+    "loading": "Opening your wardrobe…"
   }
 }

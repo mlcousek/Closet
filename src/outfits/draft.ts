@@ -33,7 +33,7 @@ export function emptyDraft(): OutfitDraft {
   return {
     rows: {
       outer: [null],
-      top: [null],
+      top: [null, null],
       fullBody: [null],
       bottom: [null],
       shoes: [null],
@@ -51,7 +51,12 @@ export function draftFromPieces(pieces: OutfitPiece[]): OutfitDraft {
       .filter((piece) => piece.slot === slot)
       .sort((a, b) => a.position - b.position)
       .map((piece) => piece.itemId);
-    if (ids.length > 0) draft.rows[slot] = isMultiSlot(slot) ? ids : [ids[0]];
+    if (ids.length > 0)
+      draft.rows[slot] = isMultiSlot(slot)
+        ? slot === 'top' && ids.length === 1
+          ? [...ids, null]
+          : ids
+        : [ids[0]];
   }
   return draft;
 }
@@ -92,7 +97,7 @@ export function select(
   if (itemId !== null) {
     if (slot === 'fullBody') {
       // Choosing a dress clears the pieces it replaces.
-      rows.top = [null];
+      rows.top = [null, null];
       rows.bottom = [null];
     }
     if (slot === 'top' || slot === 'bottom') rows.fullBody = [null];
@@ -171,8 +176,14 @@ export function shuffle(
     if ((slot === 'top' || slot === 'bottom') && useFullBody) continue;
     const offered = itemsBySlot[slot];
     if (offered.length === 0) continue;
-    const pick = offered[Math.floor(random() * offered.length)];
-    next = select({ ...next, rows: { ...next.rows, [slot]: [null] } }, slot, 0, pick.id);
+    const rowCount = isMultiSlot(slot) ? draft.rows[slot].length : 1;
+    next = { ...next, rows: { ...next.rows, [slot]: Array(rowCount).fill(null) } };
+    const remaining = [...offered];
+    for (let row = 0; row < rowCount && remaining.length > 0; row++) {
+      const index = Math.floor(random() * remaining.length);
+      const [pick] = remaining.splice(index, 1);
+      next = select(next, slot, row, pick.id);
+    }
   }
   return next;
 }

@@ -61,6 +61,7 @@ export function toItem(row: Row): Item {
     originalPath: row.originalPath,
     cutoutPath: row.cutoutPath,
     thumbPath: row.thumbPath,
+    photoHash: row.photoHash,
     needsReview: row.needsReview,
   };
 }
@@ -130,6 +131,51 @@ export function createItemRepository(db: () => Db = getDb, now: () => number = D
         .all()
         .map(toItem);
     },
+    /** Exact prepared-photo match among current owned and wishlist items. */
+    async findPhotoDuplicate(hash: string): Promise<Item | null> {
+      const row = db()
+        .select()
+        .from(items)
+        .where(
+          and(
+            eq(items.photoHash, hash),
+            isNull(items.deletedAt),
+            inArray(items.ownership, ['owned', 'wishlist']),
+          ),
+        )
+        .orderBy(asc(items.createdAt), asc(items.id))
+        .limit(1)
+        .get();
+      return row ? toItem(row) : null;
+    },
+    async unhashedPhotos(): Promise<{ id: string; originalPath: string }[]> {
+      return db()
+        .select({ id: items.id, originalPath: items.originalPath })
+        .from(items)
+        .where(
+          and(
+            isNull(items.photoHash),
+            isNull(items.deletedAt),
+            inArray(items.ownership, ['owned', 'wishlist']),
+          ),
+        )
+        .all();
+    },
+    /** A photo might be replaced while hashing it; never attach its old hash to a new photo. */
+    async recordPhotoHash(id: string, originalPath: string, hash: string): Promise<void> {
+      db()
+        .update(items)
+        .set({ photoHash: hash })
+        .where(
+          and(
+            eq(items.id, id),
+            eq(items.originalPath, originalPath),
+            isNull(items.photoHash),
+            isNull(items.deletedAt),
+          ),
+        )
+        .run();
+    },
     async get(id: string): Promise<Item | null> {
       const row = await base.getById(id);
       return row ? toItem(row) : null;
@@ -172,10 +218,15 @@ export function createItemRepository(db: () => Db = getDb, now: () => number = D
       id: string,
       patch: Partial<ItemDetails> & Partial<ItemImages> & { needsReview?: boolean },
     ): Promise<Item | null> {
-      const { originalPath, cutoutPath, thumbPath, needsReview, ...details } = patch;
+      const { originalPath, cutoutPath, thumbPath, photoHash, needsReview, ...details } = patch;
       const row = await base.update(id, {
         ...toColumns(details),
         ...(originalPath !== undefined ? { originalPath } : {}),
+        ...(photoHash !== undefined
+          ? { photoHash }
+          : originalPath !== undefined
+            ? { photoHash: null }
+            : {}),
         ...(cutoutPath !== undefined ? { cutoutPath } : {}),
         ...(thumbPath !== undefined ? { thumbPath } : {}),
         ...(needsReview !== undefined ? { needsReview } : {}),

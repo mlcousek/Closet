@@ -3,13 +3,21 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getSetting, setSetting } from '@/db/settings';
 
 import { keyManager } from './keys';
+import { isUnsupportedModelMessage } from './modelFailure';
 
 export const DEFAULT_TEXT_MODEL = 'claude-opus-5-5';
 const TEXT_MODEL_SETTING = 'ai.model.text';
 const REQUEST_TIMEOUT_MS = 60_000;
 
 /** Why an AI feature could not produce a result. Features show one message per reason. */
-export type AiUnavailableReason = 'noKey' | 'offline' | 'rejectedKey' | 'rateLimited' | 'error';
+export type AiUnavailableReason =
+  | 'noKey'
+  | 'offline'
+  | 'rejectedKey'
+  | 'rateLimited'
+  | 'modelUnavailable'
+  | 'unsupportedModel'
+  | 'error';
 
 export class AiUnavailableError extends Error {
   constructor(public reason: AiUnavailableReason) {
@@ -59,6 +67,13 @@ export function toUnavailable(error: unknown): AiUnavailableError {
     return new AiUnavailableError('rejectedKey');
   }
   if (error instanceof Anthropic.RateLimitError) return new AiUnavailableError('rateLimited');
+  if (error instanceof Anthropic.NotFoundError) return new AiUnavailableError('modelUnavailable');
+  if (
+    error instanceof Anthropic.BadRequestError &&
+    isUnsupportedModelMessage(error.message ?? '')
+  ) {
+    return new AiUnavailableError('unsupportedModel');
+  }
   // A request that ran out of time was sent; it must not be reported as "no connection".
   if (error instanceof Anthropic.APIConnectionTimeoutError) return new AiUnavailableError('error');
   if (error instanceof Anthropic.APIConnectionError) return new AiUnavailableError('offline');

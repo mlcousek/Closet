@@ -17,6 +17,12 @@ jest.mock('@expo/vector-icons', () => {
   return { Ionicons: ({ name }: { name: string }) => <Text>{`icon:${name}`}</Text> };
 });
 
+// Keep the real field's draft/confirm flow while substituting the native view.
+jest.mock('@react-native-community/datetimepicker', () => {
+  const { View } = require('react-native');
+  return { __esModule: true, default: (props: object) => <View {...props} /> };
+});
+
 // Query results arrive asynchronously; route their re-renders through act.
 notifyManager.setNotifyFunction((notify) => void act(notify));
 

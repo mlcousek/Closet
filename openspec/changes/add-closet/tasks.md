@@ -1,3 +1,5 @@
+> Status note (8 October 2026): this is the original implementation/verification checklist. Unchecked tasks can contain implemented behavior awaiting their stated validation. See [current status](../../../docs/status.md) and [decisions](../../../docs/decisions.md) for superseded designs and remaining checks.
+
 ## 1. Taxonomy and data
 
 - [x] 1.1 Define the taxonomy constants (categories, subcategories, colours, seasons, occasions, warmth levels, slot mapping) with English and Czech labels; verify a unit test that every value has both labels and every category maps to a slot

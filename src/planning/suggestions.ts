@@ -33,6 +33,8 @@ export const RULES = {
   rainChance: 50,
   rainAmount: 1,
   windy: 35,
+  /** Additional insulation per top worn over another, capped at the warmest band. */
+  topLayerWarmth: 0.5,
   /** Typical band per season when there is no forecast. */
   seasonBand: { summer: 1, spring: 3, autumn: 3, winter: 5 } as Record<Season, Band>,
   score: {
@@ -89,6 +91,25 @@ export function dayProfile(day: Day, weather: DayWeather | null, southern = fals
 
 const warmthOf = (item: Item) => item.warmth ?? DEFAULT_WARMTH[item.category];
 const slotOf = (item: Item): Slot => CATEGORY_SLOT[item.category];
+
+const BASE_TOPS = ['tshirt', 'shirt', 'blouse', 'tank', 'cropTop', 'polo'];
+const MID_TOPS = ['sweater', 'hoodie', 'cardigan'];
+const isBaseTop = (item: Item) => item.subcategory !== null && BASE_TOPS.includes(item.subcategory);
+const isMidTop = (item: Item) => item.subcategory !== null && MID_TOPS.includes(item.subcategory);
+
+/** Score each covered region once: a light base top does not dilute its warmer layers. */
+function bodyWarmths(items: Item[]): number[] {
+  const tops = items.filter((item) => slotOf(item) === 'top');
+  const warmths: number[] = items
+    .filter((item) => ['bottom', 'fullBody'].includes(slotOf(item)))
+    .map(warmthOf);
+  if (tops.length > 0) {
+    warmths.push(
+      Math.min(5, Math.max(...tops.map(warmthOf)) + (tops.length - 1) * RULES.topLayerWarmth),
+    );
+  }
+  return warmths;
+}
 
 /** Colours that go with anything. */
 const NEUTRALS: Colour[] = ['black', 'white', 'grey', 'beige', 'navy', 'brown'];
@@ -154,16 +175,22 @@ export function scoreItems(
   let score = weights.base;
 
   // Warmth of what covers the body; shoes, bags and accessories say little about it.
-  const body = items.filter((item) => ['top', 'bottom', 'fullBody'].includes(slotOf(item)));
+  const body = bodyWarmths(items);
   const hasOuter = items.some((item) => slotOf(item) === 'outer');
   if (body.length > 0) {
-    const average = body.reduce((sum, item) => sum + warmthOf(item), 0) / body.length;
+    const average = body.reduce((sum, warmth) => sum + warmth, 0) / body.length;
     // An outer layer makes up for lighter pieces underneath.
     const effective = hasOuter ? average + 0.5 : average;
     score -= Math.abs(effective - profile.band) * weights.perWarmthStep;
     // Hard limits, which no bonus can outweigh: nothing made only of light pieces on a cold
     // day, with or without a coat over it, and nothing warm on a hot day.
-    if (!extra.partial && profile.band >= 4 && body.every((item) => warmthOf(item) <= 2)) {
+    if (
+      !extra.partial &&
+      profile.band >= 4 &&
+      items
+        .filter((item) => ['top', 'bottom', 'fullBody'].includes(slotOf(item)))
+        .every((item) => warmthOf(item) <= 2)
+    ) {
       return UNSUITABLE;
     }
     if (profile.band === 1 && items.some((item) => warmthOf(item) >= 4)) return UNSUITABLE;
@@ -241,6 +268,8 @@ export function generateCombinations(
 ): Suggestion[] {
   const bySlot = (slot: Slot) => owned.filter((item) => slotOf(item) === slot);
   const tops = bySlot('top');
+  const bases = tops.filter(isBaseTop);
+  const mids = tops.filter(isMidTop);
   const bottoms = bySlot('bottom');
   const dresses = bySlot('fullBody');
   const results: Suggestion[] = [];
@@ -255,21 +284,35 @@ export function generateCombinations(
     // While the outfit is being built it is not whole: a light top alone on a cold day, or a
     // set still without its coat, must not be thrown out before the rest has been added. The
     // finished set is judged by every rule below.
-    const add = (candidates: Item[]) => {
+    const addGroup = (candidates: Item[][]) => {
       const pick = pickBest(
         candidates,
-        (item) =>
-          scoreItems([...chosen, item], profile, history, { partial: true }) +
-          leastWorn(item) +
+        (group) =>
+          scoreItems([...chosen, ...group], profile, history, { partial: true }) +
+          group.reduce((sum, item) => sum + leastWorn(item), 0) / group.length +
           jitter(),
       );
-      if (pick) chosen.push(pick);
+      if (pick) chosen.push(...pick);
     };
+    const add = (candidates: Item[]) => addGroup(candidates.map((item) => [item]));
 
     const canSeparates = tops.length > 0 && bottoms.length > 0;
     if (dresses.length > 0 && (!canSeparates || random() < 0.25)) add(dresses);
     else if (canSeparates) {
-      add(tops);
+      // Known sweaters, hoodies and cardigans go over a known base top on cooler days.
+      // Untagged tops remain single candidates; names and warmth do not establish a type.
+      // One base per attempt keeps this linear in closet size rather than enumerating pairs.
+      const layer = profile.band >= 3 && bases.length > 0 && mids.length > 0;
+      const base = layer
+        ? pickBest(
+            bases,
+            (item) => scoreItems([item], profile, history, { partial: true }) + jitter(),
+          )
+        : null;
+      addGroup([
+        ...tops.filter((item) => !base || !isMidTop(item)).map((item) => [item]),
+        ...(base ? mids.map((mid) => [base, mid]) : []),
+      ]);
       add(bottoms);
     } else continue;
     add(bySlot('shoes'));

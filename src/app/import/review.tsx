@@ -21,6 +21,7 @@ export default function ReviewScreen() {
   const invalidateItems = useInvalidateItems();
   const { data: pending = [], isPending } = useItems({ needsReview: true, sort: 'newest' });
   const [busy, setBusy] = useState(false);
+  const [awaitingNext, setAwaitingNext] = useState(false);
   // Counts items handled in this visit, so progress only moves forward even if more arrive meanwhile.
   const [handled, setHandled] = useState(0);
   // The item on screen stays there until it is dealt with, also when an earlier one comes back.
@@ -58,7 +59,10 @@ export default function ReviewScreen() {
     setPinnedId(rest[rest.length - 1]?.id ?? null);
   };
 
-  const unlockSoon = () => setTimeout(() => (acting.current = false), 400);
+  const nextItem = () => {
+    acting.current = false;
+    setAwaitingNext(false);
+  };
 
   const confirm = async (details: ItemDetails) => {
     if (acting.current) return;
@@ -68,31 +72,45 @@ export default function ReviewScreen() {
       await itemRepository.update(item.id, { ...details, needsReview: false });
       setHandled((count) => count + 1);
       pinNext();
+      setAwaitingNext(true);
       await invalidateItems();
     } catch {
+      acting.current = false;
+      setAwaitingNext(false);
       showToast({ message: t('common.somethingWentWrong') });
     } finally {
       setBusy(false);
-      unlockSoon();
     }
   };
 
-  const discard = () => {
+  const discard = async () => {
     if (acting.current) return;
     acting.current = true;
-    unlockSoon();
+    setBusy(true);
+    setAwaitingNext(true);
     setHandled((count) => count + 1);
     pinNext();
-    return deleteWithUndo({
-      remove: () => itemRepository.remove([item.id]),
-      restore: async () => {
-        await itemRepository.restore([item.id]);
-        setHandled((count) => Math.max(0, count - 1));
-      },
-      message: t('common.deleted'),
-      undoLabel: t('common.undo'),
-      onChange: () => void invalidateItems(),
-    });
+    try {
+      await deleteWithUndo({
+        remove: () => itemRepository.remove([item.id]),
+        restore: async () => {
+          await itemRepository.restore([item.id]);
+          setHandled((count) => Math.max(0, count - 1));
+        },
+        message: t('common.deleted'),
+        undoLabel: t('common.undo'),
+        onChange: () => void invalidateItems(),
+      });
+      await invalidateItems();
+    } catch {
+      acting.current = false;
+      setAwaitingNext(false);
+      setHandled((count) => Math.max(0, count - 1));
+      setPinnedId(item.id);
+      showToast({ message: t('common.somethingWentWrong') });
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -106,6 +124,14 @@ export default function ReviewScreen() {
         contentFit="contain"
         style={{ height: 260, borderRadius: radius.md, backgroundColor: colors.surface }}
       />
+      {awaitingNext ? (
+        <Button
+          testID="review-next"
+          label={t('importFlow.nextItem')}
+          disabled={busy}
+          onPress={nextItem}
+        />
+      ) : null}
       <ItemForm
         // Each item gets a fresh form.
         key={item.id}
@@ -117,12 +143,14 @@ export default function ReviewScreen() {
         }
         submitLabel={t('importFlow.confirm')}
         busy={busy}
+        submitDisabled={awaitingNext}
         onSubmit={(details) => void confirm(details)}
         footer={
           <Button
             testID="review-discard"
             kind="danger"
             label={t('importFlow.discard')}
+            disabled={busy || awaitingNext}
             onPress={() => void discard()}
           />
         }

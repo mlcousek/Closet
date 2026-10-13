@@ -10,6 +10,19 @@ jest.mock('expo-crypto', () => ({
 }));
 
 describe('migrations', () => {
+  it('adds photo hashes to an existing version-7 wardrobe without changing its items', async () => {
+    const { raw, query } = await createTestDb(
+      undefined,
+      migrations.filter((migration) => migration.version <= 7),
+    );
+    raw.exec(
+      "INSERT INTO items (id, created_at, updated_at, category, original_path, thumb_path) VALUES ('old', 1, 1, 'tops', 'old.jpg', 'thumb.jpg')",
+    );
+    runMigrations(raw);
+    expect(query('SELECT id, original_path, photo_hash FROM items')).toEqual([
+      { id: 'old', original_path: 'old.jpg', photo_hash: null },
+    ]);
+  });
   it('applies all migrations to a new database', async () => {
     const { raw, query } = await createTestDb();
     expect(raw.getUserVersion()).toBe(LATEST_SCHEMA_VERSION);

@@ -220,6 +220,13 @@ export const migrations: Migration[] = [
       );
     `,
   },
+  {
+    version: 8,
+    sql: `
+      ALTER TABLE items ADD COLUMN photo_hash TEXT;
+      CREATE INDEX IF NOT EXISTS items_photo_hash ON items (photo_hash, deleted_at);
+    `,
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = migrations[migrations.length - 1].version;

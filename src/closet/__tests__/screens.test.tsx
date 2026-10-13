@@ -129,6 +129,7 @@ jest.mock('../repository', () => ({
 const mockProgress = { queued: 0, processing: 0, done: 0, failed: 0, total: 0 };
 const mockJobs = { list: jest.fn(async () => [] as object[]) };
 const mockRetry = jest.fn(async (_id: string) => {});
+const mockDismiss = jest.fn(async (_id: string) => {});
 jest.mock('../importActions', () => ({
   useImportProgress: (selector?: (state: object) => unknown) => {
     const state = { progress: mockProgress, version: 1 };
@@ -138,6 +139,7 @@ jest.mock('../importActions', () => ({
     return mockJobs;
   },
   retryImportJob: (id: string) => mockRetry(id),
+  dismissImportJob: (id: string) => mockDismiss(id),
   dismissFailedImports: jest.fn(async () => {}),
 }));
 
@@ -148,8 +150,14 @@ const mockStoreImages = jest.fn(async (..._args: unknown[]) => ({
   thumbPath: 'images/items/n-t.png',
 }));
 const mockReduce = jest.fn();
+const mockFingerprint = jest.fn();
+const mockFindDuplicate = jest.fn();
+jest.mock('../photoDuplicates', () => ({
+  findPhotoDuplicate: (hash: string) => mockFindDuplicate(hash),
+}));
 jest.mock('../deviceImages', () => ({
   itemImageDeps: {
+    fingerprint: (uri: string) => mockFingerprint(uri),
     cutout: (uri: string) => mockCutout(uri),
     reduce: (photo: object) => mockReduce(photo),
   },
@@ -202,9 +210,11 @@ const renderWithQuery = (ui: ReactElement) =>
 const settle = () =>
   act(async () => void (await new Promise((resolve) => setTimeout(resolve, 50))));
 
-/** The review screen ignores a tap that follows another within 400 ms; this waits that out. */
-const sinceLastAction = () =>
-  act(async () => void (await new Promise((resolve) => setTimeout(resolve, 450))));
+/** Explicitly start reviewing the next item, without relying on elapsed time. */
+const reviewNextItem = async () => {
+  await waitFor(() => expect(screen.getByTestId('review-next')).toBeEnabled());
+  fireEvent.press(screen.getByTestId('review-next'));
+};
 
 const confirmAlerts = () =>
   jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
@@ -220,6 +230,8 @@ beforeEach(() => {
   mockCutout.mockResolvedValue({ uri: 'file:///tmp/cut.png', width: 10, height: 10 });
   // Photos small enough to be left as they are, unless a test says otherwise.
   mockReduce.mockImplementation(async (photo: object) => photo);
+  mockFingerprint.mockResolvedValue(undefined);
+  mockFindDuplicate.mockResolvedValue(null);
   useAddActions.setState({ actions: [], menuOpen: false });
   useClosetTab.setState({ tab: 'closet' });
 });
@@ -489,6 +501,23 @@ describe('closet screen', () => {
 });
 
 describe('adding an item from a photo', () => {
+  it('warns about a duplicate before tagging and requires an explicit override to add it', async () => {
+    mockParams = { source: 'library' };
+    mockPickPhoto.mockResolvedValue({ status: 'picked', photo: { uri: 'file:///picked.jpg' } });
+    mockFingerprint.mockResolvedValue('md5:duplicate');
+    mockFindDuplicate.mockResolvedValue(item('existing'));
+    renderWithQuery(<NewItemScreen />);
+    expect(await screen.findByTestId('add-item-duplicate')).toHaveTextContent(/already used/);
+    expect(mockTagItem).not.toHaveBeenCalled();
+    expect(mockCutout).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('item-save')).toBeNull();
+    fireEvent.press(screen.getByTestId('add-item-import-anyway'));
+    fireEvent.press(await screen.findByTestId('category-tops'));
+    fireEvent.press(await screen.findByTestId('item-save'));
+    await waitFor(() => expect(mockRepo.create).toHaveBeenCalled());
+    expect(mockStoreImages.mock.calls[0][0]).toMatchObject({ photoHash: 'md5:duplicate' });
+  });
+
   const tags = {
     name: 'Pink skirt',
     category: 'bottoms',
@@ -750,6 +779,47 @@ describe('importing from a shop link', () => {
 });
 
 describe('bulk import screens', () => {
+  it('shows a safe diagnosis and preview, and discards only the chosen photo', async () => {
+    mockJobs.list.mockResolvedValue([
+      { id: 'one', status: 'failed', sourcePath: 'images/import/one.jpg', error: 'import:offline' },
+      {
+        id: 'two',
+        status: 'failed',
+        sourcePath: 'images/import/two.jpg',
+        error: 'raw provider data with private-key',
+      },
+    ]);
+    renderWithQuery(<ImportScreen />);
+    expect(await screen.findByTestId('import-reason-one')).toHaveTextContent(/online/);
+    expect(screen.getByTestId('import-preview-one')).toHaveProp('source', {
+      uri: 'file:///documents/images/import/one.jpg',
+    });
+    expect(screen.queryByText(/private-key/)).toBeNull();
+    fireEvent.press(screen.getByTestId('import-discard-one'));
+    await waitFor(() => expect(mockDismiss).toHaveBeenCalledWith('one'));
+    expect(mockDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it('links a duplicate to its existing item and does not retry an uncopied photo', async () => {
+    mockJobs.list.mockResolvedValue([
+      {
+        id: 'one',
+        status: 'failed',
+        sourcePath: 'images/import/one.jpg',
+        error: 'import:duplicate:existing',
+      },
+      { id: 'two', status: 'failed', sourcePath: '', error: 'import:copyPhoto' },
+    ]);
+    renderWithQuery(<ImportScreen />);
+    fireEvent.press(await screen.findByTestId('import-existing-one'));
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/item/[id]',
+      params: { id: 'existing' },
+    });
+    expect(screen.getByTestId('import-retry-1')).toBeDisabled();
+    expect(screen.queryByTestId('import-preview-two')).toBeNull();
+  });
+
   it('shows progress and lets a failed photo be retried', async () => {
     Object.assign(mockProgress, { queued: 3, processing: 2, done: 14, failed: 1, total: 20 });
     mockJobs.list.mockResolvedValue([
@@ -783,8 +853,8 @@ describe('bulk import screens', () => {
 
     await waitFor(() => expect(screen.getByTestId('item-name')).toHaveProp('value', 'Second'));
     expect(screen.getByTestId('review-progress')).toHaveTextContent('2 of 2');
-    // The next item has been on screen long enough to have been seen.
-    await sinceLastAction();
+    // Explicitly begin reviewing the next item.
+    await reviewNextItem();
     await act(async () => {
       fireEvent.press(screen.getByTestId('review-discard'));
     });
@@ -812,8 +882,8 @@ describe('bulk import screens', () => {
     expect(mockItems.map((entry) => entry.id)).toEqual(['third', 'second']);
     expect(screen.getByTestId('review-progress')).toHaveTextContent('2 of 3');
 
-    // A moment later the item that is shown can be discarded as usual.
-    await sinceLastAction();
+    // Acknowledging the next item enables its actions.
+    await reviewNextItem();
     await act(async () => {
       fireEvent.press(screen.getByTestId('review-discard'));
     });
@@ -844,7 +914,7 @@ describe('bulk import screens', () => {
     expect(screen.getByTestId('item-name')).toHaveProp('value', 'Second');
     expect(screen.getByTestId('review-progress')).toHaveTextContent('2 of 3');
 
-    await sinceLastAction();
+    await reviewNextItem();
     fireEvent.press(screen.getByTestId('item-save'));
     await waitFor(() => expect(screen.getByTestId('item-name')).toHaveProp('value', 'Third'));
     expect(mockRepo.update).toHaveBeenCalledTimes(2);

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,13 +10,24 @@ import { openDb } from '@/db/client';
 import { getLanguageOverride, initI18n, setLanguageOverride } from '@/i18n';
 import { AddMenu } from '@/shell/AddMenu';
 import { ToastHost } from '@/shell/ToastHost';
+import { StartupGate } from '@/storage/StartupGate';
 import { recoverInterruptedRestore } from '@/storage/backupActions';
 import { useTheme } from '@/theme/useTheme';
 
-// The database must be open before anything renders: translations read the
-// language override from it. Opening is synchronous and applies migrations.
-openDb();
-initI18n();
+async function prepareApp() {
+  await recoverInterruptedRestore();
+  openDb();
+  await initI18n();
+  await setLanguageOverride(getLanguageOverride());
+}
+
+export default function RootLayout() {
+  return (
+    <StartupGate prepare={prepareApp}>
+      <AppLayout />
+    </StartupGate>
+  );
+}
 
 // A phone has no window focus; the app coming to the foreground is what counts. Without this
 // a morning's weather would still be on Home in the evening.
@@ -27,24 +38,11 @@ focusManager.setEventListener((setFocused) => {
   return () => subscription.remove();
 });
 
-export default function RootLayout() {
+function AppLayout() {
   const [queryClient] = useState(() => new QueryClient());
   const theme = useTheme();
   const { t } = useTranslation();
   const base = theme.dark ? DarkTheme : DefaultTheme;
-  // Nothing is shown until it is known that the data on disk is the user's own: after a
-  // restore that was cut off, the database opened above is an empty stand-in.
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    recoverInterruptedRestore()
-      .then(async (recovered) => {
-        // The language was read from the stand-in; take it from the real data.
-        if (recovered) await setLanguageOverride(getLanguageOverride());
-      })
-      .catch(() => {})
-      .finally(() => setReady(true));
-  }, []);
-  if (!ready) return null;
 
   return (
     <SafeAreaProvider>

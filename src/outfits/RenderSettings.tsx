@@ -4,6 +4,7 @@ import { Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { DEFAULT_TEXT_MODEL, getTextModel, setTextModel } from '@/ai/client';
+import { ModelCheckButton } from '@/ai/ModelCheckButton';
 import { DEFAULT_IMAGE_MODEL, getImageModel, setImageModel } from '@/ai/tryOn';
 import { AppText, Field } from '@/components/ui';
 import { useTheme } from '@/theme/useTheme';
@@ -79,6 +80,11 @@ export function RenderSettings() {
           setImageModel(text);
         }}
       />
+      <ModelCheckButton
+        key={`image:${imageModel}`}
+        provider="image"
+        model={imageModel.trim() || DEFAULT_IMAGE_MODEL}
+      />
       <Field
         testID="text-model"
         label={t('tryOn.textModel')}
@@ -91,8 +97,16 @@ export function RenderSettings() {
           setTextModel(text);
         }}
       />
+      <ModelCheckButton
+        key={`text:${textModel}`}
+        provider="anthropic"
+        model={textModel.trim() || DEFAULT_TEXT_MODEL}
+      />
       <AppText variant="caption" muted>
         {t('tryOn.modelHint')}
+      </AppText>
+      <AppText variant="caption" muted>
+        {t('ai.modelCheckHint')}
       </AppText>
     </View>
   );

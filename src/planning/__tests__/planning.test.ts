@@ -140,6 +140,31 @@ describe('calendar repository', () => {
     };
   };
 
+  it('counts a wear for the T-shirt, hoodie and jacket in one layered outfit', async () => {
+    const { db } = await createTestDb();
+    const items = createItemRepository(() => db);
+    const outfits = createOutfitRepository(() => db);
+    const calendar = createCalendarRepository(
+      () => db,
+      Date.now,
+      () => TODAY,
+    );
+    const shirt = await items.create(details({ category: 'tops', subcategory: 'tshirt' }), images);
+    const hoodie = await items.create(details({ category: 'tops', subcategory: 'hoodie' }), images);
+    const jacket = await items.create(
+      details({ category: 'outerwear', subcategory: 'jacket' }),
+      images,
+    );
+    const outfit = await outfits.create([
+      { itemId: shirt.id, slot: 'top', position: 0 },
+      { itemId: hoodie.id, slot: 'top', position: 1 },
+      { itemId: jacket.id, slot: 'outer', position: 0 },
+    ]);
+    await calendar.logWorn(TODAY, outfit.id);
+    for (const item of [shirt, hoodie, jacket]) {
+      expect(await calendar.itemStats(item.id)).toEqual({ count: 1, lastWorn: TODAY });
+    }
+  });
   it('plans an outfit for a future day', async () => {
     const { calendar, outfit } = await setup();
     await calendar.plan('2026-10-05', outfit.id);
@@ -710,6 +735,94 @@ describe('suggestions', () => {
     const plain = [item('tops'), item('bottoms')];
     expect(scoreItems(plain, mild, NO_HISTORY)).toBeGreaterThanOrEqual(RULES.threshold);
     expect(scoreItems([], mild, NO_HISTORY)).toBe(0);
+  });
+
+  it('adds insulation instead of averaging a light base into a warm top', () => {
+    const base = item('tops', { subcategory: 'tshirt', warmth: 1 });
+    const hoodie = item('tops', { subcategory: 'hoodie', warmth: 4 });
+    const withoutBase = scoreItems([hoodie, woolTrousers, coat], coldWet, NO_HISTORY);
+    const layered = scoreItems([base, hoodie, woolTrousers, coat], coldWet, NO_HISTORY);
+    expect(layered).toBeGreaterThan(withoutBase);
+    expect(scoreItems([hoodie, base, woolTrousers, coat], coldWet, NO_HISTORY)).toBe(layered);
+    const saved = outfitOf('layered', [base, hoodie, woolTrousers, coat]);
+    expect(
+      suggest({ day: '2026-12-02', profile: coldWet, outfits: [saved], owned: [] })[0],
+    ).toMatchObject({ outfit: { id: 'layered' }, score: layered });
+    // Both pieces still contribute to wear history even though warmth is scored by region.
+    expect(
+      scoreItems([base, hoodie, woolTrousers, coat], coldWet, {
+        ...NO_HISTORY,
+        recentItemIds: new Set([base.id, hoodie.id]),
+      }),
+    ).toBe(layered - 2 * RULES.score.itemWornRecently);
+  });
+
+  it.each(['hoodie', 'sweater', 'cardigan'] as const)(
+    'suggests a base top under a %s with outerwear kept separate',
+    (subcategory) => {
+      const base = item('tops', { subcategory: 'tshirt', warmth: 1 });
+      const mid = item('tops', { subcategory, warmth: 4 });
+      const [suggestion] = suggest({
+        day: '2026-12-02',
+        profile: coldWet,
+        outfits: [],
+        owned: [mid, coat, woolTrousers, base, sneakers],
+      });
+      expect(suggestion.pieces.filter((piece) => piece.slot === 'top')).toEqual([
+        { itemId: base.id, slot: 'top', position: 0 },
+        { itemId: mid.id, slot: 'top', position: 1 },
+      ]);
+      expect(suggestion.pieces).toContainEqual({ itemId: coat.id, slot: 'outer', position: 0 });
+      expect(new Set(suggestion.items.map((entry) => entry.id)).size).toBe(suggestion.items.length);
+    },
+  );
+
+  it('keeps summer tops single and does not guess layers for untyped tops', () => {
+    const base = item('tops', { subcategory: 'tshirt', warmth: 1 });
+    const hoodie = item('tops', { subcategory: 'hoodie', warmth: 4 });
+    const summer = suggest({
+      day: '2026-07-15',
+      profile: hot,
+      outfits: [],
+      owned: [base, hoodie, shorts, sneakers],
+    });
+    expect(summer.length).toBeGreaterThan(0);
+    expect(
+      summer.every((entry) => entry.pieces.filter((piece) => piece.slot === 'top').length === 1),
+    ).toBe(true);
+    expect(summer.every((entry) => !entry.items.includes(hoodie))).toBe(true);
+    const untyped = suggest({
+      day: '2026-12-02',
+      profile: coldWet,
+      outfits: [],
+      owned: [shirt, jumper, woolTrousers, coat],
+    });
+    expect(untyped.length).toBeGreaterThan(0);
+    expect(
+      untyped.every((entry) => entry.pieces.filter((piece) => piece.slot === 'top').length === 1),
+    ).toBe(true);
+  });
+
+  it('can still suggest a warm mid top when there is no base top', () => {
+    const hoodie = item('tops', { subcategory: 'hoodie', warmth: 4 });
+    expect(
+      suggest({
+        day: '2026-12-02',
+        profile: coldWet,
+        outfits: [],
+        owned: [hoodie, woolTrousers, coat],
+      })[0].pieces.filter((piece) => piece.slot === 'top'),
+    ).toEqual([{ itemId: hoodie.id, slot: 'top', position: 0 }]);
+  });
+
+  it('does not treat multiple thin tops as enough for a cold day', () => {
+    const thin = [
+      item('tops', { subcategory: 'tshirt', warmth: 2 }),
+      item('tops', { subcategory: 'shirt', warmth: 2 }),
+      item('bottoms', { warmth: 2 }),
+      coat,
+    ];
+    expect(scoreItems(thin, { ...coldWet, band: 4 }, NO_HISTORY)).toBe(-Infinity);
   });
 
   it('spots two strong colours that share nothing', () => {

@@ -5,7 +5,7 @@ Defines what the app knows about its user (name, gender, body type, sizes and av
 ## ADDED Requirements
 
 ### Requirement: First-run onboarding
-The app SHALL guide a new user through onboarding that collects name, gender, body type and a full-body photo before showing the main sections.
+The app SHALL guide a new user through onboarding that collects only a required name before showing the wardrobe; gender, body type and a full-body photo SHALL remain optional in Profile editing.
 
 #### Scenario: First launch
 - **WHEN** the app is opened with no profile stored
@@ -13,18 +13,18 @@ The app SHALL guide a new user through onboarding that collects name, gender, bo
 
 #### Scenario: Completing onboarding
 - **WHEN** the user finishes the last onboarding step
-- **THEN** the profile is saved and the Home section is shown
+- **THEN** the profile is saved and the Closet section is shown
 
-#### Scenario: Skipping optional steps
-- **WHEN** the user skips gender, body type or photo
-- **THEN** onboarding continues and the skipped value is left unset
+#### Scenario: Deferred optional details
+- **WHEN** the user completes name-only onboarding
+- **THEN** gender, body type and photo remain unset and can be added later in Profile
 
 ### Requirement: Gender selection
 The user SHALL be able to choose woman, man or prefer not to say.
 
 #### Scenario: Choosing a gender
 - **WHEN** the user selects one of the options
-- **THEN** the choice is stored and the body type step shows silhouettes matching it
+- **THEN** the choice is stored and the body type picker shows silhouettes matching it
 
 ### Requirement: Body type selection
 The user SHALL be able to choose one body type from an illustrated set.
@@ -37,11 +37,11 @@ The user SHALL be able to choose one body type from an illustrated set.
 The user SHALL be able to provide a full-body photo of themselves by taking one or picking one from the photo library, and this photo SHALL be used as their avatar.
 
 #### Scenario: Taking a photo
-- **WHEN** the user takes a photo in the avatar step and confirms it
+- **WHEN** the user takes a photo in the Profile avatar picker and confirms it
 - **THEN** the photo is stored as the avatar and shown in the profile
 
 #### Scenario: Photo guidance
-- **WHEN** the user reaches the avatar step
+- **WHEN** the user reaches the Profile avatar picker
 - **THEN** guidance explains how to take a suitable photo, with an example
 
 #### Scenario: Unsuitable photo

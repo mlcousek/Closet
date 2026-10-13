@@ -48,6 +48,7 @@ const config: ExpoConfig = {
     'expo-localization',
     'expo-sharing',
     'expo-document-picker',
+    '@react-native-community/datetimepicker',
     [
       'expo-location',
       {

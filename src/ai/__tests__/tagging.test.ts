@@ -41,6 +41,22 @@ beforeEach(() => {
 });
 
 describe('item tagging', () => {
+  it('explains a model that cannot accept images but keeps malformed-image errors generic', async () => {
+    const unsupported = Object.assign(Object.create(Anthropic.BadRequestError.prototype), {
+      message: 'This model does not support image input.',
+    });
+    const parse = jest.fn().mockRejectedValue(unsupported);
+    const client = { beta: { messages: { parse } } } as unknown as Anthropic;
+    await expect(tagItem(image, 'en', { client })).rejects.toMatchObject({
+      reason: 'unsupportedModel',
+    });
+    parse.mockRejectedValue(
+      Object.assign(Object.create(Anthropic.BadRequestError.prototype), {
+        message: 'Unsupported image format',
+      }),
+    );
+    await expect(tagItem(image, 'en', { client })).rejects.toMatchObject({ reason: 'error' });
+  });
   it('sends the image with a schema-constrained request and returns cleaned tags', async () => {
     const { client, parse } = clientReturning({
       stop_reason: 'end_turn',
@@ -155,6 +171,7 @@ describe('item tagging', () => {
     [Anthropic.AuthenticationError, 'rejectedKey'],
     [Anthropic.PermissionDeniedError, 'rejectedKey'],
     [Anthropic.RateLimitError, 'rateLimited'],
+    [Anthropic.NotFoundError, 'modelUnavailable'],
     [Anthropic.APIConnectionError, 'offline'],
     // A request that timed out was sent: the connection is not what failed.
     [Anthropic.APIConnectionTimeoutError, 'error'],

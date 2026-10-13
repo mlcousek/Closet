@@ -37,6 +37,7 @@ export function manualPrompt(outfit: Pick<Outfit, 'entries'>, hasPhoto: boolean)
     intro,
     pieces,
     `Create one photorealistic full-body picture of me wearing ${count === 1 ? 'this piece' : 'all of these pieces together'}.`,
+    'Wear multiple tops in their listed order: the first is the base layer, the next goes over it, and outerwear goes over all tops. Keep every listed piece in the outfit.',
     'Keep my face, hair, skin tone and body shape exactly as in my photo.',
     'Show every piece as it is in its picture: same colour, pattern, material and cut. Do not add other clothes over them.',
     'Standing pose, facing the camera, plain light background, portrait format 3:4. Reply with the picture only.',

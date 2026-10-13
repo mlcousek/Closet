@@ -17,6 +17,8 @@ export const RENDER_FAILURES = [
   'rateLimited',
   'timeout',
   'rejectedKey',
+  'modelUnavailable',
+  'unsupportedModel',
   'interrupted',
   'error',
 ] as const;

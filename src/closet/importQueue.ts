@@ -44,6 +44,10 @@ export function createImportJobRepository(db: () => Db = getDb, now: () => numbe
     async enqueue(sourcePaths: string[]): Promise<void> {
       for (const sourcePath of sourcePaths) await base.create({ sourcePath, status: 'queued' });
     },
+    /** A photo that could not be copied has no durable source to retry after restart. */
+    async recordCopyFailure(): Promise<void> {
+      await base.create({ sourcePath: '', status: 'failed', error: 'import:copyPhoto' });
+    },
     async list(): Promise<ImportJob[]> {
       return db()
         .select()
@@ -73,7 +77,29 @@ export function createImportJobRepository(db: () => Db = getDb, now: () => numbe
       setStatus(id, 'failed', { error });
     },
     async retry(id: string): Promise<void> {
-      setStatus(id, 'queued', { error: null });
+      db()
+        .update(importJobs)
+        .set({ status: 'queued', error: null, updatedAt: now() })
+        .where(
+          and(
+            active,
+            eq(importJobs.id, id),
+            eq(importJobs.status, 'failed'),
+            sql`(${importJobs.error} IS NULL OR ${importJobs.error} <> 'import:copyPhoto')`,
+          ),
+        )
+        .run();
+    },
+    /** Removes only this failed job; queued/running work cannot be discarded mid-import. */
+    async dismiss(id: string): Promise<ImportJob | null> {
+      const row = db()
+        .select()
+        .from(importJobs)
+        .where(and(active, eq(importJobs.id, id), eq(importJobs.status, 'failed')))
+        .get();
+      if (!row) return null;
+      db().delete(importJobs).where(eq(importJobs.id, id)).run();
+      return toJob(row);
     },
     /**
      * Jobs left in "processing" by an app that was closed mid-import go back to
@@ -148,6 +174,7 @@ export function createImportProcessor(options: {
   /** Turns one photo into an item and returns the item id. */
   process: (job: ImportJob) => Promise<string>;
   onChange?: () => void;
+  failure?: (error: unknown) => string;
   concurrency?: number;
 }) {
   const { jobs, process, onChange, concurrency = IMPORT_CONCURRENCY } = options;
@@ -162,7 +189,10 @@ export function createImportProcessor(options: {
         const itemId = await process(job);
         await jobs.markDone(job.id, itemId);
       } catch (error) {
-        await jobs.markFailed(job.id, error instanceof Error ? error.message : String(error));
+        await jobs.markFailed(
+          job.id,
+          options.failure?.(error) ?? (error instanceof Error ? error.message : String(error)),
+        );
       }
       onChange?.();
     }

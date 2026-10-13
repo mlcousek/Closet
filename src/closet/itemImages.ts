@@ -77,6 +77,8 @@ export async function reducePhoto(
 }
 
 export type ItemImageDeps = {
+  /** Hashes file bytes on the device without loading the photo into JavaScript memory. */
+  fingerprint?(uri: string): Promise<string>;
   /**
    * The photo reduced to what the app keeps (see reducePhoto), in a temporary
    * file when a copy had to be made. Never fails: the photo itself is the fallback.
@@ -106,7 +108,7 @@ export function extensionOf(uri: string): string {
  * files already written are removed again.
  */
 export async function storeItemImages(
-  photo: { originalUri: string; cutoutUri: string | null },
+  photo: { originalUri: string; cutoutUri: string | null; photoHash?: string | null },
   deps: ItemImageDeps,
 ): Promise<ItemImages> {
   const written: string[] = [];
@@ -122,7 +124,9 @@ export async function storeItemImages(
     const format: ResizeFormat = photo.cutoutUri ? 'png' : 'jpeg';
     const thumbUri = await deps.resize(photo.cutoutUri ?? photo.originalUri, THUMB_WIDTH, format);
     const thumbPath = await save(thumbUri, format === 'png' ? 'png' : 'jpg');
-    return { originalPath, cutoutPath, thumbPath };
+    const photoHash =
+      photo.photoHash ?? (await deps.fingerprint?.(photo.originalUri).catch(() => null));
+    return { originalPath, cutoutPath, thumbPath, ...(photoHash ? { photoHash } : {}) };
   } catch (error) {
     for (const path of written) await deps.remove(path).catch(() => {});
     throw error;

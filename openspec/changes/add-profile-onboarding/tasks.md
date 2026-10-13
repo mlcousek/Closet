@@ -1,3 +1,5 @@
+> Status note (8 October 2026): this is the original implementation/verification checklist. Unchecked tasks can contain implemented behavior awaiting their stated validation. See [current status](../../../docs/status.md) and [decisions](../../../docs/decisions.md) for superseded designs and remaining checks.
+
 ## 1. Data
 
 - [x] 1.1 Add the profile table and repository (name, gender, body type, height, sizes, avatar path); verify repository unit tests
@@ -7,9 +9,9 @@
 
 - [x] 2.1 Add the onboarding gate that shows the flow when no profile exists; verify a component test for both states
 - [x] 2.2 Build the welcome and name steps; verify the name is required to continue
-- [x] 2.3 Build the gender step with three options and skip; verify a component test
-- [x] 2.4 Create body type silhouettes and build the body type step filtered by gender; verify a component test for each gender choice
-- [ ] 2.5 Build the avatar step with guidance, example images, camera and library pickers; verify on device
+- [x] 2.3 Provide the three gender options in Profile editing; onboarding no longer collects gender
+- [x] 2.4 Provide matching body type silhouettes in Profile editing; onboarding no longer collects body type
+- [ ] 2.5 Provide the optional Profile avatar picker with guidance, camera and library; verify native behavior on device
 - [ ] 2.6 Add permission explanations in both languages and the denied-permission state; verify on device by denying access
 
 ## 3. Avatar handling

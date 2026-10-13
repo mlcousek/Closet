@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { DateField } from '@/components/DateField';
 import { AppText, Button, Field } from '@/components/ui';
 import { useTheme } from '@/theme/useTheme';
 
@@ -33,13 +34,22 @@ type Props = {
   suggested?: SuggestedField[];
   submitLabel: string;
   busy?: boolean;
+  submitDisabled?: boolean;
   onSubmit: (details: ItemDetails) => void;
   /** Extra actions shown under the save button. */
   footer?: ReactNode;
 };
 
 /** The form for an item's details, used when adding, editing and reviewing. */
-export function ItemForm({ initial, suggested = [], submitLabel, busy, onSubmit, footer }: Props) {
+export function ItemForm({
+  initial,
+  suggested = [],
+  submitLabel,
+  busy,
+  submitDisabled,
+  onSubmit,
+  footer,
+}: Props) {
   const { t } = useTranslation();
   const { colors, spacing, radius } = useTheme();
   const [values, setValues] = useState<ItemFormValues>(() =>
@@ -260,13 +270,13 @@ export function ItemForm({ initial, suggested = [], submitLabel, busy, onSubmit,
       </View>
 
       <View style={{ gap: spacing.sm }}>
-        <Field
+        <DateField
           testID="item-purchased"
           label={t('itemForm.purchasedAt')}
           value={values.purchasedAt}
-          onChangeText={(text) => set('purchasedAt', text)}
-          placeholder={t('itemForm.purchasedAtPlaceholder')}
-          keyboardType="numbers-and-punctuation"
+          onChange={(text) => set('purchasedAt', text)}
+          clearable
+          disabled={busy}
         />
         {error === 'purchasedAtInvalid' ? (
           <AppText testID="item-form-error" style={{ color: colors.danger }}>
@@ -287,7 +297,13 @@ export function ItemForm({ initial, suggested = [], submitLabel, busy, onSubmit,
           {t(`itemForm.${error}`)}
         </AppText>
       ) : null}
-      <Button testID="item-save" label={submitLabel} loading={busy} onPress={submit} />
+      <Button
+        testID="item-save"
+        label={submitLabel}
+        loading={busy}
+        disabled={submitDisabled}
+        onPress={submit}
+      />
       {footer}
     </View>
   );

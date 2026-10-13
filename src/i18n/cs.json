@@ -128,7 +128,23 @@
     "keyNeededTitle": "Je potřeba klíč poskytovatele",
     "keyNeededMessage": "Tato funkce používá službu {{provider}}. Přidejte svůj klíč v Nastavení.",
     "openKeySettings": "Otevřít nastavení klíčů",
-    "taggingUsage": "Požadavky na popis oblečení: {{month}} tento měsíc, {{total}} celkem"
+    "taggingUsage": "Požadavky na popis oblečení: {{month}} tento měsíc, {{total}} celkem",
+    "modelCheck": {
+      "check": "Ověřit model",
+      "supported": "Model podporuje vstupní fotky a strukturované odpovědi pro popis oblečení a stylistu.",
+      "available": {
+        "anthropic": "Model je dostupný, ale jeho schopnosti se nepodařilo potvrdit. Popis oblečení a stylista přesto nemusí fungovat.",
+        "image": "Model je dostupný pro generování. Tato kontrola nepotvrzuje výstup obrázků; vykreslení outfitu přesto nemusí fungovat."
+      },
+      "modelUnavailable": "Vybraný model není pro tento klíč dostupný. V Nastavení, Klíče poskytovatelů AI, vyberte model, který váš poskytovatel nabízí.",
+      "unsupportedModel": "Vybraný model tuto funkci nepodporuje. Změňte model v Nastavení, Klíče poskytovatelů AI.",
+      "noKey": "Před ověřením modelu uložte klíč tohoto poskytovatele.",
+      "rejectedKey": "Poskytovatel klíč odmítl. Zkontrolujte ho výše.",
+      "rateLimited": "Poskytovatel je vytížený nebo máte vyčerpanou kvótu. Zkuste to později.",
+      "unreachable": "Poskytovatel není dostupný. Zkontrolujte připojení a zkuste to znovu.",
+      "error": "Model se nepodařilo ověřit. Zkuste to znovu."
+    },
+    "modelCheckHint": "Kontrola modelu načte informace od poskytovatele bez odesílání fotek a generování obsahu."
   },
   "greeting": {
     "morning": "Dobré ráno, {{name}}",
@@ -162,7 +178,9 @@
     "bodyTypeMessage": "Slouží jen jako nápověda při vykreslování outfitů na vás.",
     "avatarTitle": "Přidejte fotku celé postavy",
     "finish": "Dokončit",
-    "saveFailed": "Profil se nepodařilo uložit. Zkuste to prosím znovu."
+    "saveFailed": "Profil se nepodařilo uložit. Zkuste to prosím znovu.",
+    "quickStart": "Přidejte pár kusů oblečení a uložte první outfit. Fotku a údaje pro zkoušení můžete doplnit později v Profilu.",
+    "addClothes": "Přidat oblečení"
   },
   "avatar": {
     "title": "Vaše fotka",
@@ -348,7 +366,9 @@
       "offline": "Bez připojení nejsou automatické návrhy k dispozici. Údaje můžete vyplnit sami.",
       "rejectedKey": "Klíč Anthropic byl odmítnut, proto nejsou k dispozici automatické návrhy. Údaje můžete vyplnit sami.",
       "rateLimited": "Poskytovatel je teď vytížený, proto nejsou k dispozici automatické návrhy. Údaje můžete vyplnit sami.",
-      "error": "Automatické návrhy se tentokrát nepovedly. Údaje můžete vyplnit sami."
+      "error": "Automatické návrhy se tentokrát nepovedly. Údaje můžete vyplnit sami.",
+      "modelUnavailable": "Vybraný model není pro tento klíč dostupný. V Nastavení, Klíče poskytovatelů AI, vyberte model, který váš poskytovatel nabízí.",
+      "unsupportedModel": "Vybraný model tuto funkci nepodporuje. Změňte model v Nastavení, Klíče poskytovatelů AI."
     },
     "denied": "Closet nemá přístup k fotoaparátu. Povolit ho můžete v nastavení systému.",
     "saveFailed": "Kousek se nepodařilo uložit. Zkuste to prosím znovu.",
@@ -410,7 +430,26 @@
     "discard": "Zahodit",
     "reviewDone": "Vše je zkontrolováno.",
     "retryAll": "Zkusit vše znovu",
-    "unreadable": "Fotky, které se nepodařilo načíst a byly vynechány: {{count}}."
+    "unreadable": "Fotky, které se nepodařilo načíst a byly vynechány: {{count}}.",
+    "nextItem": "Zkontrolovat tento kus",
+    "photo": "Fotka {{number}}",
+    "viewExisting": "Zobrazit existující kousek",
+    "checkAgain": "Zkontrolovat znovu",
+    "discardPhoto": "Zahodit tuto fotku",
+    "importAnyway": "Přesto přidat další kousek",
+    "reasons": {
+      "readPhoto": "Tuto fotku se nepodařilo přečíst. Vyberte jinou kopii nebo ji zahoďte.",
+      "savePhoto": "Fotku nebo kousek se nepodařilo uložit. Zkontrolujte volné místo a zkuste to znovu.",
+      "duplicate": "Tuto fotku už používá kousek ve vašem šatníku nebo seznamu přání. Další kousek nebyl přidán.",
+      "interrupted": "Aplikace se během importu této fotky zavřela. Zkuste to znovu; pokud se to opakuje, vyberte menší fotku.",
+      "offline": "Popis oblečení se nemohl připojit. Zkuste to znovu, až budete online.",
+      "rateLimited": "Poskytovatel AI je vytížený nebo má vyčerpanou kvótu. Zkuste to později.",
+      "modelUnavailable": "Vybraný model pro popis oblečení není dostupný. Změňte ho v Nastavení, Klíče poskytovatelů AI, a zkuste to znovu.",
+      "unsupportedModel": "Vybraný model pro popis oblečení tento požadavek nepodporuje. Změňte ho v Nastavení, Klíče poskytovatelů AI, a zkuste to znovu.",
+      "tagging": "Automatický popis oblečení se nedokončil. Zkuste tuto fotku znovu.",
+      "error": "Tuto fotku se nepodařilo importovat. Zkuste to znovu nebo ji zahoďte.",
+      "copyPhoto": "Tuto fotku se nepodařilo zkopírovat do aplikace. Vyberte ji znovu z Fotek nebo tuto chybu zahoďte."
+    }
   },
   "linkImport": {
     "title": "Přidat z odkazu",
@@ -450,7 +489,9 @@
     "discardTitle": "Zahodit změny?",
     "discardMessage": "Tento outfit má neuložené změny.",
     "discard": "Zahodit",
-    "keepEditing": "Pokračovat v úpravách"
+    "keepEditing": "Pokračovat v úpravách",
+    "baseTop": "Vršek 1 · spodní vrstva (tričko, košile)",
+    "layerTop": "Vršek {{number}} · přes spodní vrstvu (mikina, svetr)"
   },
   "outfits": {
     "title": "Outfit",
@@ -491,7 +532,9 @@
       "interrupted": "Aplikace se zavřela dřív, než se vykreslení dokončilo. Zkuste to znovu.",
       "error": "Vykreslení se tentokrát nepovedlo. Zkuste to znovu.",
       "connectionLost": "Připojení se přerušilo během vytváření obrázku. Mohl být přesto vytvořen a naúčtován, proto před dalším pokusem zkontrolujte svou spotřebu.",
-      "rejectedKey": "Poskytovatel obrázků váš klíč nepřijal. Zkontrolujte klíč a také to, že pro něj máte zapnuté účtování a generování obrázků."
+      "rejectedKey": "Poskytovatel obrázků váš klíč nepřijal. Zkontrolujte klíč a také to, že pro něj máte zapnuté účtování a generování obrázků.",
+      "modelUnavailable": "Vybraný model není pro tento klíč dostupný. V Nastavení, Klíče poskytovatelů AI, vyberte model, který váš poskytovatel nabízí.",
+      "unsupportedModel": "Vybraný model tuto funkci nepodporuje. Změňte model v Nastavení, Klíče poskytovatelů AI."
     },
     "settingsTitle": "Vykreslování outfitů",
     "autoRender": "Vykreslit při uložení outfitu",
@@ -693,7 +736,9 @@
       "offline": "Bez připojení. Stylista potřebuje internet.",
       "rejectedKey": "Anthropic váš klíč odmítl. Zkontrolujte ho v Nastavení.",
       "rateLimited": "Příliš mnoho požadavků. Zkuste to za chvíli.",
-      "error": "Stylista nedokázal odpovědět. Zkuste to prosím znovu."
+      "error": "Stylista nedokázal odpovědět. Zkuste to prosím znovu.",
+      "modelUnavailable": "Vybraný model není pro tento klíč dostupný. V Nastavení, Klíče poskytovatelů AI, vyberte model, který váš poskytovatel nabízí.",
+      "unsupportedModel": "Vybraný model tuto funkci nepodporuje. Změňte model v Nastavení, Klíče poskytovatelů AI."
     },
     "wishlistPiece": "Obsahuje kousek z vašeho seznamu přání."
   },
@@ -789,5 +834,10 @@
       "light": "Světlý",
       "warm": "Teplý"
     }
+  },
+  "startup": {
+    "title": "Šatník se nepodařilo otevřít",
+    "message": "Obnova nebyla dokončena. Zkuste znovu bezpečně otevřít uložený šatník.",
+    "loading": "Otevírání šatníku…"
   }
 }

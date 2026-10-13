@@ -420,12 +420,26 @@ describe('trip list', () => {
     expect(screen.getByTestId('trip-place-query')).toBeTruthy();
   });
 
-  it('refuses a trip without a destination, one that is over, and one longer than 30 days', async () => {
+  it('validates picker dates and saves a valid trip with the selected calendar days', async () => {
     renderWithQuery(<TripsScreen />);
     fireEvent.press(await screen.findByTestId('trip-new'));
+    fireEvent.press(screen.getByTestId('trip-create'));
+    expect(screen.getByTestId('trip-problem')).toHaveTextContent(/Enter both dates/);
     const dates = (start: string, end: string) => {
-      fireEvent.changeText(screen.getByTestId('trip-start'), start);
-      fireEvent.changeText(screen.getByTestId('trip-end'), end);
+      for (const [id, day] of [
+        ['trip-start', start],
+        ['trip-end', end],
+      ]) {
+        const [year, month, date] = day.split('-').map(Number);
+        fireEvent.press(screen.getByTestId(id));
+        fireEvent(
+          screen.getByTestId(`${id}-picker`),
+          'valueChange',
+          {},
+          new Date(year, month - 1, date, 12),
+        );
+        fireEvent.press(screen.getByTestId(`${id}-done`));
+      }
       fireEvent.press(screen.getByTestId('trip-create'));
     };
     fireEvent.changeText(screen.getByTestId('trip-name'), 'Rome');
@@ -435,15 +449,27 @@ describe('trip list', () => {
     fireEvent.changeText(screen.getByTestId('trip-place-query'), 'Rome');
     fireEvent.press(screen.getByTestId('trip-place-search'));
     fireEvent.press(await screen.findByTestId('trip-place-result-0'));
+    dates('2031-05-03', '2031-05-01');
+    expect(screen.getByTestId('trip-problem')).toHaveTextContent(
+      'The trip ends before it starts.',
+    );
     dates('2020-01-02', '2020-01-05');
     expect(screen.getByTestId('trip-problem')).toHaveTextContent('This trip is already over.');
     dates('2031-05-01', '2031-05-31');
     expect(screen.getByTestId('trip-problem')).toHaveTextContent('A trip can be 30 days at most.');
-    dates('2031-05-01', 'soon');
-    expect(screen.getByTestId('trip-problem')).toHaveTextContent(/Enter both dates/);
     await settle();
     expect(mockRepo.create).not.toHaveBeenCalled();
     expect(mockRouter.push).not.toHaveBeenCalled();
+    dates('2031-05-01', '2031-05-03');
+    await waitFor(() =>
+      expect(mockRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDay: '2031-05-01',
+          endDay: '2031-05-03',
+        }),
+      ),
+    );
+    await settle();
   });
 });
 

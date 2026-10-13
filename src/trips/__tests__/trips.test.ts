@@ -208,6 +208,33 @@ describe('trip validation', () => {
 });
 
 describe('trip outfits', () => {
+  it('packs both top layers and respects the reuse limit of each garment', () => {
+    const cold: DayProfile = { ...mild, band: 5, needsOuter: true, season: 'winter' };
+    const layeredCloset = [
+      ...['base-1', 'base-2'].map((id) => item(id, 'tops', { subcategory: 'tshirt', warmth: 1 })),
+      ...['mid-1', 'mid-2'].map((id) => item(id, 'tops', { subcategory: 'hoodie', warmth: 4 })),
+      item('wool-1', 'bottoms', { warmth: 4 }),
+      item('wool-2', 'bottoms', { warmth: 4 }),
+      item('coat', 'outerwear', { warmth: 5 }),
+      item('boots', 'shoes'),
+    ];
+    const days = tripDays(4).map((day) => ({ ...day, profile: cold }));
+    const plan = planTrip({ tripSeed: 'layers', days, owned: layeredCloset });
+    const wears = new Map<string, number>();
+    for (const day of plan) {
+      const tops = day.pieces.filter((piece) => piece.slot === 'top');
+      expect(tops).toHaveLength(2);
+      expect(tops[0]).toMatchObject({ itemId: expect.stringMatching(/^base-/), position: 0 });
+      expect(tops[1]).toMatchObject({ itemId: expect.stringMatching(/^mid-/), position: 1 });
+      for (const piece of tops) wears.set(piece.itemId, (wears.get(piece.itemId) ?? 0) + 1);
+    }
+    expect([...wears.values()]).toEqual([2, 2, 2, 2]);
+    const packed = packingList(plan, layeredCloset).find((group) => group.category === 'tops')!;
+    expect(packed.entries).toHaveLength(4);
+    expect(packed.entries.every((entry) => entry.days.length === 2)).toBe(true);
+    expect(planTrip({ tripSeed: 'layers', days, owned: layeredCloset })).toEqual(plan);
+  });
+
   it('gives every day an outfit within the reuse limits and the shoe cap', () => {
     const plan = planTrip({ tripSeed: 'trip', days: tripDays(6), owned: closet });
     expect(plan.every((day) => day.pieces.length >= 3)).toBe(true);

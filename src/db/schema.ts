@@ -55,6 +55,8 @@ export const items = sqliteTable('items', {
   /** 'owned', 'archived' or 'wishlist'. */
   ownership: text('ownership').notNull().default('owned'),
   originalPath: text('original_path').notNull(),
+  /** Fingerprint of the prepared original photo, for exact-photo duplicate detection. */
+  photoHash: text('photo_hash'),
   /** Background-removed image; null when no cutout could be made or the user kept the original. */
   cutoutPath: text('cutout_path'),
   thumbPath: text('thumb_path').notNull(),

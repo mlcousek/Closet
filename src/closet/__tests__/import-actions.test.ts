@@ -7,6 +7,7 @@ import { usageLog } from '@/outfits/renders';
 import {
   detailsFromTags,
   dismissFailedImports,
+  dismissImportJob,
   importJobs,
   processImportJob,
   resumeImports,
@@ -82,6 +83,7 @@ jest.mock('@/storage/imageStore', () => ({
 }));
 
 const mockImages = {
+  fingerprint: jest.fn(),
   cutout: jest.fn(),
   resize: jest.fn(),
   toTagImage: jest.fn(),
@@ -90,6 +92,7 @@ const mockImages = {
 };
 jest.mock('../deviceImages', () => ({
   itemImageDeps: {
+    fingerprint: (uri: string) => mockImages.fingerprint(uri),
     reduce: (...args: unknown[]) => mockImages.reduce(...args),
     discard: (...args: unknown[]) => mockImages.discard(...args),
     save: (uri: string, folder: string, extension: string) =>
@@ -149,6 +152,7 @@ beforeEach(async () => {
   mockStore.removed = [];
   mockTag.mockReset().mockResolvedValue(tags);
   mockImages.cutout.mockReset().mockResolvedValue(CUTOUT);
+  mockImages.fingerprint.mockReset().mockResolvedValue(undefined);
   // Photos small enough to be left as they are, unless a test says otherwise.
   mockImages.reduce.mockReset().mockImplementation(async (photo: object) => photo);
   mockImages.discard.mockReset().mockResolvedValue(undefined);
@@ -537,7 +541,7 @@ describe('tagging on the device', () => {
 
       expect(progress()).toEqual({ ...EMPTY, failed: 1, total: 1 });
       expect(await importJobs.list()).toMatchObject([
-        { status: 'failed', error: `AI unavailable: ${reason}`, itemId: null },
+        { status: 'failed', error: `import:${reason}`, itemId: null },
       ]);
       expect(await reviewItems()).toEqual([]);
       // Nothing was stored for an item, and the photo is still there to retry.
@@ -554,7 +558,7 @@ describe('tagging on the device', () => {
 
     expect(mockTag).not.toHaveBeenCalled();
     expect(await importJobs.list()).toMatchObject([
-      { status: 'failed', error: 'cannot decode image' },
+      { status: 'failed', error: 'import:readPhoto' },
     ]);
   });
 
@@ -565,11 +569,103 @@ describe('tagging on the device', () => {
     await resumeImports();
     await settle();
 
-    expect(await importJobs.list()).toMatchObject([{ status: 'failed', error: 'odd' }]);
+    expect(await importJobs.list()).toMatchObject([{ status: 'failed', error: 'import:error' }]);
   });
 });
 
 describe('starting a bulk import on the device', () => {
+  it('does not attach a late fingerprint to a replacement photo', async () => {
+    const existing = await itemRepository.create(detailsFromTags(tags), {
+      originalPath: 'old.jpg',
+      cutoutPath: null,
+      thumbPath: 'thumb.jpg',
+      photoHash: 'md5:old',
+    });
+    await itemRepository.update(existing.id, { originalPath: 'new.jpg' });
+    await itemRepository.recordPhotoHash(existing.id, 'old.jpg', 'md5:old');
+    expect((await itemRepository.get(existing.id))?.photoHash).toBeNull();
+    expect(await itemRepository.findPhotoDuplicate('md5:old')).toBeNull();
+    await itemRepository.recordPhotoHash(existing.id, 'new.jpg', 'md5:new');
+    expect((await itemRepository.findPhotoDuplicate('md5:new'))?.id).toBe(existing.id);
+    await itemRepository.archive([existing.id]);
+    expect(await itemRepository.findPhotoDuplicate('md5:new')).toBeNull();
+  });
+
+  it('imports concurrent copies of the same photo once, before paying for duplicate tagging', async () => {
+    mockImages.fingerprint.mockResolvedValue('md5:same');
+    await queueCopied(['a.jpg', 'b.jpg']);
+    await resumeImports();
+    await settle();
+    const items = await reviewItems();
+    expect(items).toHaveLength(1);
+    expect(items[0].photoHash).toBe('md5:same');
+    expect(mockTag).toHaveBeenCalledTimes(1);
+    expect(mockImages.cutout).toHaveBeenCalledTimes(1);
+    const duplicate = (await importJobs.list()).find((job) => job.status === 'failed')!;
+    expect(duplicate.error).toBe(`import:duplicate:${items[0].id}`);
+    expect(mockStore.files.has(duplicate.sourcePath)).toBe(true);
+    await dismissImportJob(duplicate.id);
+    expect(mockStore.files.has(duplicate.sourcePath)).toBe(false);
+    expect(await reviewItems()).toHaveLength(1);
+    expect(progress()).toMatchObject({ done: 1, failed: 0 });
+  });
+
+  it('releases a photo reservation when its first import fails', async () => {
+    mockImages.fingerprint.mockResolvedValue('md5:same');
+    mockTag.mockRejectedValueOnce(new AiUnavailableError('offline'));
+    await queueCopied(['a.jpg', 'b.jpg']);
+    await resumeImports();
+    await settle();
+    expect(await reviewItems()).toHaveLength(1);
+    expect(mockTag).toHaveBeenCalledTimes(2);
+    const failed = (await importJobs.list()).find((job) => job.status === 'failed')!;
+    await retryImportJob(failed.id);
+    await settle();
+    expect((await importJobs.list()).find((job) => job.id === failed.id)?.error).toMatch(
+      /^import:duplicate:/,
+    );
+    expect(await reviewItems()).toHaveLength(1);
+  });
+
+  it('recognizes an older item by lazily fingerprinting its stored original', async () => {
+    const existing = await itemRepository.create(detailsFromTags(tags), {
+      originalPath: 'images/items/older.jpg',
+      cutoutPath: null,
+      thumbPath: 'images/items/older-t.jpg',
+    });
+    mockImages.fingerprint.mockResolvedValue('md5:older');
+    await queueCopied(['new-copy.jpg']);
+    await resumeImports();
+    await settle();
+    expect(mockImages.fingerprint).toHaveBeenCalledWith('file:///documents/images/items/older.jpg');
+    expect((await itemRepository.get(existing.id))?.photoHash).toBe('md5:older');
+    expect((await importJobs.list())[0].error).toBe(`import:duplicate:${existing.id}`);
+    expect(mockTag).not.toHaveBeenCalled();
+  });
+
+  it('records a failed initial copy without a source path or an unsafe retry', async () => {
+    mockStore.unreadable.add('file:///picker/bad.jpg');
+    expect(await startBulkImport(['file:///picker/bad.jpg'])).toBe(1);
+    await settle();
+    const [job] = await importJobs.list();
+    expect(job).toMatchObject({ sourcePath: '', status: 'failed', error: 'import:copyPhoto' });
+    await retryImportJob(job.id);
+    await settle();
+    expect((await importJobs.list())[0].status).toBe('failed');
+    await dismissImportJob(job.id);
+    expect(await importJobs.list()).toEqual([]);
+  });
+
+  it('does not discard or requeue a photo while a worker owns it', async () => {
+    await queueCopied(['a.jpg']);
+    const job = (await importJobs.claimNext())!;
+    await dismissImportJob(job.id);
+    await importJobs.retry(job.id);
+    expect((await importJobs.list())[0].status).toBe('processing');
+    expect(mockStore.files.has(job.sourcePath)).toBe(true);
+    await importJobs.markFailed(job.id, 'import:error');
+  });
+
   it('copies each photo into the app with its own extension and imports them all', async () => {
     const failed = await startBulkImport([
       'file:///picker/IMG_1.HEIC',
@@ -615,7 +711,7 @@ describe('starting a bulk import on the device', () => {
     await settle();
 
     expect(failed).toBe(2);
-    expect(progress()).toEqual({ ...EMPTY, done: 2, total: 2 });
+    expect(progress()).toEqual({ ...EMPTY, done: 2, failed: 2, total: 4 });
     expect(await reviewItems()).toHaveLength(2);
   });
 
@@ -689,7 +785,7 @@ describe('starting a bulk import on the device', () => {
 
     expect(progress()).toEqual({ ...EMPTY, done: 4, failed: 1, total: 5 });
     expect((await importJobs.list()).filter((job) => job.status === 'failed')).toMatchObject([
-      { error: 'vision crashed', itemId: null },
+      { error: 'import:error', itemId: null },
     ]);
     expect(await reviewItems()).toHaveLength(4);
     expect(peak).toBeGreaterThanOrEqual(1);

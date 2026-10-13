@@ -326,6 +326,23 @@ beforeEach(() => {
 });
 
 describe('outfit editor', () => {
+  it('shows two tops and keeps a shirt and jumper together when saved', async () => {
+    renderWithQuery(<OutfitEditorScreen />);
+    expect(screen.getByTestId('top-layer-0')).toHaveTextContent(/Top 1/);
+    expect(screen.getByTestId('top-layer-1')).toHaveTextContent(/Top 2/);
+    fireEvent.press(screen.getByTestId('carousel-top-0-shirt'));
+    fireEvent.press(screen.getByTestId('carousel-top-1-jumper'));
+    expect(screen.getByTestId('collage-piece-shirt')).toBeTruthy();
+    expect(screen.getByTestId('collage-piece-jumper')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('editor-save'));
+    await waitFor(() =>
+      expect(mockOutfitRepo.create).toHaveBeenCalledWith([
+        { itemId: 'shirt', slot: 'top', position: 0 },
+        { itemId: 'jumper', slot: 'top', position: 1 },
+      ]),
+    );
+  });
+
   it('builds an outfit from slot rows, updates the preview at once, and saves it', async () => {
     renderWithQuery(<OutfitEditorScreen />);
     expect(screen.getByTestId('editor-empty')).toBeTruthy();

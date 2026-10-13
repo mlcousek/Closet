@@ -115,7 +115,7 @@ describe('outfit draft rules', () => {
   });
 
   it('removes an extra row but always keeps one', () => {
-    let draft = addRow(select(emptyDraft(), 'top', 0, 'shirt'), 'top');
+    let draft = select(emptyDraft(), 'top', 0, 'shirt');
     draft = select(draft, 'top', 1, 'vest');
     draft = removeRow(draft, 'top', 0);
     expect(draft.rows.top).toEqual(['vest']);
@@ -169,6 +169,18 @@ describe('outfit draft rules', () => {
     }
   });
 
+  it('shuffles both top rows without repeating a garment and keeps outerwear separate', () => {
+    const offered = Object.fromEntries(
+      EDITOR_SLOTS.map((slot) => [slot, [{ id: `${slot}-a` }, { id: `${slot}-b` }]]),
+    ) as Record<Slot, { id: string }[]>;
+    const pieces = draftPieces(shuffle(emptyDraft(), offered, () => 0.5));
+    expect(pieces.filter((piece) => piece.slot === 'top')).toEqual([
+      { itemId: 'top-b', slot: 'top', position: 0 },
+      { itemId: 'top-a', slot: 'top', position: 1 },
+    ]);
+    expect(pieces.filter((piece) => piece.slot === 'outer')).toHaveLength(1);
+  });
+
   it('gives the same shuffle for the same random source and skips hidden slots', () => {
     const offered = Object.fromEntries(
       EDITOR_SLOTS.map((slot) => [slot, [{ id: `${slot}-a` }, { id: `${slot}-b` }]]),
@@ -199,6 +211,33 @@ const setupDb = async () => {
 };
 
 describe('outfit repository', () => {
+  it('round-trips two tops and outerwear without losing a layer', async () => {
+    const { outfits, items, shirt } = await setupDb();
+    const hoodie = await items.create(
+      details({ name: 'Hoodie', category: 'tops', subcategory: 'hoodie' }),
+      images,
+    );
+    const jacket = await items.create(details({ name: 'Jacket', category: 'outerwear' }), images);
+    const pieces = [
+      { itemId: jacket.id, slot: 'outer' as const, position: 0 },
+      { itemId: shirt.id, slot: 'top' as const, position: 0 },
+      { itemId: hoodie.id, slot: 'top' as const, position: 1 },
+    ];
+    const saved = await outfits.create(pieces);
+    const loaded = await outfits.get(saved.id);
+    expect(
+      draftPieces(
+        draftFromPieces(
+          loaded!.entries.map((entry) => ({
+            itemId: entry.item.id,
+            slot: entry.slot,
+            position: entry.position,
+          })),
+        ),
+      ),
+    ).toEqual(pieces);
+  });
+
   it('stores an outfit with its pieces in editor order', async () => {
     const { outfits, pieces, shirt, skirt, boots } = await setupDb();
     const outfit = await outfits.create([...pieces].reverse(), { name: 'Friday' });
@@ -302,6 +341,18 @@ describe('outfit repository', () => {
 });
 
 describe('renders', () => {
+  it.each(['modelUnavailable', 'unsupportedModel'] as const)(
+    'retains %s when a failed render is read from storage',
+    async (failure) => {
+      const { db, outfits, renders, pieces } = await setupDb();
+      const outfit = await outfits.create(pieces, { name: 'Model check' });
+      const render = await renders.enqueue(outfit.id, 'fp');
+      await renders.markFailed(render.id, failure);
+      const reopened = createRenderRepository(() => db);
+      expect(await reopened.get(render.id)).toMatchObject({ status: 'failed', failure });
+    },
+  );
+
   it('builds a fingerprint that ignores item order and changes with the avatar or pieces', () => {
     expect(fingerprint('a.jpg', ['2', '1'])).toBe(fingerprint('a.jpg', ['1', '2']));
     expect(fingerprint('a.jpg', ['1', '2'])).not.toBe(fingerprint('b.jpg', ['1', '2']));
@@ -754,6 +805,7 @@ describe('try-on provider', () => {
     [401, 'rejectedKey'],
     [403, 'rejectedKey'],
     [429, 'rateLimited'],
+    [404, 'modelUnavailable'],
     [400, 'error'],
     [500, 'error'],
   ])('maps HTTP %i to %s', async (status, reason) => {
@@ -790,6 +842,15 @@ describe('try-on provider', () => {
       TryOnError,
     );
     expect(() => readGeminiImage(null)).toThrow(TryOnError);
+  });
+
+  it('explains unsupported image output without blaming the API key', async () => {
+    const response = {
+      error: { message: 'Requested response modalities are not supported by this model.' },
+    };
+    expect(
+      await reasonOf(createGeminiProvider(respond(400, response), () => 'm').render(input, 'k')),
+    ).toBe('unsupportedModel');
   });
 
   it('says the picture may have been charged when the connection drops mid-request', async () => {

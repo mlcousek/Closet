@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 import { Alert } from 'react-native';
 
 import AiKeysScreen from '@/app/settings/ai-keys';
 
 import { KeyNeededPrompt } from '../KeyNeededPrompt';
+import * as modelChecks from '../modelCheck';
 import { providers } from '../providers';
 
 const mockPush = jest.fn();
@@ -42,6 +43,49 @@ beforeEach(() => {
 });
 
 describe('AI key settings', () => {
+  it('checks the selected model and distinguishes model availability from image support', async () => {
+    mockSecure.set('ai-key-image', 'private-key');
+    const check = jest.spyOn(modelChecks, 'checkConfiguredModel').mockResolvedValue('available');
+    renderWithQuery(<AiKeysScreen />);
+    await screen.findByTestId('masked-image');
+    fireEvent.changeText(screen.getByTestId('image-model'), 'models/custom-image');
+    fireEvent.press(screen.getByTestId('check-model-image'));
+    expect(await screen.findByTestId('model-result-image')).toHaveTextContent(
+      /Image output is not confirmed/,
+    );
+    expect(check).toHaveBeenCalledWith('image', 'models/custom-image');
+    fireEvent.changeText(screen.getByTestId('image-model'), 'another-model');
+    expect(screen.queryByTestId('model-result-image')).toBeNull();
+  });
+
+  it('does not show an old response after the model is edited during a check', async () => {
+    let finish!: (result: modelChecks.ModelCheck) => void;
+    jest.spyOn(modelChecks, 'checkConfiguredModel').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    renderWithQuery(<AiKeysScreen />);
+    await screen.findByTestId('input-anthropic');
+    await waitFor(() => expect(screen.getByTestId('check-model-anthropic')).not.toBeDisabled());
+    fireEvent.press(screen.getByTestId('check-model-anthropic'));
+    expect(screen.getByTestId('check-model-anthropic')).toBeDisabled();
+    fireEvent.changeText(screen.getByTestId('text-model'), 'new-model');
+    await act(async () => finish('supported'));
+    expect(screen.queryByTestId('model-result-anthropic')).toBeNull();
+    expect(screen.getByTestId('check-model-anthropic')).not.toBeDisabled();
+  });
+
+  it('explains unavailable models with a settings action instead of asking for a new key', async () => {
+    jest.spyOn(modelChecks, 'checkConfiguredModel').mockResolvedValue('modelUnavailable');
+    renderWithQuery(<AiKeysScreen />);
+    await screen.findByTestId('input-anthropic');
+    await waitFor(() => expect(screen.getByTestId('check-model-anthropic')).not.toBeDisabled());
+    fireEvent.press(screen.getByTestId('check-model-anthropic'));
+    expect(await screen.findByTestId('model-result-anthropic')).toHaveTextContent(/choose a model/);
+  });
+
   it('saves a key and shows it masked from then on', async () => {
     renderWithQuery(<AiKeysScreen />);
     fireEvent.changeText(await screen.findByTestId('input-anthropic'), 'sk-ant-secret-1234');
@@ -107,6 +151,21 @@ describe('AI key settings', () => {
     expect(alert).toHaveBeenCalled();
     expect(await screen.findByTestId('input-anthropic')).toBeTruthy();
     expect(mockSecure.has('ai-key-anthropic')).toBe(false);
+  });
+
+  it('clears a model check result when its provider key is removed', async () => {
+    mockSecure.set('ai-key-anthropic', 'sk-ant-secret-1234');
+    jest.spyOn(modelChecks, 'checkConfiguredModel').mockResolvedValue('supported');
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+      buttons?.find((button) => button.style === 'destructive')?.onPress?.();
+    });
+    renderWithQuery(<AiKeysScreen />);
+    await screen.findByTestId('masked-anthropic');
+    fireEvent.press(screen.getByTestId('check-model-anthropic'));
+    await screen.findByTestId('model-result-anthropic');
+    fireEvent.press(screen.getByTestId('remove-anthropic'));
+    await screen.findByTestId('input-anthropic');
+    await waitFor(() => expect(screen.queryByTestId('model-result-anthropic')).toBeNull());
   });
 
   it('keeps the key when removal is cancelled', async () => {

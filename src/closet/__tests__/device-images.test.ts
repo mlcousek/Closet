@@ -1,7 +1,12 @@
 import { itemImageDeps } from '../deviceImages';
 
-const mockFiles = { deleted: [] as [string, object][] };
+const mockFiles = {
+  deleted: [] as [string, object][],
+  info: { exists: true, md5: '0123456789abcdef0123456789abcdef' },
+};
+const mockInfo = jest.fn(async (_uri: string, _options: object) => mockFiles.info);
 jest.mock('expo-file-system/legacy', () => ({
+  getInfoAsync: (uri: string, options: object) => mockInfo(uri, options),
   deleteAsync: async (uri: string, options: object) => void mockFiles.deleted.push([uri, options]),
 }));
 jest.mock('@/storage/imageStore', () => ({ imageStore: {} }));
@@ -60,6 +65,19 @@ beforeEach(() => {
     alive: 0,
   });
   mockFiles.deleted = [];
+  mockFiles.info = { exists: true, md5: '0123456789abcdef0123456789abcdef' };
+  mockInfo.mockClear();
+});
+
+it('requests the native file checksum and rejects a missing photo', async () => {
+  expect(await itemImageDeps.fingerprint!('file:///photo.jpg')).toBe(
+    'md5:0123456789abcdef0123456789abcdef',
+  );
+  expect(mockInfo).toHaveBeenCalledWith('file:///photo.jpg', { md5: true });
+  mockFiles.info.exists = false;
+  await expect(itemImageDeps.fingerprint!('file:///missing.jpg')).rejects.toThrow(
+    'Cannot read photo',
+  );
 });
 
 describe('reducing a photo on the device', () => {

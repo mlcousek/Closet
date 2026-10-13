@@ -26,6 +26,7 @@ export type Item = {
   sourceUrl: string | null;
   ownership: Ownership;
   originalPath: string;
+  photoHash?: string | null;
   cutoutPath: string | null;
   thumbPath: string;
   needsReview: boolean;
@@ -50,7 +51,7 @@ export type ItemDetails = Pick<
   | 'sourceUrl'
 >;
 
-export type ItemImages = Pick<Item, 'originalPath' | 'cutoutPath' | 'thumbPath'>;
+export type ItemImages = Pick<Item, 'originalPath' | 'cutoutPath' | 'thumbPath' | 'photoHash'>;
 
 export const SORTS = ['newest', 'name', 'price', 'brand'] as const;
 export type ItemSort = (typeof SORTS)[number];

@@ -138,104 +138,33 @@ describe('onboarding flow', () => {
     expect(screen.getByTestId('onboarding-next')).toBeEnabled();
   });
 
-  it('offers three gender options and shows matching silhouettes', async () => {
-    await start();
-    fireEvent.changeText(screen.getByTestId('onboarding-name'), 'Auri');
-    fireEvent.press(screen.getByTestId('onboarding-next'));
-
-    expect(screen.getByText('Woman')).toBeTruthy();
-    expect(screen.getByText('Man')).toBeTruthy();
-    expect(screen.getByText('Prefer not to say')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('gender-man'));
-    fireEvent.press(screen.getByTestId('onboarding-next'));
-
-    expect(screen.getByTestId('body-types-man')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('body-type-athletic'));
-    expect(screen.getByTestId('body-type-athletic')).toBeSelected();
-  });
-
-  it.each(['woman', 'man', 'unspecified'] as const)(
-    'shows the body type set for %s',
-    async (gender) => {
-      await start();
-      fireEvent.changeText(screen.getByTestId('onboarding-name'), 'Auri');
-      fireEvent.press(screen.getByTestId('onboarding-next'));
-      fireEvent.press(screen.getByTestId(`gender-${gender}`));
-      fireEvent.press(screen.getByTestId('onboarding-next'));
-      expect(screen.getByTestId(`body-types-${gender}`)).toBeTruthy();
-      expect(screen.getAllByRole('radio')).toHaveLength(5);
-    },
-  );
-
-  it('saves the profile with skipped steps left unset and opens Home', async () => {
+  it('saves only a name and goes straight to the closet', async () => {
     await start();
     fireEvent.changeText(screen.getByTestId('onboarding-name'), ' Auri ');
+    expect(screen.queryByTestId('gender-woman')).toBeNull();
+    expect(screen.queryByTestId('avatar-camera')).toBeNull();
     fireEvent.press(screen.getByTestId('onboarding-next'));
-    fireEvent.press(screen.getByTestId('gender-woman'));
-    fireEvent.press(screen.getByTestId('onboarding-skip'));
-    fireEvent.press(screen.getByTestId('onboarding-skip'));
-    expect(screen.getByText('Add a full-body photo')).toBeTruthy();
-    expect(screen.getByTestId('onboarding-next')).toBeDisabled();
-    fireEvent.press(screen.getByTestId('onboarding-skip'));
-
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/closet'));
     expect(mockSave).toHaveBeenCalledWith({ name: 'Auri', gender: null, bodyType: null });
   });
 
-  it('stores the avatar photo when one is taken', async () => {
-    mockPickPhoto.mockResolvedValue({ status: 'picked', photo });
+  it('keeps the entered name when going back to the welcome screen', async () => {
+    await start();
+    fireEvent.changeText(screen.getByTestId('onboarding-name'), 'Auri');
+    fireEvent.press(screen.getByTestId('onboarding-back'));
+    fireEvent.press(screen.getByTestId('onboarding-next'));
+    expect(screen.getByTestId('onboarding-name')).toHaveProp('value', 'Auri');
+  });
+
+  it('offers retry without navigation when saving fails', async () => {
+    mockSave.mockRejectedValueOnce(new Error('disk full'));
     await start();
     fireEvent.changeText(screen.getByTestId('onboarding-name'), 'Auri');
     fireEvent.press(screen.getByTestId('onboarding-next'));
-    fireEvent.press(screen.getByTestId('gender-woman'));
+    expect(await screen.findByTestId('onboarding-error')).toBeTruthy();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
     fireEvent.press(screen.getByTestId('onboarding-next'));
-    fireEvent.press(screen.getByTestId('body-type-curvy'));
-    fireEvent.press(screen.getByTestId('onboarding-next'));
-
-    expect(screen.getByText(/Stand straight facing the camera/)).toBeTruthy();
-    expect(screen.getByText('Whole body')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('avatar-camera'));
-    expect(await screen.findByTestId('avatar-preview')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('onboarding-next'));
-
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/'));
-    expect(mockSave).toHaveBeenCalledWith({
-      name: 'Auri',
-      gender: 'woman',
-      bodyType: 'curvy',
-      avatarPath: 'images/avatar/full.jpg',
-      avatarSmallPath: 'images/avatar/small.jpg',
-    });
-  });
-
-  const toAvatarStep = async () => {
-    await start();
-    fireEvent.changeText(screen.getByTestId('onboarding-name'), 'Auri');
-    fireEvent.press(screen.getByTestId('onboarding-next'));
-    fireEvent.press(screen.getByTestId('onboarding-skip'));
-    fireEvent.press(screen.getByTestId('onboarding-skip'));
-  };
-
-  it('warns about an unsuitable photo and lets the user keep it', async () => {
-    mockPickPhoto.mockResolvedValue({ status: 'picked', photo });
-    mockCheckPhoto.mockResolvedValue('severalPeople');
-    await toAvatarStep();
-
-    fireEvent.press(screen.getByTestId('avatar-library'));
-    expect(await screen.findByTestId('avatar-warning')).toHaveTextContent(/more than one person/);
-    expect(screen.getByTestId('onboarding-next')).toBeDisabled();
-
-    fireEvent.press(screen.getByTestId('avatar-keep'));
-    expect(screen.queryByTestId('avatar-warning')).toBeNull();
-    expect(screen.getByTestId('onboarding-next')).toBeEnabled();
-  });
-
-  it('explains denied access with a shortcut to system settings', async () => {
-    mockPickPhoto.mockResolvedValue({ status: 'denied' });
-    await toAvatarStep();
-    fireEvent.press(screen.getByTestId('avatar-camera'));
-    expect(await screen.findByTestId('avatar-denied')).toHaveTextContent(/no access/);
-    expect(screen.getByText('Open system settings')).toBeTruthy();
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/closet'));
   });
 });
 

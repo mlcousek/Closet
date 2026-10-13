@@ -1,31 +1,34 @@
-# Closet (working name)
+# Closet
 
-A personal digital wardrobe for iPhone: photograph your clothes, build outfits, see them rendered on your own photo, plan what to wear by weather and calendar.
+A personal digital wardrobe for iPhone, built with React Native and Expo. Photograph clothes, build layered outfits, plan what to wear and track the pieces you actually wear.
 
-Inspired by the Alta closet app. Built with React Native + Expo, developed on Windows, built in GitHub Actions and sideloaded with AltStore.
+## Available features
 
-## Plan
+- Wardrobe: camera and photo imports, bulk review, on-device background removal, optional AI tagging, shop-link import, search and filters.
+- Outfits: two visible top rows for a base top and hoodie or sweater, separate outerwear, additional layers and accessories, saved outfits and lookbooks.
+- Try-on: optional Gemini rendering with your own API key, or sharing an outfit sheet to an assistant app and importing the finished picture.
+- Planning: weather suggestions, outfit calendar, wear history and local reminders.
+- Insights: wardrobe statistics, cost per wear, AI stylist, trip packing and display mode.
+- Local SQLite storage, backup export and restore, English and Czech, light and dark appearance.
 
-The app is planned as seven OpenSpec changes, implemented in order. Each lives in `openspec/changes/<name>/` with a proposal, specs, design and tasks.
+First-run setup asks only for a name and opens the wardrobe. Gender, body type, sizes and an avatar remain optional in Profile. No AI key is required to organise clothes or build outfits.
 
-| # | Change | Delivers |
-|---|--------|----------|
-| 1 | `add-app-foundation` | Expo project, tab navigation, local database, EN/CS localisation, AI key settings, GitHub Actions IPA build |
-| 2 | `add-profile-onboarding` | Gender, body type, full-body photo used as the avatar |
-| 3 | `add-closet` | Clothing items: photo capture, automatic cutout, AI tagging, bulk import, import from shop link, search and filters |
-| 4 | `add-outfits-try-on` | Outfit editor with per-slot carousels, AI try-on render on the avatar, saved outfits grid |
-| 5 | `add-lookbooks-wishlist-sharing` | Lookbooks, wishlist items usable in outfits, share outfit as image |
-| 6 | `add-planning-weather` | Home screen, weather and season suggestions, outfit calendar, worn log, streak, daily reminder |
-| 7 | `add-smart-features` | AI stylist, closet statistics, trip packing lists, display mode |
-
-## Working with the plan
+## Development and checks
 
 ```bash
-openspec list
+npm ci
+npm run check
+npm start
 ```
 
-```bash
-openspec status --change add-app-foundation
-```
+`npm run check` runs ESLint, TypeScript, translation validation and Jest. Tests cover repositories, screens, queues, backups and provider response handling. Native camera, Vision, sharing and notifications are mocked in automated tests; passing tests do not establish device behavior or live AI output quality.
 
-In Claude Code, `/opsx:apply add-app-foundation` starts implementing the first change.
+See [building and installing](docs/building.md) for the Windows / GitHub Actions / AltStore workflow.
+
+## Current engineering status
+
+All seven original feature areas have implementations. The OpenSpec folders are the original implementation and verification checklist, not a list of wholly unbuilt features. Read [current status](docs/status.md) for the distinction between implemented behavior, design changes and outstanding validation, and [decisions](docs/decisions.md) for tradeoffs.
+
+Startup waits for database recovery before mounting wardrobe screens. A failed recovery shows a retry screen. Bulk-import review explicitly enables review of the next item, so repeated Confirm or Discard taps cannot act on an unseen item.
+
+Clothes and outfits live on the device. AI operations send the relevant text and images to the chosen provider using keys stored in the device keychain. Keys are excluded from backups.

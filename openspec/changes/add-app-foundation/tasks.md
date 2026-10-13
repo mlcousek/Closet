@@ -1,3 +1,5 @@
+> Status note (8 October 2026): this is the original implementation/verification checklist. Unchecked tasks can contain implemented behavior awaiting their stated validation. See [current status](../../../docs/status.md) and [decisions](../../../docs/decisions.md) for superseded designs and remaining checks.
+
 ## 1. Project setup
 
 - [x] 1.1 Create the Expo TypeScript project with expo-router, iPhone-only portrait config, and working-name bundle identifiers for release and development variants; verify `npx expo config` shows both variants

@@ -1,3 +1,5 @@
+> Status note (8 October 2026): this is the original implementation/verification checklist. Unchecked tasks can contain implemented behavior awaiting their stated validation. See [current status](../../../docs/status.md) and [decisions](../../../docs/decisions.md) for superseded designs and remaining checks.
+
 ## 1. Calendar data
 
 - [x] 1.1 Add calendar entries and wear events tables with migrations and a repository (plan, move, clear, mark worn, remove, list by range); verify repository unit tests including that marking worn writes one wear event per item and removing deletes them

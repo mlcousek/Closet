@@ -7,6 +7,7 @@ import { usageLog } from '@/outfits/renders';
 import { imageStore } from '@/storage/imageStore';
 
 import { itemImageDeps, toTagImage } from './deviceImages';
+import { ImportPhotoError, importFailure } from './importDiagnostics';
 import {
   createImportJobRepository,
   createImportProcessor,
@@ -21,6 +22,7 @@ import {
   type ItemImageDeps,
 } from './itemImages';
 import { itemRepository } from './repository';
+import { findPhotoDuplicate } from './photoDuplicates';
 import type { ItemDetails } from './types';
 
 const EMPTY: ImportProgress = { queued: 0, processing: 0, done: 0, failed: 0, total: 0 };
@@ -73,7 +75,27 @@ export type ImportJobDeps = {
   /** True when an item with this id already exists. */
   itemExists: (id: string) => Promise<boolean>;
   createItem: typeof itemRepository.create;
+  findDuplicate?: (hash: string) => Promise<{ id: string } | null>;
 };
+
+// A second worker with the same photo waits for the first to commit (or fail).
+const photoLocks = new Map<string, Promise<void>>();
+async function withPhotoLock<T>(hash: string | null, work: () => Promise<T>): Promise<T> {
+  if (!hash) return work();
+  const previous = photoLocks.get(hash);
+  let release!: () => void;
+  const mine = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  photoLocks.set(hash, mine);
+  await previous;
+  try {
+    return await work();
+  } finally {
+    release();
+    if (photoLocks.get(hash) === mine) photoLocks.delete(hash);
+  }
+}
 
 /**
  * Turns one imported photo into an item that waits for review. The item takes
@@ -89,27 +111,43 @@ export async function processImportJob(job: ImportJob, deps: ImportJobDeps): Pro
   const sourceUri = deps.sourceUri(job.sourcePath);
   // Reduced here rather than when the photos are queued, so a large selection is queued quickly;
   // and before the cutout, which is what needs the most memory for a full camera photo.
-  const photo = await deps.images.reduce({ uri: sourceUri });
+  const photo = await deps.images.reduce({ uri: sourceUri }).catch((error: unknown) => {
+    throw new ImportPhotoError('readPhoto', null, error);
+  });
   try {
-    const cutout = await deps.images.cutout(photo.uri);
-    const tags = await deps.tag(
-      cutout?.uri ?? photo.uri,
-      cutout !== null,
-      cutout ?? photoSize(photo),
-    );
-    const images = await storeItemImages(
-      { originalUri: photo.uri, cutoutUri: cutout?.uri ?? null },
-      deps.images,
-    );
-    const item = await deps
-      .createItem(detailsFromTags(tags), images, { needsReview: true, id: job.id })
-      .catch(async (error: unknown) => {
-        // Without the item nothing points at these files any more.
-        await removeItemImages(images, deps.images);
-        throw error;
+    const photoHash =
+      (await deps.images.fingerprint?.(photo.uri).catch((error: unknown) => {
+        throw new ImportPhotoError('readPhoto', null, error);
+      })) ?? null;
+    return await withPhotoLock(photoHash, async () => {
+      const duplicate = photoHash ? await deps.findDuplicate?.(photoHash) : null;
+      if (duplicate) throw new ImportPhotoError('duplicate', duplicate.id);
+      const cutout = await deps.images.cutout(photo.uri);
+      const tags = await deps.tag(
+        cutout?.uri ?? photo.uri,
+        cutout !== null,
+        cutout ?? photoSize(photo),
+      );
+      const images = await storeItemImages(
+        {
+          originalUri: photo.uri,
+          cutoutUri: cutout?.uri ?? null,
+          ...(photoHash ? { photoHash } : {}),
+        },
+        deps.images,
+      ).catch((error: unknown) => {
+        throw new ImportPhotoError('savePhoto', null, error);
       });
-    await deps.images.remove(job.sourcePath).catch(() => {});
-    return item.id;
+      const item = await deps
+        .createItem(detailsFromTags(tags), images, { needsReview: true, id: job.id })
+        .catch(async (error: unknown) => {
+          // Without the item nothing points at these files any more.
+          await removeItemImages(images, deps.images);
+          throw new ImportPhotoError('savePhoto', null, error);
+        });
+      await deps.images.remove(job.sourcePath).catch(() => {});
+      return item.id;
+    });
   } finally {
     // A long import would otherwise leave a reduced copy of every photo behind.
     if (photo.uri !== sourceUri) await deps.images.discard(photo.uri).catch(() => {});
@@ -124,7 +162,9 @@ const deviceDeps: ImportJobDeps = {
   sourceUri: (path) => imageStore.uri(path),
   tag: async (uri, isCutout, size) => {
     try {
-      const image = await toTagImage(uri, isCutout, size);
+      const image = await toTagImage(uri, isCutout, size).catch((error: unknown) => {
+        throw new ImportPhotoError('readPhoto', null, error);
+      });
       return await tagItem(image, i18n.language === 'cs' ? 'cs' : 'en', {
         onAnswered: () => usageLog.record('tag'),
       });
@@ -138,6 +178,7 @@ const deviceDeps: ImportJobDeps = {
   },
   itemExists: async (id) => (await itemRepository.get(id)) !== null,
   createItem: itemRepository.create,
+  findDuplicate: findPhotoDuplicate,
 };
 
 let onItemsChanged: (() => void) | null = null;
@@ -150,6 +191,7 @@ export function setImportListener(listener: (() => void) | null): void {
 const processor = createImportProcessor({
   jobs: importJobs,
   process: (job) => processImportJob(job, deviceDeps),
+  failure: importFailure,
   onChange: () => {
     void refreshProgress();
     onItemsChanged?.();
@@ -166,11 +208,14 @@ export async function startBulkImport(
   photoUris: string[],
   deps: {
     save: (uri: string) => Promise<string>;
-    jobs: Pick<typeof importJobs, 'clear' | 'enqueue'>;
+    jobs: Pick<typeof importJobs, 'clear' | 'enqueue'> &
+      Partial<Pick<typeof importJobs, 'recordCopyFailure'>>;
+    remove?: (path: string) => Promise<void>;
     started: () => void;
   } = {
     save: (uri) => imageStore.save(uri, 'import', extensionOf(uri)),
     jobs: importJobs,
+    remove: (path) => imageStore.remove(path),
     started: () => {
       void refreshProgress();
       void processor.start();
@@ -181,11 +226,16 @@ export async function startBulkImport(
   await deps.jobs.clear(['done']);
   let failed = 0;
   for (const uri of photoUris) {
+    let copied: string | null = null;
     try {
-      await deps.jobs.enqueue([await deps.save(uri)]);
+      copied = await deps.save(uri);
+      await deps.jobs.enqueue([copied]);
       deps.started();
     } catch {
       failed++;
+      if (copied) await deps.remove?.(copied).catch(() => {});
+      await deps.jobs.recordCopyFailure?.().catch(() => {});
+      if (deps.jobs.recordCopyFailure) deps.started();
     }
   }
   return failed;
@@ -205,6 +255,13 @@ export async function retryImportJob(id: string): Promise<void> {
   await importJobs.retry(id);
   await refreshProgress();
   void processor.start();
+}
+
+/** Removes one failed photo without affecting the other jobs or wardrobe items. */
+export async function dismissImportJob(id: string): Promise<void> {
+  const job = await importJobs.dismiss(id);
+  if (job) await imageStore.remove(job.sourcePath).catch(() => {});
+  await refreshProgress();
 }
 
 /** Drops failed photos the user does not want to retry. */

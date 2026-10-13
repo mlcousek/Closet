@@ -61,7 +61,7 @@ function Editor({
       return draftFromPieces(
         outfit.entries.map((entry) => ({
           itemId: entry.item.id,
-          slot: CATEGORY_SLOT[entry.item.category],
+          slot: entry.slot,
           position: entry.position,
         })),
       );
@@ -286,7 +286,14 @@ function Editor({
                   key={row}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
                 >
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, gap: spacing.xs }}>
+                    {slot === 'top' ? (
+                      <AppText testID={`top-layer-${row}`} variant="caption" muted>
+                        {t(row === 0 ? 'outfitEditor.baseTop' : 'outfitEditor.layerTop', {
+                          number: row + 1,
+                        })}
+                      </AppText>
+                    ) : null}
                     <SlotCarousel
                       testID={`carousel-${slot}-${row}`}
                       items={itemsBySlot[slot]}

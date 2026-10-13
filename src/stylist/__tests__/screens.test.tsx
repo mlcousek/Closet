@@ -722,8 +722,20 @@ describe('statistics', () => {
 
 describe('trips', () => {
   const fill = (start: string, end: string) => {
-    fireEvent.changeText(screen.getByTestId('trip-start'), start);
-    fireEvent.changeText(screen.getByTestId('trip-end'), end);
+    for (const [id, day] of [
+      ['trip-start', start],
+      ['trip-end', end],
+    ]) {
+      const [year, month, date] = day.split('-').map(Number);
+      fireEvent.press(screen.getByTestId(id));
+      fireEvent(
+        screen.getByTestId(`${id}-picker`),
+        'valueChange',
+        {},
+        new Date(year, month - 1, date, 12),
+      );
+      fireEvent.press(screen.getByTestId(`${id}-done`));
+    }
   };
 
   it('validates a new trip and creates it with a searched destination', async () => {

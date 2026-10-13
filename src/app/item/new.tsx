@@ -13,6 +13,7 @@ import { ItemForm } from '@/closet/ItemForm';
 import { photoSize, storeItemImages, type Photo as SourcePhoto } from '@/closet/itemImages';
 import { usePendingLink, type PendingLinkItem } from '@/closet/pendingLink';
 import { itemRepository } from '@/closet/repository';
+import { findPhotoDuplicate } from '@/closet/photoDuplicates';
 import type { ItemDetails } from '@/closet/types';
 import { useInvalidateItems } from '@/closet/useItems';
 import { AppText, Button, Screen } from '@/components/ui';
@@ -22,7 +23,7 @@ import { useTheme } from '@/theme/useTheme';
 
 type Params = { source?: 'camera' | 'library' | 'link'; target?: string };
 
-type Photo = { originalUri: string; cutoutUri: string | null };
+type Photo = { originalUri: string; cutoutUri: string | null; photoHash?: string | null };
 
 /** Adds one item: photo, automatic cutout, suggested details, confirmation. */
 export default function NewItemScreen() {
@@ -32,7 +33,8 @@ export default function NewItemScreen() {
   const { colors, spacing, radius } = useTheme();
   const invalidateItems = useInvalidateItems();
 
-  const [stage, setStage] = useState<'pick' | 'working' | 'tagging' | 'form'>('pick');
+  const [stage, setStage] = useState<'pick' | 'working' | 'tagging' | 'duplicate' | 'form'>('pick');
+  const [duplicateId, setDuplicateId] = useState<string | null>(null);
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [useCutout, setUseCutout] = useState(true);
   const [tags, setTags] = useState<ItemTags | null>(null);
@@ -57,6 +59,7 @@ export default function NewItemScreen() {
 
   /** Counts the photos worked on, so an answer for an earlier one is told apart and dropped. */
   const preparing = useRef(0);
+  const allowDuplicate = useRef(false);
 
   const prepare = async (picked: SourcePhoto) => {
     const mine = ++preparing.current;
@@ -64,13 +67,29 @@ export default function NewItemScreen() {
     setStage('working');
     setTags(null);
     setUnavailable(null);
+    setDuplicateId(null);
+    allowDuplicate.current = false;
     // Every photo added here, from the camera, the library or a shop link, is reduced once,
     // and everything after this works on the reduced copy.
     const reduced = await itemImageDeps.reduce(picked);
     const uri = reduced.uri;
+    const photoHash = await itemImageDeps.fingerprint?.(uri).catch(() => null);
+    const duplicate = photoHash ? await findPhotoDuplicate(photoHash) : null;
+    if (stale()) return;
+    if (duplicate) {
+      setPhoto({ originalUri: uri, cutoutUri: null, photoHash });
+      setUseCutout(false);
+      setDuplicateId(duplicate.id);
+      setStage('duplicate');
+      return;
+    }
     const cutout = await itemImageDeps.cutout(uri);
     if (stale()) return;
-    setPhoto({ originalUri: uri, cutoutUri: cutout?.uri ?? null });
+    setPhoto({
+      originalUri: uri,
+      cutoutUri: cutout?.uri ?? null,
+      ...(photoHash ? { photoHash } : {}),
+    });
     setUseCutout(cutout !== null);
     setStage('tagging');
     try {
@@ -134,8 +153,22 @@ export default function NewItemScreen() {
     setSaving(true);
     setSaveFailed(false);
     try {
+      const duplicate =
+        photo.photoHash && !allowDuplicate.current
+          ? await findPhotoDuplicate(photo.photoHash)
+          : null;
+      if (duplicate) {
+        setDuplicateId(duplicate.id);
+        setStage('duplicate');
+        setSaving(false);
+        return;
+      }
       const images = await storeItemImages(
-        { originalUri: photo.originalUri, cutoutUri: useCutout ? photo.cutoutUri : null },
+        {
+          originalUri: photo.originalUri,
+          cutoutUri: useCutout ? photo.cutoutUri : null,
+          ...(photo.photoHash ? { photoHash: photo.photoHash } : {}),
+        },
         itemImageDeps,
       );
       await itemRepository.create(details, images, { ownership: target });
@@ -216,7 +249,9 @@ export default function NewItemScreen() {
             testID="add-item-keep-photo"
             kind="secondary"
             label={t('addItem.keepPhoto')}
-            onPress={() => setStage('form')}
+            onPress={() => {
+              setStage(duplicateId && !allowDuplicate.current ? 'duplicate' : 'form');
+            }}
           />
         ) : null}
       </Screen>
@@ -258,6 +293,27 @@ export default function NewItemScreen() {
         contentFit="contain"
         style={{ height: 280, borderRadius: radius.md, backgroundColor: colors.surface }}
       />
+      {stage === 'duplicate' ? (
+        <>
+          <AppText testID="add-item-duplicate" muted>
+            {t('importFlow.reasons.duplicate')}
+          </AppText>
+          <Button
+            testID="add-item-existing"
+            label={t('importFlow.viewExisting')}
+            onPress={() => router.replace({ pathname: '/item/[id]', params: { id: duplicateId! } })}
+          />
+          <Button
+            testID="add-item-import-anyway"
+            kind="secondary"
+            label={t('importFlow.importAnyway')}
+            onPress={() => {
+              allowDuplicate.current = true;
+              setStage('form');
+            }}
+          />
+        </>
+      ) : null}
       {photo.cutoutUri ? (
         <Chips
           testIDPrefix="image-choice"
@@ -268,11 +324,11 @@ export default function NewItemScreen() {
           selected={[useCutout ? 'cutout' : 'original']}
           onToggle={(value) => setUseCutout(value === 'cutout')}
         />
-      ) : (
+      ) : stage === 'form' ? (
         <AppText testID="no-cutout-notice" muted>
           {t('addItem.noCutout')}
         </AppText>
-      )}
+      ) : null}
       <Button
         testID="another-photo"
         kind="secondary"
@@ -294,15 +350,17 @@ export default function NewItemScreen() {
           {t('addItem.saveFailed')}
         </AppText>
       ) : null}
-      <ItemForm
-        // A new photo brings new suggestions, so the form starts over.
-        key={photo.originalUri}
-        initial={initial}
-        suggested={[...suggested]}
-        submitLabel={t('itemForm.save')}
-        busy={saving}
-        onSubmit={(details) => void save(details)}
-      />
+      {stage === 'form' ? (
+        <ItemForm
+          // A new photo brings new suggestions, so the form starts over.
+          key={photo.originalUri}
+          initial={initial}
+          suggested={[...suggested]}
+          submitLabel={t('itemForm.save')}
+          busy={saving}
+          onSubmit={(details) => void save(details)}
+        />
+      ) : null}
     </Screen>
   );
 }

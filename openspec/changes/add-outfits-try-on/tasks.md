@@ -1,3 +1,5 @@
+> Status note (8 October 2026): this is the original implementation/verification checklist. Unchecked tasks can contain implemented behavior awaiting their stated validation. See [current status](../../../docs/status.md) and [decisions](../../../docs/decisions.md) for superseded designs and remaining checks.
+
 ## 1. Provider trial
 
 - [ ] 1.1 Write a standalone script that renders three sample outfits on a sample avatar with the multi-image generative provider and with the dedicated try-on provider; verify output images are saved side by side

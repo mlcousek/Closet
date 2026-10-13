@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import { parseDateInput } from '@/closet/itemFormLogic';
 import { itemRepository } from '@/closet/repository';
+import { DateField } from '@/components/DateField';
 import { AppText, Button, EmptyState, Field, Screen } from '@/components/ui';
 import { fromDay, toDay, today } from '@/planning/dates';
 import { searchPlaces, type Place } from '@/planning/weather';
@@ -114,21 +115,21 @@ function NewTrip({ onCreated }: { onCreated: (id: string) => void }) {
       )}
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         <View style={{ flex: 1 }}>
-          <Field
+          <DateField
             testID="trip-start"
             label={t('trips.from')}
             value={start}
-            onChangeText={setStart}
-            placeholder={t('itemForm.purchasedAtPlaceholder')}
+            onChange={setStart}
+            disabled={busy}
           />
         </View>
         <View style={{ flex: 1 }}>
-          <Field
+          <DateField
             testID="trip-end"
             label={t('trips.to')}
             value={end}
-            onChangeText={setEnd}
-            placeholder={t('itemForm.purchasedAtPlaceholder')}
+            onChange={setEnd}
+            disabled={busy}
           />
         </View>
       </View>

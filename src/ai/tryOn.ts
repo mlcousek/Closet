@@ -1,5 +1,7 @@
 import { getSetting, setSetting } from '@/db/settings';
 
+import { geminiModelId, isUnsupportedModelMessage } from './modelFailure';
+
 export const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image';
 const IMAGE_MODEL_SETTING = 'ai.model.image';
 const TIMEOUT_MS = 120_000;
@@ -21,6 +23,8 @@ export type TryOnFailure =
   | 'rateLimited'
   | 'timeout'
   | 'rejectedKey'
+  | 'modelUnavailable'
+  | 'unsupportedModel'
   | 'error';
 
 /** A request that fails this quickly never reached the provider. */
@@ -75,6 +79,7 @@ Requirements:
 - Keep the person's face, hair, skin tone, body shape and proportions exactly as in image 1. Do not change who they are.
 - Replace everything the person is wearing in image 1. Nothing from their original clothing may remain.
 - Reproduce every piece faithfully: its colour, pattern, print, length, cut, neckline and details. Do not redesign, recolour or restyle anything.
+- When multiple tops are listed, wear all of them layered in their listed order: the first top is closest to the body, the next top goes over it, and outerwear goes over all tops. Do not replace the base top with the next top.
 - Wear each piece as it is normally worn in the position given. Do not add any clothing, shoes, bag, jewellery or accessory that is not in the list. If no shoes are listed, show plain bare feet or neutral socks.
 - Show the whole body from head to feet, standing in a relaxed, natural pose facing the camera.
 - Plain, light, even studio background with soft lighting. Portrait orientation. No text, no watermark, no borders.`;
@@ -150,7 +155,7 @@ export function createGeminiProvider(
     const startedAt = Date.now();
     try {
       const response = await fetchImpl(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(getModel())}:generateContent`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModelId(getModel()))}:generateContent`,
         {
           method: 'POST',
           // The key travels in a header, never in the URL.
@@ -187,6 +192,11 @@ export function createGeminiProvider(
       throw new TryOnError('rejectedKey');
     }
     if (status === 429) throw new TryOnError('rateLimited');
+    if (status === 404) throw new TryOnError('modelUnavailable');
+    const message = (payload as { error?: { message?: unknown } } | null)?.error?.message;
+    if (status === 400 && typeof message === 'string' && isUnsupportedModelMessage(message)) {
+      throw new TryOnError('unsupportedModel');
+    }
     if (status < 200 || status >= 300) throw new TryOnError('error');
     return readGeminiImage(payload);
   };

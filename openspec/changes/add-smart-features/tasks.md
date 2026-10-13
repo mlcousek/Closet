@@ -1,3 +1,5 @@
+> Status note (8 October 2026): this is the original implementation/verification checklist. Unchecked tasks can contain implemented behavior awaiting their stated validation. See [current status](../../../docs/status.md) and [decisions](../../../docs/decisions.md) for superseded designs and remaining checks.
+
 ## 1. AI stylist
 
 - [x] 1.1 Build the text catalogue of owned items with device-side pre-filtering by season and warmth; verify unit tests on catalogue content and size limits

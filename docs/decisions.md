@@ -49,7 +49,7 @@ The spec lets the user filter the items offered in a row. The editor has one sea
 - **Typical conditions are last year's weather.** For days beyond the 14-day forecast, the trip uses the same dates a year earlier from the Open-Meteo archive and marks them "typical". One year is a sample, not a climate average.
 - **The stylist plans a trip all or nothing.** The stylist returns outfits without saying which day each is for, and validation can drop some. If fewer valid outfits come back than the trip has days, nothing is changed, so no outfit lands on the wrong day's weather.
 - **Display orientation uses the navigator.** The app allows every orientation in its configuration and each screen locks itself to portrait through the stack's `orientation` option; only the display allows all. No orientation module was added.
-- **Dates are typed as YYYY-MM-DD** in the trip form, as for the purchase date of an item. There is no date picker in the app yet.
+- **Date entry originally used YYYY-MM-DD text fields.** Native date pickers superseded them on 8 October 2026; calendar-day storage remains unchanged.
 
 **Not yet verified:** the display's keep-awake, rotation, dimming and start-while-charging behaviour, and every stylist request, have only been exercised in tests with mocks.
 
@@ -94,3 +94,34 @@ Still true: the reduction itself decodes the full photo once, two at a time duri
 - **A request that timed out is not counted as usage** although it may have been charged; the message for a timeout says so. Renders, studio photos, tagging and stylist requests that were answered are all counted and shown in Settings.
 - **Item names sent in prompts** are cleaned of line breaks, control characters and the catalogue's separator and cut to 80 characters. The words themselves are still sent, so a product title can still colour a picture or an explanation; the stylist's answers are checked against real item ids.
 - **Prepared SQL statements** may not be released until the database closes (not confirmed); only a very long session, such as display mode left on, could notice.
+
+## Reliability and layered outfits: 8 October 2026
+
+- Startup mounts database-backed UI only after opening, interrupted-restore recovery and translation setup succeed. Recovery errors show a localized retry screen, using device language because stored settings may be unavailable.
+- Import review no longer uses a 400 ms guard. After an item is handled, the next item's form is disabled until Review this item is tapped. This protects against repeated taps regardless of query/render timing and introduces no timeout to leak into tests.
+- Onboarding collects a name and opens Closet. Optional try-on details stay in Profile; existing profiles are unchanged.
+- The editor shows two top rows: an inner base top and a top worn over it. Outerwear remains separate. More rows can be added. Existing slot/position storage supports this without migrations, and shuffle now retains multiple rows without choosing the same garment twice.
+- Try-on instructions explain the order of multiple tops and outerwear. Provider-generated images may still conceal a base layer; saved outfit pieces and wear history retain it independently of the picture.
+
+## Automatic layers and warmth: 8 October 2026
+
+- On weather bands 3–5, known base tops (T-shirts, shirts, blouses, tanks, crop tops and polos) can be paired with sweaters, hoodies and cardigans. When a base is available, these mid-layer candidates include it; base-only and untyped-top candidates remain available. On bands 1–2, generation keeps one top. Without a known base, a mid-layer remains usable alone.
+- A generated pair occupies top positions 0 and 1 in that order. Outerwear is separate. Daily suggestions and trips share the generator, so packing and wear limits apply to both top garments without a storage change.
+- Upper-body warmth is the warmest top plus 0.5 per extra top, capped at 5, then averaged with the other body regions. This is a tunable heuristic, not a measured insulation model. Cold-day rejection of body pieces that are all light remains; recent-wear penalties still apply to every garment.
+- The greedy generator picks one base per attempt and evaluates it with each mid-layer, rather than enumerating every base/mid pair. This bounds work for larger wardrobes but does not promise the globally best combination.
+
+## Provider capability checks: 8 October 2026
+
+Model checks are explicit Settings actions, separate from key validation and paid generation. Claude's model metadata exposes image_input and structured_outputs; both are needed for the shared tagging/stylist configuration. Gemini's model metadata exposes supportedGenerationMethods but does not prove image-output support, so generateContent access is shown as available with that limitation. Missing Claude capability metadata is also unconfirmed rather than rejected.
+
+Generation remains authoritative: a missing model (404) or an explicit unsupported-capability response has its own localized failure and directs the user to model settings. Malformed images and other bad requests remain generic errors. Checks do not update the stored key connection status and do not silently change selected models. No live quality comparison has been run; the repeatable protocol is in [provider validation](provider-validation.md).
+
+## Duplicate photos and import recovery: 8 October 2026
+
+Duplicate detection uses the MD5 checksum of the prepared original file, obtained through the native filesystem API. It is a file-equality heuristic, not a visual garment matcher or security check. Comparing after photo reduction lets imported originals and older stored originals use the same representation. Differently encoded or edited versions can still be distinct.
+
+Schema version 8 stores the fingerprint with the item. Older owned/wishlist originals are hashed lazily, one file at a time, with concurrent import workers sharing the scan. Missing old files do not block new imports. Hash recording checks that the original path has not changed while reading it; a replacement photo clears a hash unless a new one is supplied. Backups continue to include the whole SQLite database, so no archive format change is needed.
+
+Same-fingerprint bulk jobs are serialized through a short-lived reservation until the item is committed or the attempt fails. Duplicates remain failed jobs with their source photo available for inspection; they can be discarded or checked again if the original item was removed. They never silently add another item or send another tagging request. Single-photo adds offer an explicit override for cases where one photo intentionally represents multiple items.
+
+New failure records contain safe reason codes. The interface also understands older interruption/AI errors without displaying raw error text. Initial copy failures have no durable source, so they offer reselecting a photo instead of an automatic retry. Per-photo retry and discard act only on failed jobs; processing jobs cannot be requeued or removed by repeated taps.
